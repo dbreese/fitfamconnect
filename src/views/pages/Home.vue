@@ -9,7 +9,7 @@ import HighlightsWidget from '@/components/landing/HighlightsWidget.vue';
         <div id="home" class="landing-wrapper overflow-hidden">
             <HeroWidget />
             <FeaturesWidget />
-            <HighlightsWidget />
+            <!-- <HighlightsWidget /> -->
             <AboutWidget />
         </div>
     </div>

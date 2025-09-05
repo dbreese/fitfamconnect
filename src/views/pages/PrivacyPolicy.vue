@@ -7,12 +7,12 @@ const { t, tm } = useI18n();
         <template #content>
             <h1 style="padding-top: 3pt; text-indent: 0pt; text-align: center">Privacy Policy</h1>
             <p style="padding-top: 16pt; padding-left: 5pt; text-indent: 0pt; line-height: 106%; text-align: left">
-                This Privacy Policy ("Policy") applies to https://classroomcrafters.com, and Fit Fam Connect, LLC
+                This Privacy Policy ("Policy") applies to https://fitfamconnect.com, and Fit Fam Connect, LLC
                 ("Company") and governs data collection and usage. For the purposes of this Privacy Policy, unless
-                otherwise noted, all references to the Company include https://classroomcrafters.com. The Company's
-                website is a site to provide teachers and school staff with online access to generative artificial
-                intelligence tools, browser extensions, and other services (collectively our "Services") site. By using
-                the Company website, you consent to the data practices described in this statement.
+                otherwise noted, all references to the Company include https://fitfamconnect.com. The Company's website
+                is a site to provide teachers and school staff with online access to generative artificial intelligence
+                tools, browser extensions, and other services (collectively our "Services") site. By using the Company
+                website, you consent to the data practices described in this statement.
             </p>
             <p style="padding-top: 1pt; text-indent: 0pt; text-align: left"><br /></p>
             <h2 style="padding-left: 5pt; text-indent: 0pt; text-align: left">
@@ -61,7 +61,7 @@ const { t, tm } = useI18n();
                 -to carry out the Company's obligations and enforce our rights arising from any contracts ente
             </p>
             <p style="padding-top: 1pt; padding-left: 43pt; text-indent: 0pt; text-align: left">
-                -to notify you about changes to our https://classroomcrafters.com or any products or service
+                -to notify you about changes to our https://fitfamconnect.com or any products or service
             </p>
             <p style="padding-top: 1pt; padding-left: 43pt; text-indent: 0pt; text-align: left">
                 -in any other way we may describe when you provide the information
@@ -239,8 +239,7 @@ const { t, tm } = useI18n();
                 YOU, INCLUDING PERSONALLY IDENTIFYING INFORMATION, TO BE SHARED IN THIS MANNER, DO NOT USE
             </p>
             <p style="padding-left: 5pt; text-indent: 0pt; line-height: 106%; text-align: left">
-                THIS FEATURE. You may disconnect your account from a third-party account at any time. Classroom
-                Crafters, LLC
+                THIS FEATURE. You may disconnect your account from a third-party account at any time.
             </p>
             <p style="text-indent: 0pt; text-align: left"><br /></p>
             <h2 style="padding-left: 5pt; text-indent: 0pt; text-align: left">Email Communications</h2>
@@ -265,10 +264,10 @@ const { t, tm } = useI18n();
                 The Company reserves the right to change this Policy from time to time. For example, when there are
                 changes in our services, changes in our data protection practices, or changes in the law. When changes
                 to this Policy are significant, we will inform you. You may receive a notice by sending an email to the
-                primary email address specified in your account, by placing a prominent notice on our Classroom
-                Crafters, LLC, and/or by updating any privacy information. Your continued use of the website and/or
-                services available after such modifications will constitute your: (a) acknowledgment of the modified
-                Policy; and (b) agreement to abide and be bound by that Policy.
+                primary email address specified in your account, by placing a prominent notice on our Fit Fam Connect,
+                LLC and/or by updating any privacy information. Your continued use of the website and/or services
+                available after such modifications will constitute your: (a) acknowledgment of the modified Policy; and
+                (b) agreement to abide and be bound by that Policy.
             </p>
             <p style="padding-top: 1pt; text-indent: 0pt; text-align: left"><br /></p>
             <h2 style="padding-left: 5pt; text-indent: 0pt; text-align: left">Contact Information</h2>
@@ -282,8 +281,8 @@ const { t, tm } = useI18n();
             </p>
             <p style="padding-left: 5pt; text-indent: 0pt; text-align: left">Monument, Colorado 80132</p>
             <p style="padding-top: 3pt; padding-left: 5pt; text-indent: 0pt; line-height: 106%; text-align: left">
-                <a href="mailto:support@classroomcrafters.com" class="a" target="_blank">Email Address: </a
-                ><a href="mailto:support@classroomcrafters.com" target="_blank">support@classroomcrafters.com</a>
+                <a href="mailto:support@fitfamconnect.com" class="a" target="_blank">Email Address: </a
+                ><a href="mailto:support@fitfamconnect.com" target="_blank">support@fitfamconnect.com</a>
             </p>
             <p style="padding-top: 1pt; text-indent: 0pt; text-align: left"><br /></p>
             <p style="padding-left: 5pt; text-indent: 0pt; text-align: left">Phone Number:</p>

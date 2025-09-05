@@ -23,7 +23,7 @@ async function smoothScroll(id: any) {
 </script>
 <template>
     <a class="flex items-center" href="#">
-        <img src="/images/cclogo.svg" class="h-10 w-10" alt="mockup" />
+        <img src="/images/logo.png" class="h-10 w-10" alt="mockup" />
         <span
             class="text-surface-900 dark:text-surface-0 font-medium text-3xl leading-normal mr-20 cc-font whitespace-nowrap pl-2"
             >{{ $t('appName') }}</span

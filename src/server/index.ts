@@ -34,8 +34,8 @@ app.use(clerkMiddleware({ debug: true, enableHandshake: true }));
 const allowedOrigins = [
     'http://localhost:5173',
     'https://schoolai-frontend.onrender.com',
-    'https://www.classroomcrafters.com',
-    'https://classroomcrafters.com'
+    'https://www.fitfamconnect.com',
+    'https://fitfamconnect.com'
 ];
 app.use(
     cors({

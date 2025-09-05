@@ -25,9 +25,9 @@ const { t } = useI18n();
             <LoginButton label="buttons.getStarted" rounded class="!text-xl mt-8 !px-4" />
         </div>
         <div
-            class="absolute right-0 top-1/2 -translate-y-1/2 h-full max-h-[400px] transition-opacity duration-300 opacity-10 2xl:opacity-100 xl:opacity-50 l:opacity:25"
+            class="absolute right-0 top-1/2 -translate-y-1/2 h-full max-h-[400px] transition-opacity duration-300 opacity-10 2xl:opacity-500 xl:opacity-25 l:opacity:25 z-0"
         >
-            <img src="/images/pencil.svg" alt="Hero Image" class="h-full w-auto object-contain" />
+            <img src="/images/logo.png" alt="Hero Image" class="h-full w-auto object-contain" />
         </div>
     </div>
 </template>

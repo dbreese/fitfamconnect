@@ -1,6 +1,6 @@
 export const messages = {
     appName: 'Fit Fam Connect',
-    motto: 'Less Stress, More Recess!',
+    motto: 'Where fitness and community meet.',
     disclaimer: {
         title: 'Important Reminder about AI',
         desc: "Our AI tools are like having a super-helpful teaching assistant, always ready to lend a hand! They're fantastic for generating drafts and ideas, but remember, you're the lead teacher! Please give all AI-generated content a quick review to ensure it's accurate, complete, and perfectly tailored to your students and classroom. Think of it as adding your special teacher's touch!"
@@ -207,55 +207,59 @@ export const messages = {
         }
     },
     homepage: {
-        intro: 'Where AI does the homework for teachers! 🚀',
-        subIntro: 'Ditch the paperwork, level up your lessons, and get back to the fun part of teaching.'
+        intro: 'Bringing fitness and community together.',
+        subIntro:
+            'Fit Fam Connect is the all-in-one solution for fitness clubs and \
+            their members. Our website and mobile app provide powerful, yet affordable, tools to simplify every aspect of club management. From managing memberships and billing to scheduling classes and connecting with coaches, Fit Fam Connect helps you streamline your operations and build a stronger fitness community.'
     },
     features: {
-        title: 'Classroom Magic',
+        title: 'Features',
         subTitle: 'Smart. Simple. Powerful.',
         points: [
             {
                 title: 'Intuitive Interface',
                 subTitle: 'Simple clicks. Fast-n-easy.',
-                icon: 'pi-users',
+                icon: 'pi-desktop',
                 color: 'bg-red-200'
             },
             {
-                title: 'Text Leveling',
-                subTitle: 'Re-write text for any grade level.',
-                icon: 'pi-pencil',
+                title: 'Inexpensive',
+                subTitle: 'Your money goes further.',
+                icon: 'pi-credit-card',
                 color: 'bg-blue-200'
             },
             {
-                title: 'Grammar Grader',
-                subTitle: 'Correct or grade text.',
-                icon: 'pi-check-circle',
+                title: 'Membership Management',
+                subTitle: 'Know your members.',
+                icon: 'pi-users',
                 color: 'bg-green-200'
             },
             {
-                title: 'Newsletters',
-                subTitle: 'Effortless newsletter generation.',
-                icon: 'pi-envelope',
+                title: 'Class Scheduling',
+                subTitle: 'Easily schedule classes.',
+                icon: 'pi-calendar',
                 color: 'bg-yellow-200'
             },
             {
-                title: 'Letter Writer',
-                subTitle: 'Easily engage with parents.',
-                icon: 'pi-file-edit',
+                title: 'Coaches and Instructors',
+                subTitle: 'Manage your team.',
+                icon: 'pi-users',
                 color: 'bg-purple-200'
             },
             {
-                title: 'Quizzes and Tests',
-                subTitle: 'Quickly create tests.',
-                icon: 'pi-list-check',
+                title: 'Billing',
+                subTitle: 'See who owes what.',
+                icon: 'pi-receipt',
                 color: 'bg-pink-200'
             },
             {
-                title: 'Rubrics',
-                subTitle: '1-2-3 Easy! Let us do the work.',
-                icon: 'pi-th-large',
+                title: 'Reports',
+                subTitle: 'Detailed info, at your fingertips.',
+                icon: 'pi-print',
                 color: 'bg-indigo-200'
-            },
+            }
+        ],
+        overflow: [
             {
                 title: 'Mobile Friendly',
                 subTitle: 'Use anywhere, anytime.',
@@ -333,18 +337,18 @@ export const messages = {
     },
     about: {
         title: 'About Us',
-        subTitle: 'A Teacher & Techie Tale',
+        subTitle: '',
         sections: [
-            "Ever wish you had a magic wand to zap away the mountains of paperwork and planning? That's exactly what we asked ourselves! Fit Fam Connect was born from a wild idea hatched between an elementary school teacher with a quarter-century of classroom adventures and an IT wizard with three decades of tech sorcery. Picture this: a seasoned educator, knee-deep in lesson plans and grading, teaming up with a tech guru to build tools that actually make a difference.",
-            "Our mission? To give teachers back their time! We're passionate about making life easier, so you can ditch the stress and embrace more playtime and family time. We believe in using the power of technology to tackle everyday classroom chaos, from differentiating instruction to meeting the needs of every student. And let's be real, we're here to help you conquer the insane demands teachers face today, without feeling like you're walking on eggshells.",
-            "We're not just building tools; we're building a community. We understand the challenges you face because we've been there (or are still there!). We're committed to creating a platform that’s as fun and engaging as it is helpful. So, join us on this adventure, and let’s make teaching a little less stressful and a whole lot more rewarding!"
+            'We saw an opportunity to help small local gyms thrive. For too long, they were at a disadvantage, lacking the tools and resources of larger chains. They were forced to choose between complex, expensive software or outdated, manual processes. This meant less time for what truly matters: building community, coaching members, and creating a fantastic fitness environment.',
+            "We believe that local gyms are the heart of their communities. They're where friendships are forged, goals are crushed, and lives are changed. Our team was motivated to build a solution that was different—one that was powerful yet simple, and most importantly, affordable. We wanted to level the playing field, giving these dedicated gym owners the tools they need to succeed without breaking the bank.",
+            "That's why we created Fit Fam Connect. We're on a mission to empower local gyms to be more fun, fit, and fantastic by providing them with the software they deserve. We handle the complexity so they can focus on what they do best: changing lives, one workout at a time."
         ]
     },
     comingsoon: {
         title: 'Coming Soon!',
         subTitle: "Sneak Peek: We're Cooking Up Something Awesome!",
         sections: [
-            "Hold onto your hats, teachers! We're currently in our secret lab, brewing up some seriously amazing new features. Think of it as a classroom upgrade on steroids – but way more fun! We're adding the finishing touches, and trust us, the wait will be worth it. Keep your eyes peeled, because something spectacular is about to drop!"
+            "Get ready to level up! We've been hard at work, sweating it out behind the scenes to bring you some epic new features. We're talking about updates that will make managing your gym easier and more fun than ever. Think of it as our own personal training session to make Fit Fam Connect the strongest, most powerful tool in your fitness arsenal. We're pumped to show you what's coming, and we know you'll be excited too!"
         ]
     }
 };
