@@ -4,6 +4,8 @@ import router from './router';
 import { clerkPlugin } from '@clerk/vue';
 import Lara from '@primevue/themes/lara';
 import Aura from '@primevue/themes/aura';
+import Nora from '@primevue/themes/nora';
+import Material from '@primevue/themes/material';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
