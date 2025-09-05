@@ -1,0 +1,21 @@
+# docker-compose up
+name: schoolai
+
+services:
+    db:
+        container_name: db
+        image: mongo:8.0
+        environment:
+            # provide your credentials here
+            - MONGO_INITDB_ROOT_USERNAME=root
+            - MONGO_INITDB_ROOT_PASSWORD=test1234
+        ports:
+            - '27017:27017'
+        volumes:
+            # if you wish to setup additional user accounts specific per DB or with different roles you can use following entry point
+            #- '$PWD/mongo-entrypoint/:/docker-entrypoint-initdb.d/'
+            - data:/data/db'
+        command: mongod
+
+volumes:
+    data: {}

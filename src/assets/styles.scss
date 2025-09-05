@@ -1,0 +1,90 @@
+/* You can add global styles to this file, and also import other style files */
+@use '@/assets/layout/layout.scss';
+@use 'primeicons/primeicons.css';
+@use '@fortawesome/fontawesome-free/css/all.min.css';
+@use '@/assets/demo/demo.scss';
+
+.progresscontainer {
+    position: relative;
+}
+
+.progressoverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.p-progress-spinner circle {
+    stroke: blue !important; /* Change stroke color */
+}
+
+.card-style {
+    width: 100%;
+}
+
+/* primvue style additions */
+.p-button-lg-cc .pi {
+    // make a larger icon
+    font-size: 1.5rem !important;
+}
+
+.debug {
+    background-color: red !important;
+}
+
+.ProseMirror:focus {
+    outline: none;
+}
+
+.ProseMirror ul {
+    list-style-type: disc; /* Bullets */
+    padding-left: 20px;
+}
+
+.ProseMirror ol {
+    list-style-type: decimal; /* Numbers */
+    padding-left: 20px;
+}
+
+/** Used for editor */
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px;
+}
+
+.separator {
+    width: 1px;
+    height: 16px;
+    background-color: #ccc;
+}
+
+.editor-button-width {
+    width: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    padding: 13px;
+    display: flex;
+    justify-content: center;
+}
+
+.push-right {
+    margin-left: auto;
+}
+
+/** Clerk Customizations **/
+.cl-profileSectionPrimaryButton__danger {
+    display: none;
+}
+
+.cl-profileSectionTitleText__danger {
+    display: none;
+}
