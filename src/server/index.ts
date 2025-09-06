@@ -11,6 +11,7 @@ import { router as aiRouter } from './ai/ai';
 import { router as authRouter } from './auth/auth';
 import { router as userRouter } from './user/userService';
 import { router as feedbackRouter } from './feedback/feedbackService';
+import { router as locationRouter } from './location/locationService';
 import { status } from './status/status';
 import { recents } from './recents/recents';
 import type { Request, Response, NextFunction } from 'express';
@@ -59,6 +60,7 @@ app.use(authRouter);
 app.use(aiRouter);
 app.use(userRouter);
 app.use(feedbackRouter);
+app.use(locationRouter);
 app.use(status);
 app.use(recents);
 
@@ -91,6 +93,7 @@ console.log(listEndpoints(authRouter));
 console.log(listEndpoints(aiRouter));
 console.log(listEndpoints(userRouter));
 console.log(listEndpoints(feedbackRouter));
+console.log(listEndpoints(locationRouter));
 console.log(listEndpoints(recents));
 
 const port = process.env['PORT'] || 3002;

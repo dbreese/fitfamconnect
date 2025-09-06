@@ -18,6 +18,7 @@ export const messages = {
     },
     menu: {
         aitools: 'AI Tools',
+        management: 'Management',
         system: 'System'
     },
     recents: {
@@ -350,5 +351,79 @@ export const messages = {
         sections: [
             "Get ready to level up! We've been hard at work, sweating it out behind the scenes to bring you some epic new features. We're talking about updates that will make managing your gym easier and more fun than ever. Think of it as our own personal training session to make Fit Fam Connect the strongest, most powerful tool in your fitness arsenal. We're pumped to show you what's coming, and we know you'll be excited too!"
         ]
+    },
+    locations: {
+        title: 'Location Management',
+        subtitle: 'Manage fitness facility locations',
+        menuTitle: 'Locations',
+        newLocation: 'New Location',
+        editLocation: 'Edit Location',
+        deleteConfirmation: 'Delete Confirmation',
+        deleteMessage: 'Are you sure you want to delete "{name}"?',
+        basicInformation: 'Basic Information',
+        addressTitle: 'Address',
+        contactInformation: 'Contact Information',
+        operatingHours: 'Operating Hours',
+        closed: 'Closed',
+        openDaily: 'Open Daily',
+        daysPerWeek: '{count} days/week',
+        name: 'Name',
+        nameRequired: 'Name *',
+        description: 'Description',
+        street: 'Street',
+        streetRequired: 'Street *',
+        city: 'City',
+        cityRequired: 'City *',
+        state: 'State',
+        stateRequired: 'State *',
+        selectState: 'Select State',
+        zipCode: 'Zip Code',
+        zipCodeRequired: 'Zip Code *',
+        country: 'Country',
+        email: 'Email',
+        phone: 'Phone',
+        actions: 'Actions',
+        address: 'Address',
+        contact: 'Contact',
+        hours: 'Hours',
+        to: 'to',
+        cancel: 'Cancel',
+        save: 'Save',
+        delete: 'Delete',
+        success: {
+            title: 'Success',
+            created: 'Location created successfully',
+            updated: 'Location updated successfully',
+            deleted: 'Location deleted successfully'
+        },
+        error: {
+            title: 'Error',
+            loadFailed: 'Failed to load locations',
+            createFailed: 'Failed to create location',
+            updateFailed: 'Failed to update location',
+            deleteFailed: 'Failed to delete location',
+            notFound: 'Location not found'
+        },
+        validation: {
+            nameRequired: 'Location name is required',
+            streetRequired: 'Street address is required',
+            cityRequired: 'City is required',
+            stateRequired: 'State is required',
+            zipCodeRequired: 'Zip code is required',
+            countryRequired: 'Country is required',
+            atLeastOneDay: 'Location must be open at least one day per week',
+            timesRequired: '{day} requires both open and close times',
+            closeAfterOpen: '{day} close time must be after open time',
+            validationError: 'Validation Error'
+        },
+        days: {
+            sunday: 'Sunday',
+            monday: 'Monday',
+            tuesday: 'Tuesday',
+            wednesday: 'Wednesday',
+            thursday: 'Thursday',
+            friday: 'Friday',
+            saturday: 'Saturday'
+        }
     }
 };

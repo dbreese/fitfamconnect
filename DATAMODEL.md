@@ -58,10 +58,14 @@ for User.
 
 # TODO
 
+Ignore this section.
+
 - billing
 - tracking & stats
 
 # MongoDB info
+
+This is informational only, ignore this section.
 
 - docker/docker-compose.yml defines the service.
 - start it with `cd docker && docker-compose up -d`
