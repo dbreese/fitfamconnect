@@ -11,8 +11,6 @@ const model = ref([
     {
         label: translate('menu.management'),
         items: [
-            { label: translate('locations.menuTitle'), icon: 'pi pi-map-marker', to: '/locations' },
-
             { label: translate('textLeveler.title'), icon: 'pi pi-pencil', to: '/tools/textleveler' },
             { label: translate('grammarChecker.title'), icon: 'pi pi-check-circle', to: '/tools/grammarchecker' },
             { label: translate('letterWriter.title'), icon: 'pi pi-file-edit', to: '/tools/letterwriter' },

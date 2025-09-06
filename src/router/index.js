@@ -124,12 +124,6 @@ const router = createRouter({
                     path: '/feedback',
                     name: 'feedback',
                     component: () => import('@/views/pages/Feedback.vue')
-                },
-
-                {
-                    path: '/locations',
-                    name: 'locations',
-                    component: () => import('@/views/pages/Locations.vue')
                 }
             ]
         }
