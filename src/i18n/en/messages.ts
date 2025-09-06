@@ -351,5 +351,47 @@ export const messages = {
         sections: [
             "Get ready to level up! We've been hard at work, sweating it out behind the scenes to bring you some epic new features. We're talking about updates that will make managing your gym easier and more fun than ever. Think of it as our own personal training session to make Fit Fam Connect the strongest, most powerful tool in your fitness arsenal. We're pumped to show you what's coming, and we know you'll be excited too!"
         ]
+    },
+    gym: {
+        title: 'Gym Management',
+        menuTitle: 'Gym Management',
+        subtitle: 'Manage your fitness facility information',
+        noGymTitle: 'No Gym Found',
+        noGymMessage: "You don't have a gym associated with your account yet.",
+        contactSupport: 'Please contact support to set up your gym information.',
+        gymCodeTitle: 'Gym Code',
+        gymCodeDescription: 'Share this code with members so they can join your gym',
+        basicInfo: 'Basic Information',
+        billingAddress: 'Billing Address',
+        contactInfo: 'Contact Information',
+        gymName: 'Gym Name',
+        description: 'Description',
+        descriptionPlaceholder: 'Brief description of your gym...',
+        streetAddress: 'Street Address',
+        city: 'City',
+        state: 'State',
+        selectState: 'Select State',
+        zipCode: 'Zip Code',
+        country: 'Country',
+        contactEmail: 'Contact Email',
+        phoneNumber: 'Phone Number',
+        updateButton: 'Update Gym Information',
+        success: {
+            updated: 'Gym information updated successfully'
+        },
+        error: {
+            loadFailed: 'Failed to load gym information',
+            updateFailed: 'Failed to update gym information'
+        },
+        validation: {
+            nameRequired: 'Gym name is required',
+            streetRequired: 'Street address is required',
+            cityRequired: 'City is required',
+            stateRequired: 'State is required',
+            zipRequired: 'Zip code is required',
+            emailRequired: 'Contact email is required',
+            invalidEmail: 'Please enter a valid email address',
+            validationError: 'Validation Error'
+        }
     }
 };

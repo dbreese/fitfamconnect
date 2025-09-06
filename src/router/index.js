@@ -124,6 +124,12 @@ const router = createRouter({
                     path: '/feedback',
                     name: 'feedback',
                     component: () => import('@/views/pages/Feedback.vue')
+                },
+
+                {
+                    path: '/gym',
+                    name: 'gym',
+                    component: () => import('@/views/pages/GymManagement.vue')
                 }
             ]
         }
