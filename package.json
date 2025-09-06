@@ -4,6 +4,7 @@
     "scripts": {
         "dev": "vite",
         "dev-server": "tsx watch --tsconfig tsconfig.server.json src/server",
+        "dev-db": "cd docker && docker-compose up -d",
         "serve": "serve -s dist",
         "build": "run-p type-check \"build-only {@}\" --",
         "preview": "vite preview",

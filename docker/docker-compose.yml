@@ -1,9 +1,9 @@
 # docker-compose up
-name: schoolai
+name: fitfam
 
 services:
     db:
-        container_name: db
+        container_name: db-fitfam
         image: mongo:8.0
         environment:
             # provide your credentials here

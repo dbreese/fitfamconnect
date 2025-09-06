@@ -60,3 +60,23 @@ for User.
 
 - billing
 - tracking & stats
+
+# MongoDB info
+
+- docker/docker-compose.yml defines the service.
+- start it with `cd docker && docker-compose up -d`
+- connection information is in .env.local via MONGO_URI
+- needs to run locally before server starts up
+- /Applications/MongoDB Compass to view UX for database.
+
+https://render.com/docs/deploy-mongodb  
+mongodb-mtot:27017 (ip:port on render)
+
+Local:  
+https://hub.docker.com/_/mongo  
+Connect via docker:  
+docker exec -it 13e3340295ce6e2b83642cf7ecaea23706ac2544116168381f8bb7257f43613f bash
+
+Set up user admin:  
+https://stackoverflow.com/questions/38921414/mongodb-what-are-the-default-user-and-password  
+admin/test1234
