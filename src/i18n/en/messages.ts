@@ -440,5 +440,58 @@ export const messages = {
             maxMembersInvalid: 'Maximum members must be greater than 0',
             validationError: 'Validation Error'
         }
+    },
+    plans: {
+        title: 'Plan Management',
+        menuTitle: 'Plan Management',
+        subtitle: 'Manage billing plans for your gym',
+        newPlan: 'New Plan',
+        editPlan: 'Edit Plan',
+        deleteConfirmation: 'Delete Confirmation',
+        deleteMessage: 'Are you sure you want to delete "{name}"?',
+        basicInfo: 'Basic Information',
+        pricing: 'Pricing',
+        schedule: 'Schedule',
+        planName: 'Plan Name',
+        description: 'Description',
+        descriptionPlaceholder: 'Brief description of the plan...',
+        priceLabel: 'Price',
+        priceHelp: 'Enter the price in dollars (e.g., 99.99)',
+        currency: 'Currency',
+        isRecurring: 'Recurring Plan',
+        recurringPeriod: 'Billing Period',
+        startDate: 'Start Date',
+        endDate: 'End Date',
+        endDateOptional: 'End Date (Optional)',
+        endDateHelp: 'Leave empty for plans that never expire',
+        type: 'Type',
+        price: 'Price',
+        dateRange: 'Date Range',
+        actions: 'Actions',
+        recurring: 'Recurring',
+        oneTime: 'One-time',
+        cancel: 'Cancel',
+        save: 'Save',
+        delete: 'Delete',
+        success: {
+            created: 'Plan created successfully',
+            updated: 'Plan updated successfully',
+            deleted: 'Plan deleted successfully'
+        },
+        error: {
+            loadFailed: 'Failed to load plans',
+            createFailed: 'Failed to create plan',
+            updateFailed: 'Failed to update plan',
+            deleteFailed: 'Failed to delete plan'
+        },
+        validation: {
+            nameRequired: 'Plan name is required',
+            priceRequired: 'Price must be 0 or greater',
+            startDateRequired: 'Start date is required',
+            endDateRequired: 'End date is required for one-time plans',
+            endAfterStart: 'End date must be after start date',
+            periodRequired: 'Billing period is required for recurring plans',
+            validationError: 'Validation Error'
+        }
     }
 };

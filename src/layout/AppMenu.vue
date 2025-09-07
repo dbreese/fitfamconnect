@@ -13,6 +13,7 @@ const model = ref([
         items: [
             { label: translate('gym.menuTitle'), icon: 'pi pi-building', to: '/gym' },
             { label: translate('classes.menuTitle'), icon: 'pi pi-calendar', to: '/classes' },
+            { label: translate('plans.menuTitle'), icon: 'pi pi-credit-card', to: '/plans' },
 
             { label: translate('textLeveler.title'), icon: 'pi pi-pencil', to: '/tools/textleveler' },
             { label: translate('grammarChecker.title'), icon: 'pi pi-check-circle', to: '/tools/grammarchecker' },
