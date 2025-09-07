@@ -14,6 +14,7 @@ import { router as feedbackRouter } from './feedback/feedbackService';
 import { router as gymRouter } from './gym/gymService';
 import { router as classRouter } from './class/classService';
 import { router as planRouter } from './plan/planService';
+import { router as locationRouter } from './location/locationService';
 import { status } from './status/status';
 import { recents } from './recents/recents';
 import type { Request, Response, NextFunction } from 'express';
@@ -65,6 +66,7 @@ app.use(feedbackRouter);
 app.use(gymRouter);
 app.use(classRouter);
 app.use(planRouter);
+app.use(locationRouter);
 app.use(status);
 app.use(recents);
 
@@ -100,6 +102,7 @@ console.log(listEndpoints(feedbackRouter));
 console.log(listEndpoints(gymRouter));
 console.log(listEndpoints(classRouter));
 console.log(listEndpoints(planRouter));
+console.log(listEndpoints(locationRouter));
 console.log(listEndpoints(recents));
 
 const port = process.env['PORT'] || 3002;

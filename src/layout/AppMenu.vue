@@ -12,6 +12,7 @@ const model = ref([
         label: translate('menu.management'),
         items: [
             { label: translate('gym.menuTitle'), icon: 'pi pi-building', to: '/gym' },
+            { label: translate('locations.menuTitle'), icon: 'pi pi-map-marker', to: '/locations' },
             { label: translate('classes.menuTitle'), icon: 'pi pi-calendar', to: '/classes' },
             { label: translate('plans.menuTitle'), icon: 'pi pi-credit-card', to: '/plans' },
 

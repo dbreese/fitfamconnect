@@ -142,6 +142,12 @@ const router = createRouter({
                     path: '/plans',
                     name: 'plans',
                     component: () => import('@/views/pages/PlanManagement.vue')
+                },
+
+                {
+                    path: '/locations',
+                    name: 'locations',
+                    component: () => import('@/views/pages/LocationManagement.vue')
                 }
             ]
         }
