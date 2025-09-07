@@ -409,7 +409,7 @@ onMounted(() => {
             >
                 <TabView>
                     <!-- Basic Information Tab -->
-                    <TabPanel :header="t('locations.basicInfo')">
+                    <TabPanel :header="t('locations.basicInfo')" value="basic">
                         <form @submit.prevent="handleSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="field">
                                 <label for="locationName" class="font-medium"
@@ -444,7 +444,7 @@ onMounted(() => {
                     </TabPanel>
 
                     <!-- Operating Hours Tab -->
-                    <TabPanel :header="t('locations.operatingHours')">
+                    <TabPanel :header="t('locations.operatingHours')" value="hours">
                         <div class="space-y-4">
                             <div
                                 v-for="(hours, index) in formData.operatingHours"
@@ -474,7 +474,7 @@ onMounted(() => {
                     </TabPanel>
 
                     <!-- Sub-Locations Tab -->
-                    <TabPanel :header="t('locations.subLocations')">
+                    <TabPanel :header="t('locations.subLocations')" value="sublocations">
                         <div class="space-y-4">
                             <div class="flex justify-content-end">
                                 <Button

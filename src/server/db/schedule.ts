@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export interface ISchedule {
+    _id?: string;
     classId: string; // Reference to Class
     locationId: string; // Reference to Location
     instructorId?: string; // Reference to Member (coach)

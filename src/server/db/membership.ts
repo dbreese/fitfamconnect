@@ -1,8 +1,9 @@
 import mongoose, { Schema } from 'mongoose';
 
 export interface IMembership {
+    _id?: string;
     memberId: string; // Reference to Member
-    locationId: string; // Reference to Location
+    gymId: string; // Reference to Gym
     gymCode: string; // The gym code used to join
     status: 'pending' | 'approved' | 'denied' | 'inactive';
     approvedBy?: string; // Reference to Member._id (owner who approved)
@@ -17,7 +18,7 @@ export interface IMembership {
 const membershipSchema = new mongoose.Schema<IMembership>(
     {
         memberId: { type: String, required: true },
-        locationId: { type: String, required: true },
+        gymId: { type: String, required: true },
         gymCode: { type: String, required: true },
         status: {
             type: String,
@@ -35,7 +36,8 @@ const membershipSchema = new mongoose.Schema<IMembership>(
 );
 
 // Compound indexes
-membershipSchema.index({ memberId: 1, locationId: 1 }, { unique: true });
+membershipSchema.index({ memberId: 1, gymId: 1 }, { unique: true });
+membershipSchema.index({ gymId: 1 });
 membershipSchema.index({ gymCode: 1 });
 membershipSchema.index({ status: 1 });
 membershipSchema.index({ approvedBy: 1 });

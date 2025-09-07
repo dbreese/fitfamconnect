@@ -17,17 +17,18 @@ Mongoose schemas will be stored in src/server/db.
 - Start date
 - Each member will have a list of classes they have attended based on a scheduled class, but this needs to be in a
   different entity somehow so it can be sharded to a different location for reporting.
-- Each member can belong to one or more locations.
-- When a member signs in, they will be able to enter a "gym code" to join 1 or more locations.
+- Each member can belong to one or more gyms.
+- When a member signs in, they will be able to enter a "gym code" to join a gym.
 
 # Membership
 
-- This entity relates a member to a location.
-- For a member to join a location, they must enter a gym code that is given to them by the owner of the location.
+- This entity relates a member to a gym.
+- For a member to join a gym, they must enter a gym code that is given to them by the owner of the gym.
 - When they enter this gym code, the owner of the gym will be able to approve their membership, so we need to track this
   approval along with the date/time of the approval.
 - Over time, multiple plans can be associated with a membership and multiple can be active at a given time (ie, multiple
   recurring plans and non-recurring plans).
+- Members belong to a gym, not to individual locations within the gym.
 
 # Gym
 
@@ -132,3 +133,63 @@ How to know if member is active? Do they have an active recurring plan? If so, t
 if the plan they are on is in the current time frame.
 
 Seeding: I will manually create the owner and gym records for now.
+
+# Example Documents
+
+Ignore this section.
+
+## GYM CREATION
+
+```json
+{
+    "_id": {
+        "$oid": "68bcc090ba8a3a46ac419227"
+    },
+
+    "name": "Full30Fit",
+    "gymCode": "F30FIT",
+    "ownerId": "507f1f77bcf86cd799439011",
+    "billingAddress": {
+        "street": "1785 LAKE WOODMOOR DRIVE",
+        "city": "Monument",
+        "state": "CO",
+        "zipCode": "80132"
+    },
+    "contact": {
+        "email": "denise@full30fit.com"
+    }
+}
+```
+
+## MEMBER CREATION
+
+```json
+{
+    "_id": {
+        "$oid": "68bdedafba8a3a46ac419237"
+    },
+    "email": "bob@gmail.com",
+    "firstName": "Bob",
+    "lastName": "Smith",
+    "phone": "719-213-7681",
+    "address": {
+        "street": "1234 Main St",
+        "city": "Monument",
+        "state": "CO",
+        "zipCode": "80132"
+    }
+}
+```
+
+## Membership
+
+```json
+{
+    "_id": {
+        "$oid": "68bdf28bba8a3a46ac41923a"
+    },
+    "memberId": "68bdedafba8a3a46ac419237",
+    "gymId": "68bcc92bba8a3a46ac419231",
+    "gymCode": "F30FIT"
+}
+```

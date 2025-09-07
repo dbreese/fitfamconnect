@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export interface IMember {
+    _id?: string;
     email: string;
     firstName: string;
     lastName: string;

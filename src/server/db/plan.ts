@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export interface IPlan {
+    _id?: string;
     name: string;
     description?: string;
     price: number; // In cents to avoid floating point issues

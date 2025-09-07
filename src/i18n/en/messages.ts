@@ -320,7 +320,7 @@ export const messages = {
         subTitle: 'Ready to make a difference? Your feedback is the key to unlocking even more teaching magic!',
         submit: 'Send Feedback',
         textHint: 'What do you think about Fit Fam Connect?',
-        successTitle: 'Woohoo! Feedback Received!',
+        successTitle: 'Woohoo! Action successful!',
         successMsg:
             'Your brilliant ideas are now on their way to making Fit Fam Connect even better. Thanks for being awesome!',
         errorTitle: 'Oops! Something Went Wrong...',
@@ -553,6 +553,50 @@ export const messages = {
             duplicateSubLocationName: 'Sub-location names must be unique',
             subLocationCapacityInvalid: 'Sub-location capacity must be greater than 0',
             validationError: 'Validation Error'
+        }
+    },
+    memberships: {
+        title: 'Membership Management',
+        menuTitle: 'Membership',
+        subtitle: 'Manage member status, plans, and notes',
+        editMembership: 'Edit Membership',
+        memberName: 'Member Name',
+        contact: 'Contact',
+        status: 'Status',
+        plans: 'Plans',
+        joinDate: 'Join Date',
+        notes: 'Notes',
+        actions: 'Actions',
+        manage: 'Manage',
+        memberInfo: 'Member Information',
+        memberType: 'Member Type',
+        unknownMember: 'Unknown Member',
+        unknown: 'Unknown',
+        noPlans: 'No plans assigned',
+        noNotes: 'No notes',
+        selectPlans: 'Select plans for this member',
+        notesPlaceholder: 'Add notes about this member...',
+        plansHelp: 'Select one or more plans for this member',
+        notesHelp: 'Add internal notes about this member (not visible to member)',
+        memberInfoNote: 'Member contact information can only be updated by the member themselves',
+        cancel: 'Cancel',
+        save: 'Save',
+        success: {
+            updated: 'Membership updated successfully'
+        },
+        error: {
+            loadFailed: 'Failed to load memberships',
+            updateFailed: 'Failed to update membership'
+        },
+        validation: {
+            statusRequired: 'Status is required',
+            validationError: 'Validation Error'
+        },
+        status: {
+            pending: 'Pending',
+            approved: 'Approved',
+            denied: 'Denied',
+            inactive: 'Inactive'
         }
     }
 };

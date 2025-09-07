@@ -148,6 +148,12 @@ const router = createRouter({
                     path: '/locations',
                     name: 'locations',
                     component: () => import('@/views/pages/LocationManagement.vue')
+                },
+
+                {
+                    path: '/memberships',
+                    name: 'memberships',
+                    component: () => import('@/views/pages/MembershipManagement.vue')
                 }
             ]
         }

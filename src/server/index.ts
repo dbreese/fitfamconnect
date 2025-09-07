@@ -15,6 +15,7 @@ import { router as gymRouter } from './gym/gymService';
 import { router as classRouter } from './class/classService';
 import { router as planRouter } from './plan/planService';
 import { router as locationRouter } from './location/locationService';
+import { router as membershipRouter } from './membership/membershipService';
 import { status } from './status/status';
 import { recents } from './recents/recents';
 import type { Request, Response, NextFunction } from 'express';
@@ -67,6 +68,7 @@ app.use(gymRouter);
 app.use(classRouter);
 app.use(planRouter);
 app.use(locationRouter);
+app.use(membershipRouter);
 app.use(status);
 app.use(recents);
 
@@ -103,6 +105,7 @@ console.log(listEndpoints(gymRouter));
 console.log(listEndpoints(classRouter));
 console.log(listEndpoints(planRouter));
 console.log(listEndpoints(locationRouter));
+console.log(listEndpoints(membershipRouter));
 console.log(listEndpoints(recents));
 
 const port = process.env['PORT'] || 3002;

@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export interface IClass {
+    _id?: string;
     name: string;
     description?: string;
     duration: number; // Duration in minutes
@@ -36,7 +37,7 @@ classSchema.index({ category: 1 });
 classSchema.index({ isActive: 1 });
 
 // Compound index for gym and class name uniqueness
-classSchema.index({ gymId: 1, name: 1 }, { unique: true });
+// classSchema.index({ gymId: 1, name: 1 }, { unique: true });
 
 const Class = mongoose.model<IClass>('Class', classSchema);
 export { Class };

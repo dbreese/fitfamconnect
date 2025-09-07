@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export interface IGym {
+    _id?: string;
     name: string;
     description?: string;
     gymCode: string; // Unique 6-character alphanumeric code

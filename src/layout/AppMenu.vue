@@ -15,13 +15,7 @@ const model = ref([
             { label: translate('locations.menuTitle'), icon: 'pi pi-map-marker', to: '/locations' },
             { label: translate('classes.menuTitle'), icon: 'pi pi-calendar', to: '/classes' },
             { label: translate('plans.menuTitle'), icon: 'pi pi-credit-card', to: '/plans' },
-
-            { label: translate('textLeveler.title'), icon: 'pi pi-pencil', to: '/tools/textleveler' },
-            { label: translate('grammarChecker.title'), icon: 'pi pi-check-circle', to: '/tools/grammarchecker' },
-            { label: translate('letterWriter.title'), icon: 'pi pi-file-edit', to: '/tools/letterwriter' },
-            { label: translate('newsLetter.title'), icon: 'pi pi-envelope', to: '/tools/newsletter' },
-            { label: translate('quizes.title'), icon: 'pi pi-list-check', to: '/tools/quizes' },
-            { label: translate('rubric.title'), icon: 'pi pi-th-large', to: '/tools/rubric' },
+            { label: translate('memberships.menuTitle'), icon: 'pi pi-users', to: '/memberships' },
 
             { separator: true }
         ]

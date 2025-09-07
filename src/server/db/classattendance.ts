@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export interface IClassAttendance {
+    _id?: string;
     memberId: string; // Reference to Member
     scheduleId: string; // Reference to Schedule
     classId: string; // Reference to Class (for easier reporting)

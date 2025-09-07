@@ -9,6 +9,7 @@ export interface ISubLocation {
 }
 
 export interface ILocation {
+    _id?: string;
     name: string;
     description?: string;
     gymId: string; // Reference to Gym
