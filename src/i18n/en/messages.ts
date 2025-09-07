@@ -393,5 +393,52 @@ export const messages = {
             invalidEmail: 'Please enter a valid email address',
             validationError: 'Validation Error'
         }
+    },
+    classes: {
+        title: 'Class Management',
+        menuTitle: 'Class Management',
+        subtitle: 'Manage fitness classes for your gym',
+        newClass: 'New Class',
+        editClass: 'Edit Class',
+        deleteConfirmation: 'Delete Confirmation',
+        deleteMessage: 'Are you sure you want to delete "{name}"?',
+        basicInfo: 'Basic Information',
+        classDetails: 'Class Details',
+        className: 'Class Name',
+        category: 'Category',
+        categoryPlaceholder: 'e.g. Cardio, Strength, Yoga',
+        description: 'Description',
+        descriptionPlaceholder: 'Brief description of the class...',
+        duration: 'Duration (minutes)',
+        maxMembers: 'Maximum Members',
+        maxMembersPlaceholder: 'Leave empty for unlimited',
+        equipment: 'Required Equipment',
+        equipmentHelp: 'Press Enter after each equipment item',
+        actions: 'Actions',
+        general: 'General',
+        unlimited: 'Unlimited',
+        none: 'None',
+        minutes: 'min',
+        hours: 'h',
+        cancel: 'Cancel',
+        save: 'Save',
+        delete: 'Delete',
+        success: {
+            created: 'Class created successfully',
+            updated: 'Class updated successfully',
+            deleted: 'Class deleted successfully'
+        },
+        error: {
+            loadFailed: 'Failed to load classes',
+            createFailed: 'Failed to create class',
+            updateFailed: 'Failed to update class',
+            deleteFailed: 'Failed to delete class'
+        },
+        validation: {
+            nameRequired: 'Class name is required',
+            durationRequired: 'Duration must be greater than 0 minutes',
+            maxMembersInvalid: 'Maximum members must be greater than 0',
+            validationError: 'Validation Error'
+        }
     }
 };

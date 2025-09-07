@@ -130,6 +130,12 @@ const router = createRouter({
                     path: '/gym',
                     name: 'gym',
                     component: () => import('@/views/pages/GymManagement.vue')
+                },
+
+                {
+                    path: '/classes',
+                    name: 'classes',
+                    component: () => import('@/views/pages/ClassManagement.vue')
                 }
             ]
         }
