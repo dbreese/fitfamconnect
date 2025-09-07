@@ -19,6 +19,7 @@ export const messages = {
     menu: {
         aitools: 'AI Tools',
         management: 'Management',
+        reports: 'Reports',
         system: 'System'
     },
     recents: {

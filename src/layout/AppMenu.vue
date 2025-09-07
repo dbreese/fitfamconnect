@@ -21,6 +21,18 @@ const model = ref([
         ]
     },
     {
+        label: translate('menu.reports'),
+        items: [
+            { label: 'Member Retention', icon: 'pi pi-clock', to: '/reports/member-retention' },
+            { label: 'Missing Members', icon: 'pi pi-question', to: '/reports/missing-members' },
+            { label: 'Attendance', icon: 'pi pi-calendar', to: '/reports/missing-members' },
+            { label: 'Payroll', icon: 'pi pi-money-bill', to: '/reports/missing-members' },
+            { label: 'Billing', icon: 'pi pi-dollar', to: '/reports/missing-members' },
+
+            { separator: true }
+        ]
+    },
+    {
         label: translate('menu.system'),
         items: [
             { label: translate('help.title'), icon: 'pi pi-question-circle', to: '/app' },
