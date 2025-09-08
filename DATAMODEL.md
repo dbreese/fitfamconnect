@@ -189,6 +189,50 @@ Ignore this section.
 }
 ```
 
+```json
+[
+    {
+        "email": "bob@full30fit.com",
+        "firstName": "Bob",
+        "lastName": "Smith",
+        "phone": "719-213-7681",
+        "address": {
+            "street": "1234 Main St",
+            "city": "Monument",
+            "state": "CO",
+            "zipCode": "80132"
+        },
+        "memberType": "member"
+    },
+    {
+        "email": "jan@full30fit.com",
+        "firstName": "Jan",
+        "lastName": "Smith",
+        "phone": "719-213-7681",
+        "address": {
+            "street": "1234 Main St",
+            "city": "Monument",
+            "state": "CO",
+            "zipCode": "80132"
+        },
+        "memberType": "member"
+    },
+    {
+        "email": "jamie@full30fit.com",
+        "firstName": "Jamie",
+        "lastName": "Z",
+        "phone": "719-213-7681",
+        "address": {
+            "street": "1234 Main St",
+            "city": "Monument",
+            "state": "CO",
+            "zipCode": "80132"
+        },
+        "memberType": "member"
+    }
+]
+```
+
 ## Membership
 
 ```json
@@ -202,13 +246,34 @@ Ignore this section.
 }
 ```
 
+```json
+[
+    {
+        "memberId": "68bee4383176325df76546df",
+        "gymId": "68be53b1c83c987d816ffdaa",
+        "gymCode": "F30FIT"
+    },
+    {
+        "memberId": "68bee4383176325df76546e0",
+        "gymId": "68be53b1c83c987d816ffdaa",
+        "gymCode": "F30FIT"
+    },
+    {
+        "memberId": "68bee4383176325df76546e1",
+        "gymId": "68be53b1c83c987d816ffdaa",
+        "gymCode": "F30FIT"
+    }
+]
+```
+
 ## Mongo CLI cheatsheet
 
 ```
 use fitfam;
 
+
 // "db." is hard coded and not the name of a database:
-db.gyms.find({})
+db.gyms.find({}).pretty()
 
 db.gyms.find({ fieldName: 'value' })
 
@@ -228,5 +293,14 @@ db.gyms.insertMany([
 db.gyms.deleteOne({ fieldName: 'value' })
 
 db.gyms.deleteMany({})
+
+db.members.updateOne(
+  { email: "john.doe@example.com" }, // Filter for the document you want to update
+  {
+    $set: {
+      newFieldName: "value" // The new field and its value
+    }
+  }
+);
 
 ```

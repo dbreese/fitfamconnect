@@ -29,3 +29,21 @@ yarn dev-db
 yarn dev-server
 yarn dev
 ```
+
+## Render Notes
+
+- Don't forget environment variables.
+- Need a rewrite rule for /\* to /index.html or you will see NOT FOUND after redirect after login.
+- Database is mongodb running from docker image.
+
+- Render CLI (https://render.com/docs/cli)
+
+```sh
+render login
+render services
+```
+
+# Creating a new service
+
+Create the server/location/locations.ts backend service. Use rules from @SERVER.md to create this new service. It should
+satisfy all of the endpoints used in LocationService.ts
