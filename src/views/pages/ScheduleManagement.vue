@@ -40,6 +40,7 @@ const selectedSchedule = ref<any | null>(null);
 const currentView = ref('week');
 const currentDate = ref(new Date());
 const hideEmptySlots = ref(false);
+const activeTab = ref(0);
 
 const formData = ref({
     classId: '',
@@ -125,6 +126,30 @@ async function loadSchedules() {
         endDate.setDate(endDate.getDate() + 6); // End of week
 
         const result = await ScheduleService.getSchedulesByDateRange(startDate.toISOString(), endDate.toISOString());
+
+        if (result) {
+            schedules.value = result;
+            console.log(`Loaded ${result.length} schedules`);
+        } else {
+            schedules.value = [];
+        }
+    } catch (error) {
+        console.error('Error loading schedules:', error);
+        toast.add({
+            severity: 'error',
+            summary: t('feedback.errorTitle'),
+            detail: t('schedules.error.loadFailed'),
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function loadAllSchedules() {
+    loading.value = true;
+    try {
+        const result = await ScheduleService.getMySchedules();
 
         if (result) {
             schedules.value = result;
@@ -307,9 +332,9 @@ async function handleSubmit() {
             startDateTime: formData.value.isRecurring ? undefined : formData.value.startDateTime,
             endDateTime: formData.value.isRecurring ? undefined : formData.value.endDateTime || undefined,
             // For recurring schedules
-            startDate: formData.value.isRecurring ? formData.value.startDate : undefined,
-            endDate: formData.value.isRecurring ? formData.value.endDate : undefined,
-            timeOfDay: formData.value.isRecurring ? formData.value.timeOfDay : undefined,
+            startDate: formData.value.isRecurring ? formData.value.startDate || undefined : undefined,
+            endDate: formData.value.isRecurring ? formData.value.endDate || undefined : undefined,
+            timeOfDay: formData.value.isRecurring ? formData.value.timeOfDay || undefined : undefined,
             maxAttendees: formData.value.maxAttendees ? parseInt(formData.value.maxAttendees) : undefined,
             notes: formData.value.notes.trim() || undefined,
             instructorId: formData.value.instructorId || undefined,
@@ -429,6 +454,46 @@ function formatDuration(start: string | Date, end: string | Date): string {
     const diffMs = endTime.getTime() - startTime.getTime();
     const diffMins = Math.round(diffMs / 60000);
     return `${diffMins} min`;
+}
+
+function formatScheduleType(schedule: any): string {
+    return schedule.isRecurring ? t('schedules.recurring') : t('schedules.oneTime');
+}
+
+function formatScheduleDates(schedule: any): string {
+    if (schedule.isRecurring) {
+        const startDate = schedule.startDate ? formatDate(schedule.startDate) : '';
+        const endDate = schedule.endDate ? formatDate(schedule.endDate) : t('schedules.noEndDate');
+        return `${startDate} - ${endDate}`;
+    } else {
+        return formatDate(schedule.startDateTime);
+    }
+}
+
+function formatScheduleTimes(schedule: any): string {
+    if (schedule.isRecurring) {
+        return schedule.timeOfDay ? formatTime(schedule.timeOfDay) : '';
+    } else {
+        return `${formatTime(schedule.startDateTime)} - ${formatTime(schedule.endDateTime)}`;
+    }
+}
+
+function formatRecurringPattern(schedule: any): string {
+    if (!schedule.isRecurring || !schedule.recurringPattern) return '';
+
+    const { frequency, interval, daysOfWeek } = schedule.recurringPattern;
+
+    if (frequency === 'weekly' && daysOfWeek && daysOfWeek.length > 0) {
+        const dayNames = daysOfWeek.map((day: number) => {
+            const dayObj = daysOfWeek.find((d: any) => d.value === day);
+            return dayObj
+                ? dayObj.label
+                : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day];
+        });
+        return `${t('schedules.every')} ${interval} ${t('schedules.week')} (${dayNames.join(', ')})`;
+    }
+
+    return `${t('schedules.every')} ${interval} ${frequency}`;
 }
 
 function getWeekDates(): Date[] {
@@ -642,6 +707,24 @@ watch(
     }
 );
 
+// Watch for tab changes to load appropriate data
+watch(
+    () => activeTab.value,
+    (newTab) => {
+        if (newTab === 1) {
+            // List view
+            loadAllSchedules();
+        } else if (newTab === 0) {
+            // Week view
+            loadSchedules();
+        }
+    }
+);
+
+function onTabChange(event: any) {
+    activeTab.value = event.index;
+}
+
 onMounted(() => {
     loadSchedules();
     loadClasses();
@@ -660,7 +743,7 @@ onMounted(() => {
                 <template #title>{{ t('schedules.title') }}</template>
                 <template #subtitle>{{ t('schedules.subtitle') }}</template>
                 <template #content>
-                    <TabView>
+                    <TabView v-model:activeIndex="activeTab" @tab-change="onTabChange">
                         <!-- Weekly View Tab -->
                         <TabPanel :header="t('schedules.weeklyView')" value="week">
                             <div class="mb-4 flex justify-between items-center">
@@ -798,19 +881,32 @@ onMounted(() => {
                                         {{ data.location?.name }}
                                     </template>
                                 </Column>
-                                <Column field="startDateTime" :header="t('schedules.date')" sortable>
+                                <Column field="isRecurring" :header="t('schedules.type')" sortable>
                                     <template #body="{ data }">
-                                        {{ formatDate(data.startDateTime) }}
+                                        <Tag
+                                            :value="formatScheduleType(data)"
+                                            :severity="data.isRecurring ? 'info' : 'success'"
+                                        />
                                     </template>
                                 </Column>
-                                <Column field="startDateTime" :header="t('schedules.time')" sortable>
+                                <Column field="startDate" :header="t('schedules.dates')" sortable>
                                     <template #body="{ data }">
-                                        {{ formatTime(data.startDateTime) }} - {{ formatTime(data.endDateTime) }}
+                                        {{ formatScheduleDates(data) }}
                                     </template>
                                 </Column>
-                                <Column field="duration" :header="t('schedules.duration')">
+                                <Column field="timeOfDay" :header="t('schedules.time')" sortable>
                                     <template #body="{ data }">
-                                        {{ formatDuration(data.startDateTime, data.endDateTime) }}
+                                        {{ formatScheduleTimes(data) }}
+                                    </template>
+                                </Column>
+                                <Column field="recurringPattern" :header="t('schedules.pattern')">
+                                    <template #body="{ data }">
+                                        {{ formatRecurringPattern(data) }}
+                                    </template>
+                                </Column>
+                                <Column field="maxAttendees" :header="t('schedules.maxAttendees')">
+                                    <template #body="{ data }">
+                                        {{ data.maxAttendees || t('schedules.unlimited') }}
                                     </template>
                                 </Column>
                                 <Column field="instructor" :header="t('schedules.instructor')">
