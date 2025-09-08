@@ -177,17 +177,47 @@ const authProvider = createClientAuthProvider(import.meta.env.VITE_CLERK_PUBLISH
 
 router.beforeEach(async (to, from, next) => {
     if (to.meta.requiresAuth) {
-        if (!user.username) {
-            const dbUser = await authProvider.status();
-            console.log('auth user: ' + JSON.stringify(dbUser));
+        // Always check authentication status on page refresh or if user data is missing
+        if (!user.username || !user.email) {
+            let retryCount = 0;
+            const maxRetries = 3;
+            let dbUser = null;
 
-            Object.assign(user, dbUser);
+            // Retry authentication check with exponential backoff
+            while (retryCount < maxRetries && !dbUser) {
+                try {
+                    console.log(`Authentication attempt ${retryCount + 1}/${maxRetries}`);
+                    dbUser = await authProvider.status();
+
+                    if (dbUser) {
+                        console.log('Authentication successful:', dbUser);
+                        Object.assign(user, dbUser);
+                        break;
+                    }
+                } catch (error) {
+                    console.error(`Authentication attempt ${retryCount + 1} failed:`, error);
+
+                    // Wait before retry with exponential backoff
+                    if (retryCount < maxRetries - 1) {
+                        const delay = Math.pow(2, retryCount) * 100; // 100ms, 200ms, 400ms
+                        await new Promise((resolve) => setTimeout(resolve, delay));
+                    }
+                }
+                retryCount++;
+            }
+
+            // If all retries failed, clear any stale user data
+            if (!dbUser) {
+                console.error('All authentication attempts failed, clearing user data');
+                Object.keys(user).forEach((key) => delete user[key]);
+            }
         }
-        if (user.username) {
-            console.log(`Routing to ${to.path} allowed`);
+
+        if (user.username && user.email) {
+            console.log(`Routing to ${to.path} allowed for user: ${user.username}`);
             next();
         } else {
-            console.log(`Routing to ${to.path} NOT allowed`);
+            console.log(`Routing to ${to.path} NOT allowed - redirecting to home`);
             next({ name: 'home' });
         }
     } else {

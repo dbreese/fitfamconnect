@@ -1,56 +1,74 @@
-import { Clerk } from '@clerk/clerk-js';
 import { API_SERVER } from '@/shared/config';
-import { SessionUtils } from './SessionUtils.js';
 
 /**
- *
- * @param apiKey - publishable key
+ * Create auth provider that uses the global Clerk instance
+ * @param apiKey - publishable key (kept for compatibility but not used)
  * @returns auth provider
  */
 export function createClientAuthProvider(apiKey?: string) {
-    if (!apiKey) {
-        throw new Error('Publishable api key required to create auth provider');
-    }
-    const clerk = new Clerk(apiKey);
-
     return {
         async status(): Promise<Record<string, any> | undefined> {
-            await clerk.load({});
-            const user = clerk.user;
-            if (user) {
-                const clerkEmail = user.primaryEmailAddress?.emailAddress ?? 'unknown';
-                if (!clerkEmail) {
-                    console.error(`User does not have a primary email address.: ${user}`);
+            try {
+                // Wait for Clerk to be available on window
+                let attempts = 0;
+                const maxAttempts = 50; // 5 seconds max wait
+
+                while (!window.Clerk && attempts < maxAttempts) {
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    attempts++;
+                }
+
+                if (!window.Clerk) {
+                    console.error('Clerk not available after waiting');
                     return undefined;
                 }
 
-                // testing
-                // const token = await SessionUtils.getToken();
-                const token = await clerk.session?.getToken();
-                const endpoint = `${__API_SERVER__}/auth/user`;
+                // Wait for Clerk to be loaded
+                await window.Clerk.load();
 
-                // TODO: Dont hit this every time and cache results
-                var remoteUser: Record<string, any> | undefined = undefined;
-                await fetch(endpoint, {
+                const clerkUser = window.Clerk.user;
+                const session = window.Clerk.session;
+
+                if (!clerkUser || !session) {
+                    console.log('No authenticated user or session found');
+                    return undefined;
+                }
+
+                const clerkEmail = clerkUser.primaryEmailAddress?.emailAddress ?? 'unknown';
+                if (!clerkEmail || clerkEmail === 'unknown') {
+                    console.error(`User does not have a primary email address: ${clerkUser}`);
+                    return undefined;
+                }
+
+                // Get the session token
+                const token = await session.getToken();
+                if (!token) {
+                    console.error('Could not get session token');
+                    return undefined;
+                }
+
+                // Fetch user data from our backend
+                const endpoint = `${API_SERVER}/auth/user`;
+                const response = await fetch(endpoint, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         Authorization: `Bearer ${token}`
                     }
-                })
-                    .then((result) => result.json())
-                    .then((data) => {
-                        const { __v, _id, remoteId, ...filteredData } = data;
-                        remoteUser = { ...filteredData };
-                    })
-                    .catch((error) => {
-                        return Promise.reject('Error.');
-                    });
+                });
 
-                // testing
+                if (!response.ok) {
+                    console.error(`Backend auth failed: ${response.status} ${response.statusText}`);
+                    return undefined;
+                }
 
-                return remoteUser;
-            } else {
+                const data = await response.json();
+                const { __v, _id, remoteId, ...filteredData } = data;
+
+                console.log('Successfully authenticated user:', filteredData);
+                return { ...filteredData };
+            } catch (error) {
+                console.error('Authentication check failed:', error);
                 return undefined;
             }
         }
