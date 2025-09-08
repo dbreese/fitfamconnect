@@ -39,6 +39,7 @@ const editMode = ref(false);
 const selectedSchedule = ref<any | null>(null);
 const currentView = ref('week');
 const currentDate = ref(new Date());
+const hideEmptySlots = ref(false);
 
 const formData = ref({
     classId: '',
@@ -426,10 +427,10 @@ function getSchedulesForDay(dayDate: Date): any[] {
 function getTimeSlots(): Array<{ key: string; label: string; hour: number; minute: number }> {
     const timeSlots = [];
 
-    // Generate time slots from 4 AM to 10 PM in 15-minute intervals
+    // Generate time slots from 4 AM to 10 PM in 30-minute intervals
     for (let hour = 4; hour <= 22; hour++) {
-        for (let minute = 0; minute < 60; minute += 15) {
-            // Skip 10 PM slots (we only go to 10 PM, not 10:15 PM)
+        for (let minute = 0; minute < 60; minute += 30) {
+            // Skip 10 PM slots (we only go to 10 PM, not 10:30 PM)
             if (hour === 22 && minute > 0) break;
 
             const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
@@ -452,20 +453,44 @@ function getSchedulesForTimeSlot(dayDate: Date, timeSlot: { hour: number; minute
     const dayEnd = new Date(dayDate);
     dayEnd.setHours(23, 59, 59, 999);
 
+    // Calculate the time slot boundaries
+    const slotStart = new Date(dayDate);
+    slotStart.setHours(timeSlot.hour, timeSlot.minute, 0, 0);
+
+    const slotEnd = new Date(dayDate);
+    slotEnd.setHours(timeSlot.hour, timeSlot.minute + 30, 0, 0);
+
     return schedules.value.filter((schedule) => {
-        const scheduleDate = new Date(schedule.startDateTime);
+        const scheduleStart = new Date(schedule.startDateTime);
+        const scheduleEnd = new Date(schedule.endDateTime);
 
         // Check if schedule is on the same day
-        if (scheduleDate < dayStart || scheduleDate > dayEnd) {
+        if (scheduleStart < dayStart || scheduleStart > dayEnd) {
             return false;
         }
 
-        // Check if schedule starts at this time slot
-        const scheduleHour = scheduleDate.getHours();
-        const scheduleMinute = scheduleDate.getMinutes();
-
-        return scheduleHour === timeSlot.hour && scheduleMinute === timeSlot.minute;
+        // Check if schedule overlaps with this time slot
+        // Schedule overlaps if: schedule starts before slot ends AND schedule ends after slot starts
+        return scheduleStart < slotEnd && scheduleEnd > slotStart;
     });
+}
+
+function hasSchedulesInTimeSlot(timeSlot: { hour: number; minute: number }): boolean {
+    const weekDates = getWeekDates();
+    return weekDates.some((dayDate) => {
+        const schedulesForSlot = getSchedulesForTimeSlot(dayDate, timeSlot);
+        return schedulesForSlot.length > 0;
+    });
+}
+
+function getVisibleTimeSlots(): Array<{ key: string; label: string; hour: number; minute: number }> {
+    const allTimeSlots = getTimeSlots();
+
+    if (!hideEmptySlots.value) {
+        return allTimeSlots;
+    }
+
+    return allTimeSlots.filter((timeSlot) => hasSchedulesInTimeSlot(timeSlot));
 }
 
 function navigateWeek(direction: 'prev' | 'next') {
@@ -549,7 +574,22 @@ onMounted(() => {
                                         severity="secondary"
                                     />
                                 </div>
-                                <Button icon="pi pi-plus" :label="t('schedules.newSchedule')" @click="openNewDialog" />
+                                <div class="flex gap-2">
+                                    <Button
+                                        :icon="hideEmptySlots ? 'pi pi-eye' : 'pi pi-eye-slash'"
+                                        :label="
+                                            hideEmptySlots ? t('schedules.showAllSlots') : t('schedules.hideEmptySlots')
+                                        "
+                                        @click="hideEmptySlots = !hideEmptySlots"
+                                        severity="secondary"
+                                        size="small"
+                                    />
+                                    <Button
+                                        icon="pi pi-plus"
+                                        :label="t('schedules.newSchedule')"
+                                        @click="openNewDialog"
+                                    />
+                                </div>
                             </div>
 
                             <!-- Weekly Calendar Grid -->
@@ -570,9 +610,9 @@ onMounted(() => {
                                 </div>
                             </div>
 
-                            <!-- Time slots (4 AM to 10 PM in 15-minute intervals) -->
+                            <!-- Time slots (4 AM to 10 PM in 30-minute intervals) -->
                             <div class="grid grid-cols-8 gap-2">
-                                <template v-for="timeSlot in getTimeSlots()" :key="timeSlot.key">
+                                <template v-for="timeSlot in getVisibleTimeSlots()" :key="timeSlot.key">
                                     <!-- Time label -->
                                     <div class="p-2 text-xs text-gray-600 bg-gray-50 rounded">
                                         {{ timeSlot.label }}
@@ -582,7 +622,7 @@ onMounted(() => {
                                     <div
                                         v-for="dayDate in getWeekDates()"
                                         :key="`${timeSlot.key}-${dayDate.toISOString()}`"
-                                        class="min-h-[40px] p-1 border border-gray-200 rounded relative"
+                                        class="min-h-[60px] p-1 border border-gray-200 rounded relative"
                                     >
                                         <!-- Find schedules for this time slot and day -->
                                         <div
@@ -717,7 +757,7 @@ onMounted(() => {
                                 v-model="formData.startDateTime"
                                 showTime
                                 hourFormat="12"
-                                :stepMinute="15"
+                                :stepMinute="30"
                                 class="w-full"
                                 required
                             />
@@ -730,7 +770,7 @@ onMounted(() => {
                                 v-model="formData.endDateTime"
                                 showTime
                                 hourFormat="12"
-                                :stepMinute="15"
+                                :stepMinute="30"
                                 class="w-full"
                             />
                             <small class="text-gray-500">{{ t('schedules.endTimeHelp') }}</small>

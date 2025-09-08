@@ -608,6 +608,8 @@ export const messages = {
         listView: 'List View',
         newSchedule: 'New Schedule',
         editSchedule: 'Edit Schedule',
+        hideEmptySlots: 'Hide Empty Slots',
+        showAllSlots: 'Show All Slots',
         deleteConfirmation: 'Delete Confirmation',
         deleteMessage: 'Are you sure you want to delete the schedule for "{name}"?',
         class: 'Class',
