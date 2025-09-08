@@ -12,8 +12,8 @@ console.log('API SERVER: ' + process.env.API_SERVER);
 
 export default defineConfig({
     build: {
-        minify: true,
-        sourcemap: false
+        minify: false,
+        sourcemap: true
     },
     define: {
         __API_SERVER__: JSON.stringify(process.env.API_SERVER)
