@@ -69,8 +69,15 @@ Mongoose schemas will be stored in src/server/db.
 
 # Schedule
 
-- A schedule is for each sublocation.
-- It associates a class with a sublocation at a specific time and date.
+- A schedule is for a location.
+- It associates a class with a location at a specific time and date.
+- The class can be a 1-time, or recurring.
+- Scheduling should be easy for the owner to do. It would be nice to see a week and month at a time and easily add
+  classes to the schedule.
+- A class can be scheduled multiple times in a day, but look for an overlap to ensure multiple classes are not scheduled
+  at the same time by accident for the same location. For example, a "HIIT Class" might be scheduled at 5am-6am,
+  6am-7am, 12pm-1pm, and 4:30pm-5:30pm, every Monday. I might have another class, a "Strength Class" scheduled from
+  7am-8am and 5:30-6:30pm every Monday.
 
 # Security
 
@@ -166,18 +173,19 @@ Ignore this section.
 ```json
 {
     "_id": {
-        "$oid": "68bdedafba8a3a46ac419237"
+        "$oid": "68be4ec8ba8a3a46ac419260"
     },
-    "email": "bob@gmail.com",
-    "firstName": "Bob",
-    "lastName": "Smith",
+    "email": "dustin.breese@gmail.com",
+    "firstName": "Dustin",
+    "lastName": "Breese",
     "phone": "719-213-7681",
     "address": {
         "street": "1234 Main St",
         "city": "Monument",
         "state": "CO",
         "zipCode": "80132"
-    }
+    },
+    "memberType": "owner"
 }
 ```
 

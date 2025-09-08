@@ -81,7 +81,7 @@ async function findGymByOwner(user: IUser | undefined): Promise<IGym | null> {
 
     console.log(`gymService.findGymByOwner: Looking for gym owned by user ${user._id}`);
     // const gym = await Gym.findOne({ ownerId: user._id, isActive: true });
-    const gym = await Gym.findOne({ ownerId: '68bc81109e851c702426c4be' });
+    const gym = await Gym.findOne({ ownerId: user._id });
 
     if (gym) {
         console.log(`gymService.findGymByOwner: Found gym "${gym.name}" with code ${gym.gymCode}`);
