@@ -623,6 +623,8 @@ export const messages = {
         startTime: 'Start Time',
         endTime: 'End Time',
         endTimeHelp: 'Automatically calculated from class duration. You can override if needed.',
+        startDate: 'Start Date',
+        timeOfDay: 'Time of Day',
         maxAttendees: 'Max Attendees',
         maxAttendeesHelp: 'Override class maximum if needed',
         notes: 'Notes',
@@ -652,6 +654,8 @@ export const messages = {
             classRequired: 'Class is required',
             locationRequired: 'Location is required',
             startTimeRequired: 'Start time is required',
+            startDateRequired: 'Start date is required for recurring schedules',
+            timeOfDayRequired: 'Time of day is required for recurring schedules',
             daysRequired: 'At least one day must be selected for recurring schedules',
             validationError: 'Validation Error'
         }

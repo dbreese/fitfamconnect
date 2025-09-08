@@ -45,16 +45,20 @@ const formData = ref({
     classId: '',
     locationId: '',
     instructorId: '',
+    // For one-time schedules
     startDateTime: new Date(),
     endDateTime: null as Date | null,
+    // For recurring schedules
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+    timeOfDay: null as Date | null,
     maxAttendees: null as string | null,
     notes: '',
     isRecurring: false,
     recurringPattern: {
         frequency: 'weekly' as 'daily' | 'weekly' | 'monthly',
         interval: '1' as string,
-        daysOfWeek: [] as number[],
-        endDate: undefined as Date | undefined
+        daysOfWeek: [] as number[]
     }
 });
 
@@ -194,8 +198,13 @@ async function openEditDialog(schedule: any) {
         classId: originalSchedule.classId,
         locationId: originalSchedule.locationId,
         instructorId: originalSchedule.instructorId || '',
-        startDateTime: new Date(originalSchedule.startDateTime),
+        // For one-time schedules
+        startDateTime: originalSchedule.startDateTime ? new Date(originalSchedule.startDateTime) : new Date(),
         endDateTime: originalSchedule.endDateTime ? new Date(originalSchedule.endDateTime) : null,
+        // For recurring schedules
+        startDate: originalSchedule.startDate ? new Date(originalSchedule.startDate) : null,
+        endDate: originalSchedule.endDate ? new Date(originalSchedule.endDate) : null,
+        timeOfDay: originalSchedule.timeOfDay ? new Date(originalSchedule.timeOfDay) : null,
         maxAttendees: originalSchedule.maxAttendees ? originalSchedule.maxAttendees.toString() : null,
         notes: originalSchedule.notes || '',
         isRecurring: originalSchedule.isRecurring || false,
@@ -204,10 +213,7 @@ async function openEditDialog(schedule: any) {
             interval: originalSchedule.recurringPattern?.interval
                 ? originalSchedule.recurringPattern.interval.toString()
                 : '1',
-            daysOfWeek: originalSchedule.recurringPattern?.daysOfWeek || [],
-            endDate: originalSchedule.recurringPattern?.endDate
-                ? new Date(originalSchedule.recurringPattern.endDate)
-                : undefined
+            daysOfWeek: originalSchedule.recurringPattern?.daysOfWeek || []
         }
     };
     showDialog.value = true;
@@ -218,20 +224,28 @@ function resetForm() {
     const defaultStartTime = new Date();
     defaultStartTime.setHours(6, 0, 0, 0);
 
+    // Set default time of day for recurring schedules
+    const defaultTimeOfDay = new Date();
+    defaultTimeOfDay.setHours(6, 0, 0, 0);
+
     formData.value = {
         classId: '',
         locationId: '',
         instructorId: '',
+        // For one-time schedules
         startDateTime: defaultStartTime,
         endDateTime: null,
+        // For recurring schedules
+        startDate: null,
+        endDate: null,
+        timeOfDay: defaultTimeOfDay,
         maxAttendees: null,
         notes: '',
         isRecurring: false,
         recurringPattern: {
             frequency: 'weekly',
             interval: '1',
-            daysOfWeek: [],
-            endDate: undefined
+            daysOfWeek: []
         }
     };
 }
@@ -247,12 +261,22 @@ function validateForm(): { isValid: boolean; errors: string[] } {
         errors.push(t('schedules.validation.locationRequired'));
     }
 
-    if (!formData.value.startDateTime) {
-        errors.push(t('schedules.validation.startTimeRequired'));
-    }
-
-    if (formData.value.isRecurring && formData.value.recurringPattern.daysOfWeek.length === 0) {
-        errors.push(t('schedules.validation.daysRequired'));
+    if (formData.value.isRecurring) {
+        // For recurring schedules
+        if (!formData.value.startDate) {
+            errors.push(t('schedules.validation.startDateRequired'));
+        }
+        if (!formData.value.timeOfDay) {
+            errors.push(t('schedules.validation.timeOfDayRequired'));
+        }
+        if (formData.value.recurringPattern.daysOfWeek.length === 0) {
+            errors.push(t('schedules.validation.daysRequired'));
+        }
+    } else {
+        // For one-time schedules
+        if (!formData.value.startDateTime) {
+            errors.push(t('schedules.validation.startTimeRequired'));
+        }
     }
 
     return {
@@ -279,15 +303,20 @@ async function handleSubmit() {
 
         const submitData = {
             ...formData.value,
-            endDateTime: formData.value.endDateTime || undefined,
+            // For one-time schedules
+            startDateTime: formData.value.isRecurring ? undefined : formData.value.startDateTime,
+            endDateTime: formData.value.isRecurring ? undefined : formData.value.endDateTime || undefined,
+            // For recurring schedules
+            startDate: formData.value.isRecurring ? formData.value.startDate : undefined,
+            endDate: formData.value.isRecurring ? formData.value.endDate : undefined,
+            timeOfDay: formData.value.isRecurring ? formData.value.timeOfDay : undefined,
             maxAttendees: formData.value.maxAttendees ? parseInt(formData.value.maxAttendees) : undefined,
             notes: formData.value.notes.trim() || undefined,
             instructorId: formData.value.instructorId || undefined,
             recurringPattern: formData.value.isRecurring
                 ? {
                       ...formData.value.recurringPattern,
-                      interval: parseInt(formData.value.recurringPattern.interval),
-                      endDate: formData.value.recurringPattern.endDate || undefined
+                      interval: parseInt(formData.value.recurringPattern.interval)
                   }
                 : undefined
         };
@@ -583,11 +612,11 @@ function navigateWeek(direction: 'prev' | 'next') {
     loadSchedules();
 }
 
-// Watch for class selection changes to auto-calculate end time
+// Watch for class selection changes to auto-calculate end time (one-time schedules only)
 watch(
     () => formData.value.classId,
     (newClassId) => {
-        if (newClassId && formData.value.startDateTime) {
+        if (newClassId && !formData.value.isRecurring && formData.value.startDateTime) {
             const selectedClass = classes.value.find((cls) => cls._id === newClassId);
             if (selectedClass) {
                 const startTime = new Date(formData.value.startDateTime);
@@ -598,11 +627,11 @@ watch(
     }
 );
 
-// Watch for start time changes to auto-calculate end time
+// Watch for start time changes to auto-calculate end time (one-time schedules only)
 watch(
     () => formData.value.startDateTime,
     (newStartTime) => {
-        if (newStartTime && formData.value.classId) {
+        if (newStartTime && !formData.value.isRecurring && formData.value.classId) {
             const selectedClass = classes.value.find((cls) => cls._id === formData.value.classId);
             if (selectedClass) {
                 const startTime = new Date(newStartTime);
@@ -852,43 +881,73 @@ onMounted(() => {
                             />
                         </div>
 
-                        <div class="field">
-                            <label for="startTime" class="font-medium">{{ t('schedules.startTime') }} *</label>
-                            <Calendar
-                                id="startTime"
-                                v-model="formData.startDateTime"
-                                showTime
-                                hourFormat="12"
-                                :stepMinute="15"
-                                class="w-full"
-                                required
-                            />
-                        </div>
+                        <!-- One-time schedule fields -->
+                        <template v-if="!formData.isRecurring">
+                            <div class="field">
+                                <label for="startTime" class="font-medium">{{ t('schedules.startTime') }} *</label>
+                                <Calendar
+                                    id="startTime"
+                                    v-model="formData.startDateTime"
+                                    showTime
+                                    hourFormat="12"
+                                    :stepMinute="15"
+                                    class="w-full"
+                                    required
+                                />
+                            </div>
 
-                        <div class="field">
-                            <label for="endTime" class="font-medium">{{ t('schedules.endTime') }}</label>
-                            <Calendar
-                                id="endTime"
-                                v-model="formData.endDateTime"
-                                showTime
-                                hourFormat="12"
-                                :stepMinute="15"
-                                class="w-full"
-                            />
-                            <small class="text-gray-500">{{ t('schedules.endTimeHelp') }}</small>
-                        </div>
+                            <div class="field">
+                                <label for="endTime" class="font-medium">{{ t('schedules.endTime') }}</label>
+                                <Calendar
+                                    id="endTime"
+                                    v-model="formData.endDateTime"
+                                    showTime
+                                    hourFormat="12"
+                                    :stepMinute="15"
+                                    class="w-full"
+                                />
+                                <small class="text-gray-500">{{ t('schedules.endTimeHelp') }}</small>
+                            </div>
+                        </template>
 
-                        <div class="field">
-                            <label for="maxAttendees" class="font-medium">{{ t('schedules.maxAttendees') }}</label>
-                            <InputText id="maxAttendees" v-model="formData.maxAttendees" type="number" class="w-full" />
-                            <small class="text-gray-500">{{ t('schedules.maxAttendeesHelp') }}</small>
-                        </div>
+                        <!-- Recurring schedule fields -->
+                        <template v-else>
+                            <div class="field">
+                                <label for="startDate" class="font-medium">{{ t('schedules.startDate') }} *</label>
+                                <Calendar id="startDate" v-model="formData.startDate" class="w-full" required />
+                            </div>
+
+                            <div class="field">
+                                <label for="endDate" class="font-medium">{{ t('schedules.endDate') }}</label>
+                                <Calendar id="endDate" v-model="formData.endDate" class="w-full" />
+                                <small class="text-gray-500">{{ t('schedules.endDateHelp') }}</small>
+                            </div>
+
+                            <div class="field">
+                                <label for="timeOfDay" class="font-medium">{{ t('schedules.timeOfDay') }} *</label>
+                                <Calendar
+                                    id="timeOfDay"
+                                    v-model="formData.timeOfDay"
+                                    timeOnly
+                                    hourFormat="12"
+                                    :stepMinute="15"
+                                    class="w-full"
+                                    required
+                                />
+                            </div>
+                        </template>
 
                         <div class="field">
                             <div class="flex items-center gap-2">
                                 <Checkbox v-model="formData.isRecurring" binary />
                                 <label class="font-medium">{{ t('schedules.isRecurring') }}</label>
                             </div>
+                        </div>
+
+                        <div class="field">
+                            <label for="maxAttendees" class="font-medium">{{ t('schedules.maxAttendees') }}</label>
+                            <InputText id="maxAttendees" v-model="formData.maxAttendees" type="number" class="w-full" />
+                            <small class="text-gray-500">{{ t('schedules.maxAttendeesHelp') }}</small>
                         </div>
                     </div>
 
@@ -932,12 +991,6 @@ onMounted(() => {
                                         <label :for="`day-${day.value}`" class="text-sm">{{ day.label }}</label>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="field">
-                                <label for="endDate" class="font-medium">{{ t('schedules.endDate') }}</label>
-                                <Calendar id="endDate" v-model="formData.recurringPattern.endDate" class="w-full" />
-                                <small class="text-gray-500">{{ t('schedules.endDateHelp') }}</small>
                             </div>
                         </div>
                     </div>

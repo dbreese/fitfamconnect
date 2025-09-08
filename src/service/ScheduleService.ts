@@ -94,9 +94,7 @@ export const ScheduleService = {
             });
     },
 
-    async createSchedule(
-        scheduleData: Omit<ISchedule, 'gymId' | 'isActive' | 'createdAt' | 'updatedAt'>
-    ): Promise<ServerResponse | undefined> {
+    async createSchedule(scheduleData: Partial<ISchedule>): Promise<ServerResponse | undefined> {
         console.log('ScheduleService.createSchedule: Starting to create schedule', { classId: scheduleData.classId });
         return await submit('POST', '/schedules', scheduleData)
             .then(async (result) => {

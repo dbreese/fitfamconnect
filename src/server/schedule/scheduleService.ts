@@ -233,28 +233,31 @@ async function createScheduleForOwner(
         throw new Error('Location not found or access denied');
     }
 
-    // Calculate end time if not provided
-    const endDateTime =
-        scheduleData.endDateTime ||
-        new Date(new Date(scheduleData.startDateTime!).getTime() + classObj.duration * 60000);
+    // Calculate end time if not provided (for one-time schedules)
+    let endDateTime = scheduleData.endDateTime;
+    if (!scheduleData.isRecurring && scheduleData.startDateTime && !endDateTime) {
+        endDateTime = new Date(new Date(scheduleData.startDateTime).getTime() + classObj.duration * 60000);
+    }
 
-    // Check for scheduling conflicts
-    const conflictingSchedule = await Schedule.findOne({
-        locationId: scheduleData.locationId,
-        startDateTime: { $lt: endDateTime },
-        endDateTime: { $gt: scheduleData.startDateTime }
-    });
+    // Check for scheduling conflicts (only for one-time schedules)
+    if (!scheduleData.isRecurring && scheduleData.startDateTime && endDateTime) {
+        const conflictingSchedule = await Schedule.findOne({
+            locationId: scheduleData.locationId,
+            startDateTime: { $lt: endDateTime },
+            endDateTime: { $gt: scheduleData.startDateTime }
+        });
 
-    if (conflictingSchedule) {
-        console.log(`scheduleService.createScheduleForOwner: Scheduling conflict detected`);
-        throw new Error('Scheduling conflict: Another class is already scheduled at this time and location');
+        if (conflictingSchedule) {
+            console.log(`scheduleService.createScheduleForOwner: Scheduling conflict detected`);
+            throw new Error('Scheduling conflict: Another class is already scheduled at this time and location');
+        }
     }
 
     // Remove sensitive fields
     const { createdAt, updatedAt, ...safeScheduleData } = scheduleData;
     const newScheduleData = {
         ...safeScheduleData,
-        endDateTime
+        endDateTime: endDateTime || undefined
     };
 
     const newSchedule = new Schedule(newScheduleData);
@@ -347,29 +350,49 @@ async function findSchedulesByOwner(user: IUser | undefined): Promise<any[]> {
 function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Date): any[] {
     const instances = [];
     const pattern = schedule.recurringPattern;
-    const originalStart = new Date(schedule.startDateTime);
-    const originalEnd = schedule.endDateTime ? new Date(schedule.endDateTime) : null;
+    const scheduleStartDate = new Date(schedule.startDate);
+    const scheduleEndDate = schedule.endDate ? new Date(schedule.endDate) : null;
+    const timeOfDay = new Date(schedule.timeOfDay);
 
-    // Calculate duration in milliseconds
-    const duration = originalEnd ? originalEnd.getTime() - originalStart.getTime() : 0;
+    console.log('getActiveRecurringInstances: Processing schedule', {
+        scheduleId: schedule._id,
+        scheduleStartDate: scheduleStartDate.toISOString(),
+        scheduleEndDate: scheduleEndDate?.toISOString(),
+        timeOfDay: timeOfDay.toISOString(),
+        pattern,
+        rangeStart: startDate.toISOString(),
+        rangeEnd: endDate.toISOString()
+    });
 
-    let currentDate = new Date(originalStart);
+    // Get duration from the class
+    const duration = schedule.class?.duration || 60; // Default to 60 minutes if not found
 
-    // Move to the start of the date range if the original date is before it
-    while (currentDate < startDate) {
-        currentDate = getNextRecurrenceDate(currentDate, pattern, originalStart);
-    }
+    // Find the first occurrence that matches the pattern and is within our date range
+    let currentDate = findFirstOccurrence(scheduleStartDate, pattern, startDate, endDate);
+
+    console.log('getActiveRecurringInstances: First occurrence found', {
+        scheduleId: schedule._id,
+        firstOccurrence: currentDate?.toISOString()
+    });
 
     // Generate instances until we exceed the end date or the recurring end date
-    while (currentDate <= endDate) {
+    while (currentDate && currentDate <= endDate) {
         // Check if we've exceeded the recurring end date
-        if (pattern.endDate && currentDate > new Date(pattern.endDate)) {
+        if (scheduleEndDate && currentDate > scheduleEndDate) {
             break;
         }
 
         // Create instance with adjusted times but keep original schedule ID
         const instanceStart = new Date(currentDate);
-        const instanceEnd = originalEnd ? new Date(instanceStart.getTime() + duration) : null;
+        instanceStart.setHours(timeOfDay.getHours(), timeOfDay.getMinutes(), 0, 0);
+
+        const instanceEnd = new Date(instanceStart.getTime() + duration * 60000);
+
+        console.log('getActiveRecurringInstances: Creating instance', {
+            scheduleId: schedule._id,
+            instanceStart: instanceStart.toISOString(),
+            instanceEnd: instanceEnd.toISOString()
+        });
 
         instances.push({
             ...(schedule.toObject ? schedule.toObject() : schedule),
@@ -383,10 +406,69 @@ function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Da
         });
 
         // Move to next occurrence
-        currentDate = getNextRecurrenceDate(currentDate, pattern, originalStart);
+        currentDate = getNextRecurrenceDate(currentDate, pattern, scheduleStartDate);
     }
 
+    console.log('getActiveRecurringInstances: Generated instances', {
+        scheduleId: schedule._id,
+        instanceCount: instances.length
+    });
+
     return instances;
+}
+
+/**
+ * Find the first occurrence that matches the pattern and is within the date range
+ */
+function findFirstOccurrence(scheduleStartDate: Date, pattern: any, startDate: Date, endDate: Date): Date | null {
+    let currentDate = new Date(scheduleStartDate);
+
+    console.log('findFirstOccurrence: Starting search', {
+        scheduleStartDate: scheduleStartDate.toISOString(),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        pattern
+    });
+
+    // If the schedule start date is after our end date, no instances possible
+    if (currentDate > endDate) {
+        console.log('findFirstOccurrence: Schedule start date is after end date');
+        return null;
+    }
+
+    // For weekly patterns with specific days
+    if (pattern.frequency === 'weekly' && pattern.daysOfWeek && pattern.daysOfWeek.length > 0) {
+        console.log('findFirstOccurrence: Processing weekly pattern with days', pattern.daysOfWeek);
+        // Start from the schedule start date and find the first matching day
+        while (currentDate <= endDate) {
+            const dayOfWeek = currentDate.getDay();
+            console.log('findFirstOccurrence: Checking date', {
+                date: currentDate.toISOString(),
+                dayOfWeek,
+                matches: pattern.daysOfWeek.includes(dayOfWeek)
+            });
+
+            if (pattern.daysOfWeek.includes(dayOfWeek)) {
+                // Found a matching day, check if it's within our range
+                if (currentDate >= startDate) {
+                    console.log('findFirstOccurrence: Found first occurrence', currentDate.toISOString());
+                    return currentDate;
+                }
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        console.log('findFirstOccurrence: No matching days found in range');
+        return null;
+    }
+
+    // For other patterns, start from the schedule start date or the range start date, whichever is later
+    if (currentDate < startDate) {
+        currentDate = new Date(startDate);
+    }
+
+    const result = currentDate <= endDate ? currentDate : null;
+    console.log('findFirstOccurrence: Result', result?.toISOString() || 'null');
+    return result;
 }
 
 /**
@@ -459,29 +541,96 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
         classes.map((c) => ({ id: c._id, name: c.name }))
     );
 
+    console.log('findSchedulesByDateRange: Class IDs for query', {
+        classIds: classIds.map((id) => id.toString()),
+        classIdsType: classIds.map((id) => typeof id)
+    });
+
     // Find schedules in date range
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
 
     // Get all schedules that could potentially have instances in this date range
-    const schedules = await Schedule.find({
-        classId: { $in: classIds },
+    const query = {
+        classId: { $in: classIds.map((id) => id.toString()) },
         $or: [
             // Direct schedules in the date range
             {
+                isRecurring: false,
                 startDateTime: { $gte: startDateObj, $lte: endDateObj }
             },
             // Recurring schedules that could generate instances in this range
             {
                 isRecurring: true,
-                startDateTime: { $lte: endDateObj },
-                $or: [
-                    { 'recurringPattern.endDate': { $exists: false } },
-                    { 'recurringPattern.endDate': { $gte: startDateObj } }
-                ]
+                startDate: { $lte: endDateObj },
+                $or: [{ endDate: { $exists: false } }, { endDate: null }, { endDate: { $gte: startDateObj } }]
             }
         ]
-    }).sort({ startDateTime: 1 });
+    };
+
+    console.log('findSchedulesByDateRange: Database query', {
+        classIds: classIds.map((id) => id.toString()),
+        startDateObj: startDateObj.toISOString(),
+        endDateObj: endDateObj.toISOString(),
+        query: JSON.stringify(query, null, 2)
+    });
+
+    // First, let's see what schedules exist for all classes
+    const allSchedulesForClasses = await Schedule.find({ classId: { $in: classIds.map((id) => id.toString()) } });
+    console.log('findSchedulesByDateRange: All schedules for all classes', {
+        count: allSchedulesForClasses.length,
+        schedules: allSchedulesForClasses.map((s) => ({
+            id: s._id,
+            isRecurring: s.isRecurring,
+            startDate: s.startDate?.toISOString(),
+            startDateTime: s.startDateTime?.toISOString(),
+            classId: s.classId,
+            timeOfDay: s.timeOfDay?.toISOString(),
+            recurringPattern: s.recurringPattern,
+            endDate: s.endDate?.toISOString()
+        }))
+    });
+
+    // Test the query step by step
+    console.log('findSchedulesByDateRange: Testing query components...');
+
+    // Test 1: Just find recurring schedules for this class
+    const recurringSchedules = await Schedule.find({
+        classId: '68be2b9f7f0bac2dc28348f1',
+        isRecurring: true
+    });
+    console.log('findSchedulesByDateRange: Recurring schedules for class', {
+        count: recurringSchedules.length,
+        schedules: recurringSchedules.map((s) => ({
+            id: s._id,
+            startDate: s.startDate?.toISOString(),
+            endDate: s.endDate?.toISOString()
+        }))
+    });
+
+    // Test 2: Test the date condition
+    const dateTestSchedules = await Schedule.find({
+        classId: '68be2b9f7f0bac2dc28348f1',
+        isRecurring: true,
+        startDate: { $lte: endDateObj }
+    });
+    console.log('findSchedulesByDateRange: Date condition test', {
+        count: dateTestSchedules.length,
+        endDateObj: endDateObj.toISOString()
+    });
+
+    const schedules = await Schedule.find(query).sort({ startDateTime: 1, startDate: 1 });
+
+    console.log('findSchedulesByDateRange: Found schedules from database', {
+        count: schedules.length,
+        schedules: schedules.map((s) => ({
+            id: s._id,
+            isRecurring: s.isRecurring,
+            startDate: s.startDate?.toISOString(),
+            startDateTime: s.startDateTime?.toISOString(),
+            classId: s.classId
+        }))
+    });
 
     // First enrich all schedules with class, location, and instructor details
     const enrichedSchedules = await Promise.all(
