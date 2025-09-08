@@ -154,6 +154,12 @@ const router = createRouter({
                     path: '/memberships',
                     name: 'memberships',
                     component: () => import('@/views/pages/MembershipManagement.vue')
+                },
+
+                {
+                    path: '/schedules',
+                    name: 'schedules',
+                    component: () => import('@/views/pages/ScheduleManagement.vue')
                 }
             ]
         }

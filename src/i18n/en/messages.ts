@@ -563,7 +563,7 @@ export const messages = {
         editMembership: 'Edit Membership',
         memberName: 'Member Name',
         contact: 'Contact',
-        status: 'Status',
+        statusField: 'Status',
         plans: 'Plans',
         joinDate: 'Join Date',
         notes: 'Notes',
@@ -593,11 +593,65 @@ export const messages = {
             statusRequired: 'Status is required',
             validationError: 'Validation Error'
         },
-        status: {
+        statuses: {
             pending: 'Pending',
             approved: 'Approved',
             denied: 'Denied',
             inactive: 'Inactive'
+        }
+    },
+    schedules: {
+        title: 'Schedule Management',
+        menuTitle: 'Schedules',
+        subtitle: 'Manage class schedules and recurring events',
+        weeklyView: 'Weekly View',
+        listView: 'List View',
+        newSchedule: 'New Schedule',
+        editSchedule: 'Edit Schedule',
+        deleteConfirmation: 'Delete Confirmation',
+        deleteMessage: 'Are you sure you want to delete the schedule for "{name}"?',
+        class: 'Class',
+        location: 'Location',
+        date: 'Date',
+        time: 'Time',
+        duration: 'Duration',
+        instructor: 'Instructor',
+        noInstructor: 'No instructor assigned',
+        actions: 'Actions',
+        startTime: 'Start Time',
+        endTime: 'End Time',
+        endTimeHelp: 'Automatically calculated from class duration. You can override if needed.',
+        maxAttendees: 'Max Attendees',
+        maxAttendeesHelp: 'Override class maximum if needed',
+        notes: 'Notes',
+        notesPlaceholder: 'Add notes about this schedule...',
+        isRecurring: 'Recurring Schedule',
+        recurringPattern: 'Recurring Pattern',
+        frequency: 'Frequency',
+        interval: 'Interval',
+        daysOfWeek: 'Days of Week',
+        endDate: 'End Date',
+        endDateHelp: 'Leave empty for no end date',
+        cancel: 'Cancel',
+        save: 'Save',
+        delete: 'Delete',
+        success: {
+            created: 'Schedule created successfully',
+            updated: 'Schedule updated successfully',
+            deleted: 'Schedule deleted successfully'
+        },
+        error: {
+            loadFailed: 'Failed to load schedules',
+            createFailed: 'Failed to create schedule',
+            updateFailed: 'Failed to update schedule',
+            deleteFailed: 'Failed to delete schedule'
+        },
+        validation: {
+            classRequired: 'Class is required',
+            locationRequired: 'Location is required',
+            startTimeRequired: 'Start time is required',
+            daysRequired: 'At least one day must be selected for recurring schedules',
+            validationError: 'Validation Error'
         }
     }
 };

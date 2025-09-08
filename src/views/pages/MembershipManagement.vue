@@ -177,13 +177,13 @@ function getStatusSeverity(status: string): string {
 function getStatusLabel(status: string): string {
     switch (status) {
         case 'approved':
-            return t('memberships.status.approved');
+            return t('memberships.statuses.approved');
         case 'pending':
-            return t('memberships.status.pending');
+            return t('memberships.statuses.pending');
         case 'denied':
-            return t('memberships.status.denied');
+            return t('memberships.statuses.denied');
         case 'inactive':
-            return t('memberships.status.inactive');
+            return t('memberships.statuses.inactive');
         default:
             return status;
     }
@@ -259,7 +259,7 @@ onMounted(() => {
                                 </div>
                             </template>
                         </Column>
-                        <Column field="status" :header="t('memberships.status')" sortable>
+                        <Column field="status" :header="t('memberships.statusField')" sortable>
                             <template #body="{ data }">
                                 <Tag :value="getStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
                             </template>
@@ -341,7 +341,7 @@ onMounted(() => {
                     <!-- Editable Fields -->
                     <form @submit.prevent="handleSubmit" class="space-y-4">
                         <div class="field">
-                            <label for="status" class="font-medium">{{ t('memberships.status') }} *</label>
+                            <label for="status" class="font-medium">{{ t('memberships.statusField') }} *</label>
                             <Select
                                 id="status"
                                 v-model="formData.status"

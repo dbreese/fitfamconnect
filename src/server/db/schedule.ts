@@ -51,7 +51,7 @@ scheduleSchema.index({ startDateTime: 1 });
 
 // Validation: end time must be after start time
 scheduleSchema.pre('validate', function (next) {
-    if (this.endDateTime && this.startDateTime < this.endDateTime) {
+    if (this.endDateTime && this.startDateTime >= this.endDateTime) {
         return next(new Error('End time must be after start time'));
     }
     next();

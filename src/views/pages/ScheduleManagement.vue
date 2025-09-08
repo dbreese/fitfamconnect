@@ -1,0 +1,855 @@
+<script setup lang="ts">
+import { ScheduleService } from '@/service/ScheduleService';
+import { ClassService } from '@/service/ClassService';
+import { LocationService } from '@/service/LocationService';
+import type { ISchedule } from '@/server/db/schedule';
+import type { IClass } from '@/server/db/class';
+import type { ILocation } from '@/server/db/location';
+import Card from 'primevue/card';
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
+import Select from 'primevue/select';
+import Calendar from 'primevue/calendar';
+import Checkbox from 'primevue/checkbox';
+import Toast from 'primevue/toast';
+import ConfirmDialog from 'primevue/confirmdialog';
+import ProgressSpinner from 'primevue/progressspinner';
+import Tag from 'primevue/tag';
+import TabView from 'primevue/tabview';
+import TabPanel from 'primevue/tabpanel';
+import { ref, onMounted, computed, watch } from 'vue';
+import { useToast } from 'primevue/usetoast';
+import { useConfirm } from 'primevue/useconfirm';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+const toast = useToast();
+const confirm = useConfirm();
+
+const schedules = ref<any[]>([]);
+const classes = ref<IClass[]>([]);
+const locations = ref<ILocation[]>([]);
+const loading = ref(false);
+const showDialog = ref(false);
+const editMode = ref(false);
+const selectedSchedule = ref<any | null>(null);
+const currentView = ref('week');
+const currentDate = ref(new Date());
+
+const formData = ref({
+    classId: '',
+    locationId: '',
+    instructorId: '',
+    startDateTime: new Date(),
+    endDateTime: null as Date | null,
+    maxAttendees: null as string | null,
+    notes: '',
+    isRecurring: false,
+    recurringPattern: {
+        frequency: 'weekly' as 'daily' | 'weekly' | 'monthly',
+        interval: '1' as string,
+        daysOfWeek: [] as number[],
+        endDate: undefined as Date | undefined
+    }
+});
+
+const frequencyOptions = [
+    { label: 'Daily', value: 'daily' },
+    { label: 'Weekly', value: 'weekly' },
+    { label: 'Monthly', value: 'monthly' }
+];
+
+const daysOfWeek = [
+    { label: 'Sunday', value: 0 },
+    { label: 'Monday', value: 1 },
+    { label: 'Tuesday', value: 2 },
+    { label: 'Wednesday', value: 3 },
+    { label: 'Thursday', value: 4 },
+    { label: 'Friday', value: 5 },
+    { label: 'Saturday', value: 6 }
+];
+
+const classOptions = computed(() => {
+    return classes.value.map((cls) => ({
+        label: cls.category ? `${cls.name} (${cls.category})` : cls.name,
+        value: cls._id
+    }));
+});
+
+const locationOptions = computed(() => {
+    return locations.value.map((loc) => ({
+        label: loc.name,
+        value: loc._id
+    }));
+});
+
+// Color mapping for classes
+const classColors = ref<Map<string, string>>(new Map());
+const colorPalette = [
+    '#3B82F6',
+    '#EF4444',
+    '#10B981',
+    '#F59E0B',
+    '#8B5CF6',
+    '#EC4899',
+    '#06B6D4',
+    '#84CC16',
+    '#F97316',
+    '#6366F1'
+];
+
+function getClassColor(classId: string): string {
+    if (!classColors.value.has(classId)) {
+        const colorIndex = classColors.value.size % colorPalette.length;
+        classColors.value.set(classId, colorPalette[colorIndex]);
+    }
+    return classColors.value.get(classId) || '#6B7280';
+}
+
+async function loadSchedules() {
+    loading.value = true;
+    try {
+        const startDate = new Date(currentDate.value);
+        startDate.setDate(startDate.getDate() - startDate.getDay()); // Start of week
+
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6); // End of week
+
+        const result = await ScheduleService.getSchedulesByDateRange(startDate.toISOString(), endDate.toISOString());
+
+        if (result) {
+            schedules.value = result;
+            console.log(`Loaded ${result.length} schedules`);
+        } else {
+            schedules.value = [];
+        }
+    } catch (error) {
+        console.error('Error loading schedules:', error);
+        toast.add({
+            severity: 'error',
+            summary: t('feedback.errorTitle'),
+            detail: t('schedules.error.loadFailed'),
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function loadClasses() {
+    try {
+        const result = await ClassService.getMyClasses();
+        if (result) {
+            classes.value = result;
+            console.log(`Loaded ${result.length} classes`);
+        }
+    } catch (error) {
+        console.error('Error loading classes:', error);
+    }
+}
+
+async function loadLocations() {
+    try {
+        const result = await LocationService.getMyLocations();
+        if (result) {
+            locations.value = result;
+            console.log(`Loaded ${result.length} locations`);
+        }
+    } catch (error) {
+        console.error('Error loading locations:', error);
+    }
+}
+
+function openNewDialog() {
+    editMode.value = false;
+    selectedSchedule.value = null;
+    resetForm();
+    showDialog.value = true;
+}
+
+async function openEditDialog(schedule: any) {
+    editMode.value = true;
+    selectedSchedule.value = schedule;
+
+    // If this is a recurring instance, we need to fetch the original schedule
+    let originalSchedule = schedule;
+    if (schedule.isRecurringInstance) {
+        try {
+            const result = await ScheduleService.getScheduleById(schedule._id);
+            if (result) {
+                originalSchedule = result;
+            }
+        } catch (error) {
+            console.error('Error fetching original schedule:', error);
+            // Fall back to the instance data if we can't fetch the original
+        }
+    }
+
+    formData.value = {
+        classId: originalSchedule.classId,
+        locationId: originalSchedule.locationId,
+        instructorId: originalSchedule.instructorId || '',
+        startDateTime: new Date(originalSchedule.startDateTime),
+        endDateTime: originalSchedule.endDateTime ? new Date(originalSchedule.endDateTime) : null,
+        maxAttendees: originalSchedule.maxAttendees ? originalSchedule.maxAttendees.toString() : null,
+        notes: originalSchedule.notes || '',
+        isRecurring: originalSchedule.isRecurring || false,
+        recurringPattern: {
+            frequency: originalSchedule.recurringPattern?.frequency || 'weekly',
+            interval: originalSchedule.recurringPattern?.interval
+                ? originalSchedule.recurringPattern.interval.toString()
+                : '1',
+            daysOfWeek: originalSchedule.recurringPattern?.daysOfWeek || [],
+            endDate: originalSchedule.recurringPattern?.endDate
+                ? new Date(originalSchedule.recurringPattern.endDate)
+                : undefined
+        }
+    };
+    showDialog.value = true;
+}
+
+function resetForm() {
+    // Set default start time to 6:00 AM (within 4 AM - 10 PM range)
+    const defaultStartTime = new Date();
+    defaultStartTime.setHours(6, 0, 0, 0);
+
+    formData.value = {
+        classId: '',
+        locationId: '',
+        instructorId: '',
+        startDateTime: defaultStartTime,
+        endDateTime: null,
+        maxAttendees: null,
+        notes: '',
+        isRecurring: false,
+        recurringPattern: {
+            frequency: 'weekly',
+            interval: '1',
+            daysOfWeek: [],
+            endDate: undefined
+        }
+    };
+}
+
+function validateForm(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!formData.value.classId) {
+        errors.push(t('schedules.validation.classRequired'));
+    }
+
+    if (!formData.value.locationId) {
+        errors.push(t('schedules.validation.locationRequired'));
+    }
+
+    if (!formData.value.startDateTime) {
+        errors.push(t('schedules.validation.startTimeRequired'));
+    }
+
+    if (formData.value.isRecurring && formData.value.recurringPattern.daysOfWeek.length === 0) {
+        errors.push(t('schedules.validation.daysRequired'));
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
+}
+
+async function handleSubmit() {
+    const validation = validateForm();
+    if (!validation.isValid) {
+        toast.add({
+            severity: 'warn',
+            summary: t('schedules.validation.validationError'),
+            detail: validation.errors[0],
+            life: 5000
+        });
+        return;
+    }
+
+    loading.value = true;
+    try {
+        let result;
+
+        const submitData = {
+            ...formData.value,
+            endDateTime: formData.value.endDateTime || undefined,
+            maxAttendees: formData.value.maxAttendees ? parseInt(formData.value.maxAttendees) : undefined,
+            notes: formData.value.notes.trim() || undefined,
+            instructorId: formData.value.instructorId || undefined,
+            recurringPattern: formData.value.isRecurring
+                ? {
+                      ...formData.value.recurringPattern,
+                      interval: parseInt(formData.value.recurringPattern.interval),
+                      endDate: formData.value.recurringPattern.endDate || undefined
+                  }
+                : undefined
+        };
+
+        if (editMode.value && selectedSchedule.value) {
+            result = await ScheduleService.updateSchedule((selectedSchedule.value as any)._id, submitData);
+        } else {
+            result = await ScheduleService.createSchedule(submitData);
+        }
+
+        if (result && result.responseCode === 200) {
+            toast.add({
+                severity: 'success',
+                summary: t('feedback.successTitle'),
+                detail: editMode.value ? t('schedules.success.updated') : t('schedules.success.created'),
+                life: 3000
+            });
+            showDialog.value = false;
+            await loadSchedules();
+        } else {
+            toast.add({
+                severity: 'error',
+                summary: t('feedback.errorTitle'),
+                detail: editMode.value ? t('schedules.error.updateFailed') : t('schedules.error.createFailed'),
+                life: 3000
+            });
+        }
+    } catch (error) {
+        console.error('Error submitting schedule:', error);
+        toast.add({
+            severity: 'error',
+            summary: t('feedback.errorTitle'),
+            detail: editMode.value ? t('schedules.error.updateFailed') : t('schedules.error.createFailed'),
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+function confirmDelete(schedule: any) {
+    confirm.require({
+        message: t('schedules.deleteMessage', { name: schedule.class?.name }),
+        header: t('schedules.deleteConfirmation'),
+        icon: 'pi pi-info-circle',
+        rejectLabel: t('schedules.cancel'),
+        rejectProps: {
+            label: t('schedules.cancel'),
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: t('schedules.delete'),
+            severity: 'danger'
+        },
+        accept: () => {
+            deleteSchedule(schedule);
+        }
+    });
+}
+
+async function deleteSchedule(schedule: any) {
+    loading.value = true;
+    try {
+        const result = await ScheduleService.deleteSchedule((schedule as any)._id);
+        if (result && result.responseCode === 200) {
+            toast.add({
+                severity: 'success',
+                summary: t('feedback.successTitle'),
+                detail: t('schedules.success.deleted'),
+                life: 3000
+            });
+            await loadSchedules();
+        } else {
+            toast.add({
+                severity: 'error',
+                summary: t('feedback.errorTitle'),
+                detail: t('schedules.error.deleteFailed'),
+                life: 3000
+            });
+        }
+    } catch (error) {
+        console.error('Error deleting schedule:', error);
+        toast.add({
+            severity: 'error',
+            summary: t('feedback.errorTitle'),
+            detail: t('schedules.error.deleteFailed'),
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+function formatTime(date: string | Date): string {
+    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDate(date: string | Date): string {
+    return new Date(date).toLocaleDateString();
+}
+
+function formatDuration(start: string | Date, end: string | Date): string {
+    const startTime = new Date(start);
+    const endTime = new Date(end);
+    const diffMs = endTime.getTime() - startTime.getTime();
+    const diffMins = Math.round(diffMs / 60000);
+    return `${diffMins} min`;
+}
+
+function getWeekDates(): Date[] {
+    const startDate = new Date(currentDate.value);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        weekDates.push(date);
+    }
+    return weekDates;
+}
+
+function getSchedulesForDay(dayDate: Date): any[] {
+    const dayStart = new Date(dayDate);
+    dayStart.setHours(0, 0, 0, 0);
+
+    const dayEnd = new Date(dayDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    return schedules.value.filter((schedule) => {
+        const scheduleDate = new Date(schedule.startDateTime);
+        return scheduleDate >= dayStart && scheduleDate <= dayEnd;
+    });
+}
+
+function getTimeSlots(): Array<{ key: string; label: string; hour: number; minute: number }> {
+    const timeSlots = [];
+
+    // Generate time slots from 4 AM to 10 PM in 15-minute intervals
+    for (let hour = 4; hour <= 22; hour++) {
+        for (let minute = 0; minute < 60; minute += 15) {
+            // Skip 10 PM slots (we only go to 10 PM, not 10:15 PM)
+            if (hour === 22 && minute > 0) break;
+
+            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            timeSlots.push({
+                key: `${hour}-${minute}`,
+                label: timeString,
+                hour,
+                minute
+            });
+        }
+    }
+
+    return timeSlots;
+}
+
+function getSchedulesForTimeSlot(dayDate: Date, timeSlot: { hour: number; minute: number }): any[] {
+    const dayStart = new Date(dayDate);
+    dayStart.setHours(0, 0, 0, 0);
+
+    const dayEnd = new Date(dayDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    return schedules.value.filter((schedule) => {
+        const scheduleDate = new Date(schedule.startDateTime);
+
+        // Check if schedule is on the same day
+        if (scheduleDate < dayStart || scheduleDate > dayEnd) {
+            return false;
+        }
+
+        // Check if schedule starts at this time slot
+        const scheduleHour = scheduleDate.getHours();
+        const scheduleMinute = scheduleDate.getMinutes();
+
+        return scheduleHour === timeSlot.hour && scheduleMinute === timeSlot.minute;
+    });
+}
+
+function navigateWeek(direction: 'prev' | 'next') {
+    const newDate = new Date(currentDate.value);
+    newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+    currentDate.value = newDate;
+    loadSchedules();
+}
+
+// Watch for class selection changes to auto-calculate end time
+watch(
+    () => formData.value.classId,
+    (newClassId) => {
+        if (newClassId && formData.value.startDateTime) {
+            const selectedClass = classes.value.find((cls) => cls._id === newClassId);
+            if (selectedClass) {
+                const startTime = new Date(formData.value.startDateTime);
+                const endTime = new Date(startTime.getTime() + selectedClass.duration * 60000);
+                formData.value.endDateTime = endTime;
+            }
+        }
+    }
+);
+
+// Watch for start time changes to auto-calculate end time
+watch(
+    () => formData.value.startDateTime,
+    (newStartTime) => {
+        if (newStartTime && formData.value.classId) {
+            const selectedClass = classes.value.find((cls) => cls._id === formData.value.classId);
+            if (selectedClass) {
+                const startTime = new Date(newStartTime);
+                const endTime = new Date(startTime.getTime() + selectedClass.duration * 60000);
+                formData.value.endDateTime = endTime;
+            }
+        }
+    }
+);
+
+onMounted(() => {
+    loadSchedules();
+    loadClasses();
+    loadLocations();
+});
+</script>
+
+<template>
+    <Fluid>
+        <div class="flex progresscontainer">
+            <div v-if="loading" class="spinner-overlay progressoverlay">
+                <ProgressSpinner aria-label="Loading" />
+            </div>
+
+            <Card class="card-style">
+                <template #title>{{ t('schedules.title') }}</template>
+                <template #subtitle>{{ t('schedules.subtitle') }}</template>
+                <template #content>
+                    <TabView>
+                        <!-- Weekly View Tab -->
+                        <TabPanel :header="t('schedules.weeklyView')" value="week">
+                            <div class="mb-4 flex justify-between items-center">
+                                <div class="flex items-center gap-4">
+                                    <Button
+                                        icon="pi pi-chevron-left"
+                                        @click="navigateWeek('prev')"
+                                        size="small"
+                                        severity="secondary"
+                                    />
+                                    <h3 class="text-lg font-semibold">
+                                        {{
+                                            currentDate.toLocaleDateString('en-US', {
+                                                month: 'long',
+                                                year: 'numeric'
+                                            })
+                                        }}
+                                    </h3>
+                                    <Button
+                                        icon="pi pi-chevron-right"
+                                        @click="navigateWeek('next')"
+                                        size="small"
+                                        severity="secondary"
+                                    />
+                                </div>
+                                <Button icon="pi pi-plus" :label="t('schedules.newSchedule')" @click="openNewDialog" />
+                            </div>
+
+                            <!-- Weekly Calendar Grid -->
+                            <div class="grid grid-cols-8 gap-2 mb-4">
+                                <!-- Time column header -->
+                                <div class="p-2 font-semibold text-center bg-gray-100 rounded">
+                                    {{ t('schedules.time') }}
+                                </div>
+
+                                <!-- Day headers -->
+                                <div
+                                    v-for="dayDate in getWeekDates()"
+                                    :key="dayDate.toISOString()"
+                                    class="p-2 font-semibold text-center bg-gray-100 rounded"
+                                >
+                                    <div>{{ dayDate.toLocaleDateString('en-US', { weekday: 'short' }) }}</div>
+                                    <div class="text-sm">{{ dayDate.getDate() }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Time slots (4 AM to 10 PM in 15-minute intervals) -->
+                            <div class="grid grid-cols-8 gap-2">
+                                <template v-for="timeSlot in getTimeSlots()" :key="timeSlot.key">
+                                    <!-- Time label -->
+                                    <div class="p-2 text-xs text-gray-600 bg-gray-50 rounded">
+                                        {{ timeSlot.label }}
+                                    </div>
+
+                                    <!-- Schedule slots for each day -->
+                                    <div
+                                        v-for="dayDate in getWeekDates()"
+                                        :key="`${timeSlot.key}-${dayDate.toISOString()}`"
+                                        class="min-h-[40px] p-1 border border-gray-200 rounded relative"
+                                    >
+                                        <!-- Find schedules for this time slot and day -->
+                                        <div
+                                            v-for="schedule in getSchedulesForTimeSlot(dayDate, timeSlot)"
+                                            :key="schedule._id"
+                                            class="absolute inset-1 rounded text-xs p-1 text-white cursor-pointer hover:opacity-80"
+                                            :style="{ backgroundColor: getClassColor(schedule.classId) }"
+                                            @click="openEditDialog(schedule)"
+                                        >
+                                            <div class="font-semibold truncate">{{ schedule.class?.name }}</div>
+                                            <div class="text-xs opacity-90">{{ schedule.location?.name }}</div>
+                                            <div class="text-xs opacity-90">
+                                                {{ formatTime(schedule.startDateTime) }} -
+                                                {{ formatTime(schedule.endDateTime) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </TabPanel>
+
+                        <!-- List View Tab -->
+                        <TabPanel :header="t('schedules.listView')" value="list">
+                            <div class="flex justify-content-end mb-3">
+                                <Button icon="pi pi-plus" :label="t('schedules.newSchedule')" @click="openNewDialog" />
+                            </div>
+
+                            <DataTable :value="schedules" paginator :rows="10" responsiveLayout="scroll">
+                                <Column field="class" :header="t('schedules.class')" sortable>
+                                    <template #body="{ data }">
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                class="w-3 h-3 rounded-full"
+                                                :style="{ backgroundColor: getClassColor(data.classId) }"
+                                            ></div>
+                                            {{ data.class?.name }}
+                                        </div>
+                                    </template>
+                                </Column>
+                                <Column field="location" :header="t('schedules.location')" sortable>
+                                    <template #body="{ data }">
+                                        {{ data.location?.name }}
+                                    </template>
+                                </Column>
+                                <Column field="startDateTime" :header="t('schedules.date')" sortable>
+                                    <template #body="{ data }">
+                                        {{ formatDate(data.startDateTime) }}
+                                    </template>
+                                </Column>
+                                <Column field="startDateTime" :header="t('schedules.time')" sortable>
+                                    <template #body="{ data }">
+                                        {{ formatTime(data.startDateTime) }} - {{ formatTime(data.endDateTime) }}
+                                    </template>
+                                </Column>
+                                <Column field="duration" :header="t('schedules.duration')">
+                                    <template #body="{ data }">
+                                        {{ formatDuration(data.startDateTime, data.endDateTime) }}
+                                    </template>
+                                </Column>
+                                <Column field="instructor" :header="t('schedules.instructor')">
+                                    <template #body="{ data }">
+                                        {{
+                                            data.instructor
+                                                ? `${data.instructor.firstName} ${data.instructor.lastName}`
+                                                : t('schedules.noInstructor')
+                                        }}
+                                    </template>
+                                </Column>
+                                <Column :header="t('schedules.actions')">
+                                    <template #body="{ data }">
+                                        <div class="flex gap-2">
+                                            <Button
+                                                icon="pi pi-pencil"
+                                                size="small"
+                                                severity="secondary"
+                                                @click="openEditDialog(data)"
+                                            />
+                                            <Button
+                                                icon="pi pi-trash"
+                                                size="small"
+                                                severity="danger"
+                                                @click="confirmDelete(data)"
+                                            />
+                                        </div>
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </TabPanel>
+                    </TabView>
+                </template>
+            </Card>
+
+            <!-- Create/Edit Dialog -->
+            <Dialog
+                v-model:visible="showDialog"
+                :modal="true"
+                :header="editMode ? t('schedules.editSchedule') : t('schedules.newSchedule')"
+                :pt="{ root: { class: 'w-[90vw] md:w-[70vw] lg:w-[60vw]' } }"
+            >
+                <form @submit.prevent="handleSubmit" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="field">
+                            <label for="class" class="font-medium">{{ t('schedules.class') }} *</label>
+                            <Select
+                                id="class"
+                                v-model="formData.classId"
+                                :options="classOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                                required
+                            />
+                        </div>
+
+                        <div class="field">
+                            <label for="location" class="font-medium">{{ t('schedules.location') }} *</label>
+                            <Select
+                                id="location"
+                                v-model="formData.locationId"
+                                :options="locationOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                                required
+                            />
+                        </div>
+
+                        <div class="field">
+                            <label for="startTime" class="font-medium">{{ t('schedules.startTime') }} *</label>
+                            <Calendar
+                                id="startTime"
+                                v-model="formData.startDateTime"
+                                showTime
+                                hourFormat="12"
+                                :stepMinute="15"
+                                class="w-full"
+                                required
+                            />
+                        </div>
+
+                        <div class="field">
+                            <label for="endTime" class="font-medium">{{ t('schedules.endTime') }}</label>
+                            <Calendar
+                                id="endTime"
+                                v-model="formData.endDateTime"
+                                showTime
+                                hourFormat="12"
+                                :stepMinute="15"
+                                class="w-full"
+                            />
+                            <small class="text-gray-500">{{ t('schedules.endTimeHelp') }}</small>
+                        </div>
+
+                        <div class="field">
+                            <label for="maxAttendees" class="font-medium">{{ t('schedules.maxAttendees') }}</label>
+                            <InputText id="maxAttendees" v-model="formData.maxAttendees" type="number" class="w-full" />
+                            <small class="text-gray-500">{{ t('schedules.maxAttendeesHelp') }}</small>
+                        </div>
+
+                        <div class="field">
+                            <div class="flex items-center gap-2">
+                                <Checkbox v-model="formData.isRecurring" binary />
+                                <label class="font-medium">{{ t('schedules.isRecurring') }}</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recurring Pattern -->
+                    <div v-if="formData.isRecurring" class="p-4 bg-gray-50 rounded-lg space-y-4">
+                        <h4 class="text-lg font-semibold">{{ t('schedules.recurringPattern') }}</h4>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="field">
+                                <label for="frequency" class="font-medium">{{ t('schedules.frequency') }}</label>
+                                <Select
+                                    id="frequency"
+                                    v-model="formData.recurringPattern.frequency"
+                                    :options="frequencyOptions"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    class="w-full"
+                                />
+                            </div>
+
+                            <div class="field">
+                                <label for="interval" class="font-medium">{{ t('schedules.interval') }}</label>
+                                <InputText
+                                    id="interval"
+                                    v-model="formData.recurringPattern.interval"
+                                    type="number"
+                                    :min="1"
+                                    class="w-full"
+                                />
+                            </div>
+
+                            <div v-if="formData.recurringPattern.frequency === 'weekly'" class="field col-span-full">
+                                <label class="font-medium">{{ t('schedules.daysOfWeek') }}</label>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    <div v-for="day in daysOfWeek" :key="day.value" class="flex items-center gap-1">
+                                        <Checkbox
+                                            :id="`day-${day.value}`"
+                                            v-model="formData.recurringPattern.daysOfWeek"
+                                            :value="day.value"
+                                        />
+                                        <label :for="`day-${day.value}`" class="text-sm">{{ day.label }}</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="endDate" class="font-medium">{{ t('schedules.endDate') }}</label>
+                                <Calendar id="endDate" v-model="formData.recurringPattern.endDate" class="w-full" />
+                                <small class="text-gray-500">{{ t('schedules.endDateHelp') }}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="notes" class="font-medium">{{ t('schedules.notes') }}</label>
+                        <Textarea
+                            id="notes"
+                            v-model="formData.notes"
+                            rows="3"
+                            class="w-full"
+                            :placeholder="t('schedules.notesPlaceholder')"
+                        />
+                    </div>
+                </form>
+
+                <template #footer>
+                    <div class="flex justify-end gap-2">
+                        <Button :label="t('schedules.cancel')" severity="secondary" @click="showDialog = false" />
+                        <Button :label="t('schedules.save')" type="submit" @click="handleSubmit" />
+                    </div>
+                </template>
+            </Dialog>
+
+            <Toast />
+            <ConfirmDialog />
+        </div>
+    </Fluid>
+</template>
+
+<style scoped>
+.field {
+    margin-bottom: 1rem;
+}
+
+.field label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.progresscontainer {
+    position: relative;
+}
+
+.progressoverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+</style>
