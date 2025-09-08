@@ -39,7 +39,7 @@ app.use(clerkMiddleware({ debug: true, enableHandshake: true }));
 // ✅ Allowed origins list
 const allowedOrigins = [
     'http://localhost:5173',
-    'https://schoolai-frontend.onrender.com',
+    'https://fitfamconnect-server.onrender.com',
     'https://www.fitfamconnect.com',
     'https://fitfamconnect.com'
 ];

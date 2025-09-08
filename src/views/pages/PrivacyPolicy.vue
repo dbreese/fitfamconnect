@@ -10,9 +10,9 @@ const { t, tm } = useI18n();
                 This Privacy Policy ("Policy") applies to https://fitfamconnect.com, and Fit Fam Connect, LLC
                 ("Company") and governs data collection and usage. For the purposes of this Privacy Policy, unless
                 otherwise noted, all references to the Company include https://fitfamconnect.com. The Company's website
-                is a site to provide teachers and school staff with online access to generative artificial intelligence
-                tools, browser extensions, and other services (collectively our "Services") site. By using the Company
-                website, you consent to the data practices described in this statement.
+                is a site to provide fitness gyms, their owners, and members with online access to management tools,
+                browser extensions, and other services (collectively our "Services") site. By using the Company website,
+                you consent to the data practices described in this statement.
             </p>
             <p style="padding-top: 1pt; text-indent: 0pt; text-align: left"><br /></p>
             <h2 style="padding-left: 5pt; text-indent: 0pt; text-align: left">
