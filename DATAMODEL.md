@@ -201,3 +201,32 @@ Ignore this section.
     "gymCode": "F30FIT"
 }
 ```
+
+## Mongo CLI cheatsheet
+
+```
+use fitfam;
+
+// "db." is hard coded and not the name of a database:
+db.gyms.find({})
+
+db.gyms.find({ fieldName: 'value' })
+
+db.gyms.findOne({ fieldName: 'value' })
+
+db.gyms.insertOne({
+  key1: 'value1',
+  key2: 'value2',
+  // ... more fields
+})
+
+db.gyms.insertMany([
+  { key1: 'valueA', key2: 'valueB' },
+  { key1: 'valueC', key2: 'valueD' }
+])
+
+db.gyms.deleteOne({ fieldName: 'value' })
+
+db.gyms.deleteMany({})
+
+```
