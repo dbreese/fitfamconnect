@@ -437,7 +437,11 @@ function getTimeSlots(): Array<{ key: string; label: string; hour: number; minut
             // Skip 10 PM slots (we only go to 10 PM, not 10:15 PM)
             if (hour === 22 && minute > 0) break;
 
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            // Convert to 12-hour format
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            const ampm = hour < 12 ? 'AM' : 'PM';
+            const timeString = `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
+
             timeSlots.push({
                 key: `${hour}-${minute}`,
                 label: timeString,
@@ -565,7 +569,11 @@ function getEndTimeForGroup(timeSlot: any): string {
     const endHour = Math.floor(totalMinutes / 60);
     const endMinute = totalMinutes % 60;
 
-    return `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+    // Convert to 12-hour format
+    const displayHour = endHour === 0 ? 12 : endHour > 12 ? endHour - 12 : endHour;
+    const ampm = endHour < 12 ? 'AM' : 'PM';
+
+    return `${displayHour}:${endMinute.toString().padStart(2, '0')} ${ampm}`;
 }
 
 function navigateWeek(direction: 'prev' | 'next') {
