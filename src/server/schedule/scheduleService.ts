@@ -296,7 +296,7 @@ async function findSchedulesByOwner(user: IUser | undefined): Promise<any[]> {
     const enrichedSchedules = await Promise.all(
         schedules.map(async (schedule) => {
             // Get class details
-            const classObj = classes.find((c) => c._id === schedule.classId);
+            const classObj = classes.find((c) => c._id.toString() === schedule.classId.toString());
 
             // Get location details
             const location = await Location.findById(schedule.locationId);
@@ -375,7 +375,11 @@ function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Da
             ...(schedule.toObject ? schedule.toObject() : schedule),
             startDateTime: instanceStart,
             endDateTime: instanceEnd,
-            isRecurringInstance: true
+            isRecurringInstance: true,
+            // Preserve class data if it exists
+            class: schedule.class || null,
+            location: schedule.location || null,
+            instructor: schedule.instructor || null
         });
 
         // Move to next occurrence
@@ -450,6 +454,10 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
     // Find all classes for this gym
     const classes = await Class.find({ gymId: gym._id, isActive: true });
     const classIds = classes.map((c) => c._id);
+    console.log(
+        `Found ${classes.length} classes for gym ${gym._id}:`,
+        classes.map((c) => ({ id: c._id, name: c.name }))
+    );
 
     // Find schedules in date range
     const startDateObj = new Date(startDate);
@@ -475,25 +483,15 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
         ]
     }).sort({ startDateTime: 1 });
 
-    // Filter and expand recurring schedules to show only active instances in date range
-    const activeSchedules = [];
-
-    for (const schedule of schedules) {
-        if (schedule.isRecurring && schedule.recurringPattern) {
-            // Check if this recurring schedule has any active instances in the date range
-            const activeInstances = getActiveRecurringInstances(schedule, startDateObj, endDateObj);
-            activeSchedules.push(...activeInstances);
-        } else {
-            // Direct schedule - already in date range
-            activeSchedules.push(schedule);
-        }
-    }
-
-    // Enrich with class, location, and instructor details
+    // First enrich all schedules with class, location, and instructor details
     const enrichedSchedules = await Promise.all(
-        activeSchedules.map(async (schedule) => {
+        schedules.map(async (schedule) => {
             // Get class details
-            const classObj = classes.find((c) => c._id === schedule.classId);
+            const classObj = classes.find((c) => c._id.toString() === schedule.classId.toString());
+            console.log(
+                `Schedule ${schedule._id}: classId=${schedule.classId} (type: ${typeof schedule.classId}), found class:`,
+                classObj ? classObj.name : 'null'
+            );
 
             // Get location details
             const location = await Location.findById(schedule.locationId);
@@ -532,10 +530,24 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
         })
     );
 
+    // Now filter and expand recurring schedules to show only active instances in date range
+    const activeSchedules = [];
+
+    for (const schedule of enrichedSchedules) {
+        if (schedule.isRecurring && schedule.recurringPattern) {
+            // Check if this recurring schedule has any active instances in the date range
+            const activeInstances = getActiveRecurringInstances(schedule, startDateObj, endDateObj);
+            activeSchedules.push(...activeInstances);
+        } else {
+            // Direct schedule - already in date range
+            activeSchedules.push(schedule);
+        }
+    }
+
     console.log(
-        `scheduleService.findSchedulesByDateRange: Found ${enrichedSchedules.length} schedules for gym ${gym.name}`
+        `scheduleService.findSchedulesByDateRange: Found ${activeSchedules.length} active schedules for gym ${gym.name}`
     );
-    return enrichedSchedules;
+    return activeSchedules;
 }
 
 /**

@@ -383,7 +383,11 @@ async function deleteSchedule(schedule: any) {
 }
 
 function formatTime(date: string | Date): string {
-    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date(date).toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
 }
 
 function formatDate(date: string | Date): string {
@@ -427,10 +431,10 @@ function getSchedulesForDay(dayDate: Date): any[] {
 function getTimeSlots(): Array<{ key: string; label: string; hour: number; minute: number }> {
     const timeSlots = [];
 
-    // Generate time slots from 4 AM to 10 PM in 30-minute intervals
+    // Generate time slots from 4 AM to 10 PM in 15-minute intervals
     for (let hour = 4; hour <= 22; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
-            // Skip 10 PM slots (we only go to 10 PM, not 10:30 PM)
+        for (let minute = 0; minute < 60; minute += 15) {
+            // Skip 10 PM slots (we only go to 10 PM, not 10:15 PM)
             if (hour === 22 && minute > 0) break;
 
             const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
@@ -458,7 +462,7 @@ function getSchedulesForTimeSlot(dayDate: Date, timeSlot: { hour: number; minute
     slotStart.setHours(timeSlot.hour, timeSlot.minute, 0, 0);
 
     const slotEnd = new Date(dayDate);
-    slotEnd.setHours(timeSlot.hour, timeSlot.minute + 30, 0, 0);
+    slotEnd.setHours(timeSlot.hour, timeSlot.minute + 15, 0, 0);
 
     return schedules.value.filter((schedule) => {
         const scheduleStart = new Date(schedule.startDateTime);
@@ -483,14 +487,85 @@ function hasSchedulesInTimeSlot(timeSlot: { hour: number; minute: number }): boo
     });
 }
 
-function getVisibleTimeSlots(): Array<{ key: string; label: string; hour: number; minute: number }> {
-    const allTimeSlots = getTimeSlots();
+function getScheduleSpan(schedule: any): number {
+    if (!schedule.endDateTime) return 1;
 
+    const startTime = new Date(schedule.startDateTime);
+    const endTime = new Date(schedule.endDateTime);
+    const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+
+    // Calculate how many 15-minute slots this spans
+    return Math.ceil(durationMinutes / 15);
+}
+
+function isFirstSlotForSchedule(schedule: any, dayDate: Date, timeSlot: { hour: number; minute: number }): boolean {
+    const scheduleStart = new Date(schedule.startDateTime);
+    const slotStart = new Date(dayDate);
+    slotStart.setHours(timeSlot.hour, timeSlot.minute, 0, 0);
+    const slotEnd = new Date(dayDate);
+    slotEnd.setHours(timeSlot.hour, timeSlot.minute + 15, 0, 0);
+
+    // This is the first slot if the schedule starts within this time slot
+    return scheduleStart >= slotStart && scheduleStart < slotEnd;
+}
+
+function getVisibleTimeSlots(): Array<{
+    key: string;
+    label: string;
+    hour: number;
+    minute: number;
+    isGrouped?: boolean;
+    groupSize?: number;
+}> {
     if (!hideEmptySlots.value) {
-        return allTimeSlots;
+        return getTimeSlots();
     }
 
-    return allTimeSlots.filter((timeSlot) => hasSchedulesInTimeSlot(timeSlot));
+    const allTimeSlots = getTimeSlots();
+    const groupedSlots = [];
+    let i = 0;
+
+    while (i < allTimeSlots.length) {
+        const currentSlot = allTimeSlots[i];
+
+        if (hasSchedulesInTimeSlot(currentSlot)) {
+            // Slot has schedules - add it normally
+            groupedSlots.push(currentSlot);
+            i++;
+        } else {
+            // Slot is empty - find consecutive empty slots
+            let emptyCount = 1;
+            let j = i + 1;
+
+            while (j < allTimeSlots.length && !hasSchedulesInTimeSlot(allTimeSlots[j])) {
+                emptyCount++;
+                j++;
+            }
+
+            // Add a single grouped slot representing all consecutive empty slots
+            groupedSlots.push({
+                ...currentSlot,
+                isGrouped: true,
+                groupSize: emptyCount
+            });
+
+            i = j; // Skip all the empty slots we just grouped
+        }
+    }
+
+    return groupedSlots;
+}
+
+function getEndTimeForGroup(timeSlot: any): string {
+    if (!timeSlot.isGrouped || !timeSlot.groupSize) return timeSlot.label;
+
+    const startHour = timeSlot.hour;
+    const startMinute = timeSlot.minute;
+    const totalMinutes = startHour * 60 + startMinute + timeSlot.groupSize * 15;
+    const endHour = Math.floor(totalMinutes / 60);
+    const endMinute = totalMinutes % 60;
+
+    return `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
 }
 
 function navigateWeek(direction: 'prev' | 'next') {
@@ -610,34 +685,53 @@ onMounted(() => {
                                 </div>
                             </div>
 
-                            <!-- Time slots (4 AM to 10 PM in 30-minute intervals) -->
-                            <div class="grid grid-cols-8 gap-2">
+                            <!-- Time slots (4 AM to 10 PM in 15-minute intervals) -->
+                            <div class="grid grid-cols-8">
                                 <template v-for="timeSlot in getVisibleTimeSlots()" :key="timeSlot.key">
                                     <!-- Time label -->
-                                    <div class="p-2 text-xs text-gray-600 bg-gray-50 rounded">
-                                        {{ timeSlot.label }}
+                                    <div
+                                        :class="[
+                                            'text-xs text-gray-600 bg-gray-50 relative z-10',
+                                            timeSlot.isGrouped ? 'p-1' : 'p-2'
+                                        ]"
+                                    >
+                                        <span v-if="timeSlot.isGrouped">
+                                            {{ timeSlot.label }} - {{ getEndTimeForGroup(timeSlot) }}
+                                        </span>
+                                        <span v-else>
+                                            {{ timeSlot.label }}
+                                        </span>
                                     </div>
 
                                     <!-- Schedule slots for each day -->
                                     <div
                                         v-for="dayDate in getWeekDates()"
                                         :key="`${timeSlot.key}-${dayDate.toISOString()}`"
-                                        class="min-h-[60px] p-1 border border-gray-200 rounded relative"
+                                        :class="['relative', timeSlot.isGrouped ? 'min-h-[10px]' : 'min-h-[80px]']"
                                     >
                                         <!-- Find schedules for this time slot and day -->
                                         <div
                                             v-for="schedule in getSchedulesForTimeSlot(dayDate, timeSlot)"
                                             :key="schedule._id"
-                                            class="absolute inset-1 rounded text-xs p-1 text-white cursor-pointer hover:opacity-80"
+                                            class="absolute inset-0 text-xs p-1 text-white cursor-pointer hover:opacity-80"
                                             :style="{ backgroundColor: getClassColor(schedule.classId) }"
                                             @click="openEditDialog(schedule)"
                                         >
-                                            <div class="font-semibold truncate">{{ schedule.class?.name }}</div>
-                                            <div class="text-xs opacity-90">{{ schedule.location?.name }}</div>
-                                            <div class="text-xs opacity-90">
-                                                {{ formatTime(schedule.startDateTime) }} -
-                                                {{ formatTime(schedule.endDateTime) }}
-                                            </div>
+                                            <!-- Show full class info only in the first time slot -->
+                                            <template v-if="isFirstSlotForSchedule(schedule, dayDate, timeSlot)">
+                                                <div class="font-semibold truncate">
+                                                    {{ schedule.class?.name }} ({{ schedule.class?.category }})
+                                                </div>
+                                                <div class="text-xs opacity-90">{{ schedule.location?.name }}</div>
+                                                <div class="text-xs opacity-90">
+                                                    {{ formatTime(schedule.startDateTime) }} -
+                                                    {{ formatTime(schedule.endDateTime) }}
+                                                </div>
+                                            </template>
+                                            <!-- Show continuation indicator in subsequent slots -->
+                                            <template v-else>
+                                                <div class="text-center opacity-75">⋯</div>
+                                            </template>
                                         </div>
                                     </div>
                                 </template>
@@ -757,7 +851,7 @@ onMounted(() => {
                                 v-model="formData.startDateTime"
                                 showTime
                                 hourFormat="12"
-                                :stepMinute="30"
+                                :stepMinute="15"
                                 class="w-full"
                                 required
                             />
@@ -770,7 +864,7 @@ onMounted(() => {
                                 v-model="formData.endDateTime"
                                 showTime
                                 hourFormat="12"
-                                :stepMinute="30"
+                                :stepMinute="15"
                                 class="w-full"
                             />
                             <small class="text-gray-500">{{ t('schedules.endTimeHelp') }}</small>
