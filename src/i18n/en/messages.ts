@@ -645,6 +645,8 @@ export const messages = {
         unlimited: 'Unlimited',
         every: 'Every',
         week: 'week',
+        filter: 'Filter',
+        schedulesFound: 'schedules found',
         cancel: 'Cancel',
         save: 'Save',
         delete: 'Delete',

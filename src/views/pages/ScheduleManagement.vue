@@ -41,6 +41,7 @@ const currentView = ref('week');
 const currentDate = ref(new Date());
 const hideEmptySlots = ref(false);
 const activeTab = ref(0);
+const scheduleFilter = ref('all');
 
 const formData = ref({
     classId: '',
@@ -79,6 +80,12 @@ const daysOfWeek = [
     { label: 'Saturday', value: 6 }
 ];
 
+const filterOptions = [
+    { label: 'All Schedules', value: 'all' },
+    { label: 'Recurring Only', value: 'recurring' },
+    { label: 'One-Time Only', value: 'non-recurring' }
+];
+
 const classOptions = computed(() => {
     return classes.value.map((cls) => ({
         label: cls.category ? `${cls.name} (${cls.category})` : cls.name,
@@ -91,6 +98,17 @@ const locationOptions = computed(() => {
         label: loc.name,
         value: loc._id
     }));
+});
+
+const filteredSchedules = computed(() => {
+    if (scheduleFilter.value === 'all') {
+        return schedules.value;
+    } else if (scheduleFilter.value === 'recurring') {
+        return schedules.value.filter((schedule) => schedule.isRecurring);
+    } else if (scheduleFilter.value === 'non-recurring') {
+        return schedules.value.filter((schedule) => !schedule.isRecurring);
+    }
+    return schedules.value;
 });
 
 // Color mapping for classes
@@ -778,11 +796,14 @@ onMounted(() => {
                                         @click="hideEmptySlots = !hideEmptySlots"
                                         severity="secondary"
                                         size="small"
+                                        class="compact-button"
                                     />
                                     <Button
                                         icon="pi pi-plus"
                                         :label="t('schedules.newSchedule')"
                                         @click="openNewDialog"
+                                        size="small"
+                                        class="compact-button"
                                     />
                                 </div>
                             </div>
@@ -860,11 +881,30 @@ onMounted(() => {
 
                         <!-- List View Tab -->
                         <TabPanel :header="t('schedules.listView')" value="list">
-                            <div class="flex justify-content-end mb-3">
-                                <Button icon="pi pi-plus" :label="t('schedules.newSchedule')" @click="openNewDialog" />
+                            <div class="flex justify-between items-center mb-3">
+                                <div class="flex items-center gap-3">
+                                    <label class="font-medium">{{ t('schedules.filter') }}:</label>
+                                    <Select
+                                        v-model="scheduleFilter"
+                                        :options="filterOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        class="w-48"
+                                    />
+                                    <span class="text-sm text-gray-600 whitespace-nowrap">
+                                        {{ filteredSchedules.length }} {{ t('schedules.schedulesFound') }}
+                                    </span>
+                                </div>
+                                <Button
+                                    icon="pi pi-plus"
+                                    :label="t('schedules.newSchedule')"
+                                    @click="openNewDialog"
+                                    size="small"
+                                    class="ml-auto compact-button"
+                                />
                             </div>
 
-                            <DataTable :value="schedules" paginator :rows="10" responsiveLayout="scroll">
+                            <DataTable :value="filteredSchedules" paginator :rows="10" responsiveLayout="scroll">
                                 <Column field="class" :header="t('schedules.class')" sortable>
                                     <template #body="{ data }">
                                         <div class="flex items-center gap-2">
@@ -1142,5 +1182,11 @@ onMounted(() => {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+}
+
+.compact-button {
+    flex-shrink: 0;
+    min-width: auto;
+    width: auto;
 }
 </style>
