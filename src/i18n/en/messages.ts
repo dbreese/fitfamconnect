@@ -618,6 +618,7 @@ export const messages = {
     },
     charges: {
         addCharge: 'Add Charge',
+        chargeHistory: 'Charge History',
         chargingMember: 'Charging Member',
         amount: 'Amount',
         amountPlaceholder: '0.00',
@@ -628,6 +629,12 @@ export const messages = {
         noteHelp: 'Optional description of what this charge is for',
         isBilled: 'Mark as Billed',
         isBilledHelp: 'Check this if the charge has already been billed to the member',
+        billingStatus: 'Billing Status',
+        billedDate: 'Billed Date',
+        billed: 'Billed',
+        unbilled: 'Unbilled',
+        noNote: 'No note',
+        close: 'Close',
         cancel: 'Cancel',
         create: 'Create Charge',
         validation: {
@@ -639,7 +646,8 @@ export const messages = {
             created: 'Charge created successfully'
         },
         error: {
-            createFailed: 'Failed to create charge'
+            createFailed: 'Failed to create charge',
+            loadFailed: 'Failed to load charges'
         }
     },
     schedules: {

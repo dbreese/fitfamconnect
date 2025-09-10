@@ -32,7 +32,9 @@ const loading = ref(false);
 const showDialog = ref(false);
 const showNewMemberDialog = ref(false);
 const showAddChargeDialog = ref(false);
+const showChargeHistoryDialog = ref(false);
 const selectedMember = ref<any | null>(null);
+const memberCharges = ref<any[]>([]);
 
 const formData = ref({
     status: 'pending' as 'pending' | 'approved' | 'denied' | 'inactive',
@@ -120,6 +122,31 @@ async function loadPlans() {
     }
 }
 
+async function loadMemberCharges() {
+    if (!selectedMember.value) return;
+
+    loading.value = true;
+    try {
+        const result = await ChargeService.getChargesByMember((selectedMember.value as any)._id);
+        if (result) {
+            memberCharges.value = result;
+            console.log(`Loaded ${result.length} charges for member`);
+        } else {
+            memberCharges.value = [];
+        }
+    } catch (error) {
+        console.error('Error loading member charges:', error);
+        toast.add({
+            severity: 'error',
+            summary: t('feedback.errorTitle'),
+            detail: t('charges.error.loadFailed'),
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
 function openEditDialog(member: any) {
     selectedMember.value = member;
     formData.value = {
@@ -135,8 +162,13 @@ function openNewMemberDialog() {
     showNewMemberDialog.value = true;
 }
 
-function openAddChargeDialog(member: any) {
+function openChargeHistoryDialog(member: any) {
     selectedMember.value = member;
+    loadMemberCharges();
+    showChargeHistoryDialog.value = true;
+}
+
+function openAddChargeDialog() {
     resetChargeForm();
     showAddChargeDialog.value = true;
 }
@@ -387,6 +419,8 @@ async function handleChargeSubmit() {
                 life: 3000
             });
             showAddChargeDialog.value = false;
+            // Refresh the charge list
+            await loadMemberCharges();
         } else {
             toast.add({
                 severity: 'error',
@@ -492,6 +526,23 @@ function formatJoinDate(date: string | Date): string {
     return new Date(date).toLocaleDateString();
 }
 
+function formatChargeAmount(amountInCents: number): string {
+    const amount = (amountInCents / 100).toFixed(2);
+    return `$${amount}`;
+}
+
+function formatChargeDate(date: string | Date): string {
+    return new Date(date).toLocaleDateString();
+}
+
+function getBillingStatusSeverity(isBilled: boolean): string {
+    return isBilled ? 'success' : 'warning';
+}
+
+function getBillingStatusLabel(isBilled: boolean): string {
+    return isBilled ? t('charges.billed') : t('charges.unbilled');
+}
+
 onMounted(() => {
     loadMembers();
     loadPlans();
@@ -556,8 +607,8 @@ onMounted(() => {
                                         icon="pi pi-dollar"
                                         size="small"
                                         severity="info"
-                                        :label="t('charges.addCharge')"
-                                        @click="openAddChargeDialog(data)"
+                                        :label="t('charges.chargeHistory')"
+                                        @click="openChargeHistoryDialog(data)"
                                     />
                                 </div>
                             </template>
@@ -789,6 +840,81 @@ onMounted(() => {
                             @click="showNewMemberDialog = false"
                         />
                         <Button :label="t('memberships.create')" type="submit" @click="handleNewMemberSubmit" />
+                    </div>
+                </template>
+            </Dialog>
+
+            <!-- Charge History Dialog -->
+            <Dialog
+                v-model:visible="showChargeHistoryDialog"
+                :modal="true"
+                :header="t('charges.chargeHistory')"
+                :pt="{ root: { class: 'w-[90vw] md:w-[80vw] lg:w-[70vw]' } }"
+            >
+                <div v-if="selectedMember" class="space-y-4">
+                    <!-- Member Information (Read-only) -->
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <h4 class="text-sm font-semibold mb-2">{{ t('charges.chargingMember') }}</h4>
+                        <div class="text-lg font-medium">{{ formatMemberName(selectedMember) }}</div>
+                        <div class="text-sm text-gray-600">{{ selectedMember.email }}</div>
+                    </div>
+
+                    <!-- Add New Charge Button -->
+                    <div class="flex justify-end">
+                        <Button
+                            icon="pi pi-plus"
+                            :label="t('charges.addCharge')"
+                            @click="openAddChargeDialog"
+                            size="small"
+                        />
+                    </div>
+
+                    <!-- Charges List -->
+                    <div class="border rounded-lg">
+                        <DataTable :value="memberCharges" :loading="loading" responsiveLayout="scroll">
+                            <Column field="amount" :header="t('charges.amount')" sortable>
+                                <template #body="{ data }">
+                                    <span class="font-semibold">{{ formatChargeAmount(data.amount) }}</span>
+                                </template>
+                            </Column>
+                            <Column field="chargeDate" :header="t('charges.date')" sortable>
+                                <template #body="{ data }">
+                                    {{ formatChargeDate(data.chargeDate) }}
+                                </template>
+                            </Column>
+                            <Column field="note" :header="t('charges.note')">
+                                <template #body="{ data }">
+                                    <span v-if="data.note" class="text-sm">{{ data.note }}</span>
+                                    <span v-else class="text-gray-400 text-sm">{{ t('charges.noNote') }}</span>
+                                </template>
+                            </Column>
+                            <Column field="isBilled" :header="t('charges.billingStatus')" sortable>
+                                <template #body="{ data }">
+                                    <Tag
+                                        :value="getBillingStatusLabel(data.isBilled)"
+                                        :severity="getBillingStatusSeverity(data.isBilled)"
+                                    />
+                                </template>
+                            </Column>
+                            <Column field="billedDate" :header="t('charges.billedDate')" sortable>
+                                <template #body="{ data }">
+                                    <span v-if="data.billedDate" class="text-sm">
+                                        {{ formatChargeDate(data.billedDate) }}
+                                    </span>
+                                    <span v-else class="text-gray-400 text-sm">-</span>
+                                </template>
+                            </Column>
+                        </DataTable>
+                    </div>
+                </div>
+
+                <template #footer>
+                    <div class="flex justify-end">
+                        <Button
+                            :label="t('charges.close')"
+                            severity="secondary"
+                            @click="showChargeHistoryDialog = false"
+                        />
                     </div>
                 </template>
             </Dialog>
