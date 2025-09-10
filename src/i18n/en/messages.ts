@@ -660,6 +660,50 @@ export const messages = {
             loadFailed: 'Failed to load charges'
         }
     },
+    billing: {
+        title: 'Billing Management',
+        menuTitle: 'Billing',
+        subtitle: 'Manage billing runs and view billing history',
+        billingRun: 'Billing Run',
+        history: 'History',
+        selectPeriod: 'Select Billing Period',
+        startDate: 'Start Date',
+        endDate: 'End Date',
+        generatePreview: 'Generate Preview',
+        previewResults: 'Preview Results',
+        billingPeriod: 'Billing Period',
+        member: 'Member',
+        type: 'Type',
+        description: 'Description',
+        amount: 'Amount',
+        date: 'Date',
+        totalAmount: 'Total Amount',
+        totalCharges: 'Total Charges',
+        recurringPlans: 'Recurring Plans',
+        nonRecurringPlans: 'Non-recurring Plans',
+        oneTimeCharges: 'One-time Charges',
+        commitBilling: 'Commit Billing',
+        confirmCommit: 'Confirm Billing Commit',
+        commitWarning: 'Warning: This action cannot be undone',
+        commitWarningDetail: 'This will create charge records and mark existing charges as billed.',
+        cancel: 'Cancel',
+        billingHistory: 'Billing History',
+        billingDate: 'Billing Date',
+        createdAt: 'Created At',
+        validation: {
+            periodRequired: 'Both start and end dates are required',
+            endDateAfterStart: 'End date must be after start date'
+        },
+        success: {
+            previewGenerated: 'Billing preview generated successfully',
+            committed:
+                'Billing committed successfully. Created {charges} new charges and marked {existing} existing charges as billed.'
+        },
+        error: {
+            previewFailed: 'Failed to generate billing preview',
+            commitFailed: 'Failed to commit billing run'
+        }
+    },
     schedules: {
         title: 'Schedule Management',
         menuTitle: 'Schedules',

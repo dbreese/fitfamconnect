@@ -160,6 +160,12 @@ const router = createRouter({
                     path: '/schedules',
                     name: 'schedules',
                     component: () => import('@/views/pages/ScheduleManagement.vue')
+                },
+
+                {
+                    path: '/billing',
+                    name: 'billing',
+                    component: () => import('@/views/pages/BillingManagement.vue')
                 }
             ]
         }

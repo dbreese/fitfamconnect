@@ -48,6 +48,12 @@ Mongoose schemas will be stored in src/server/db.
 - Tracks the date the charge occurred, an optional plan id, and an amount and a note.
 - Should have an indicator for if it has been billed yet.
 
+# Billing
+
+- member id of the person who ran billing
+- date the billing run was created
+- start and end date period of the billing cycle
+
 # Gym
 
 - Billing address and description of a gym or workout facility.

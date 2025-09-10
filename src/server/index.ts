@@ -18,6 +18,7 @@ import { router as locationRouter } from './location/locationService';
 import { router as membershipRouter } from './membership/membershipService';
 import { router as scheduleRouter } from './schedule/scheduleService';
 import { router as chargeRouter } from './charge/chargeService';
+import { router as billingRouter } from './billing/billingService';
 import { status } from './status/status';
 import { recents } from './recents/recents';
 import type { Request, Response, NextFunction } from 'express';
@@ -73,6 +74,7 @@ app.use(locationRouter);
 app.use(membershipRouter);
 app.use(scheduleRouter);
 app.use(chargeRouter);
+app.use(billingRouter);
 app.use(status);
 app.use(recents);
 
@@ -112,6 +114,7 @@ console.log(listEndpoints(locationRouter));
 console.log(listEndpoints(membershipRouter));
 console.log(listEndpoints(scheduleRouter));
 console.log(listEndpoints(chargeRouter));
+console.log(listEndpoints(billingRouter));
 console.log(listEndpoints(recents));
 
 const port = process.env['PORT'] || 3002;

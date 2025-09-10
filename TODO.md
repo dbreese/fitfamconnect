@@ -23,6 +23,7 @@
     - [ ] email
     - [ ] push notification
 - [ ] Inventory
+- [ ] Unit tests to lock things in
 
 ## Reports
 
@@ -38,3 +39,25 @@
 - [ ] minify code via config (see commit 1e0559e0)
 - [ ] Need to ensure database is locked down
 - [ ] CSS issues with data?
+
+## Billing Process
+
+- Billing logic is defined in /src/server/billing/billingService.ts
+- Owner can select start and end date for the billing period
+- The owner is presented with a billing report using the "Review" section below.
+- If the owner is happy with things, they can select "Commit" which will perform steps in the "Commit" section below.
+- Only charges for active/approved members should be considered (for example. member.status = "approved")
+
+- Review
+
+    - arrears billing calculations:
+
+        - gather all non-recurring membership records for the billing period.
+        - gather all of the 1-time charges for members which have not been billed (isBilled=false), regardless of date.
+
+    - advance billing calculations:
+        - gather all recurring charges for members for the billing period.
+
+- Commit
+
+    - generate a charge record for each item in the table.
