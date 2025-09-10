@@ -587,6 +587,8 @@ export const messages = {
         plansHelp: 'Select one or more plans for this member',
         notesHelp: 'Add internal notes about this member (not visible to member)',
         memberInfoNote: 'Member contact information can only be updated by the member themselves',
+        searchPlaceholder: 'Search members...',
+        membersFound: 'members found',
         cancel: 'Cancel',
         save: 'Save',
         create: 'Create',

@@ -19,7 +19,7 @@ import Checkbox from 'primevue/checkbox';
 import Toast from 'primevue/toast';
 import ProgressSpinner from 'primevue/progressspinner';
 import Tag from 'primevue/tag';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useI18n } from 'vue-i18n';
 
@@ -27,6 +27,7 @@ const { t } = useI18n();
 const toast = useToast();
 
 const members = ref<any[]>([]);
+const filteredMembers = ref<any[]>([]);
 const plans = ref<IPlan[]>([]);
 const loading = ref(false);
 const showDialog = ref(false);
@@ -37,6 +38,7 @@ const showEditChargeDialog = ref(false);
 const selectedMember = ref<any | null>(null);
 const memberCharges = ref<any[]>([]);
 const selectedCharge = ref<any | null>(null);
+const searchQuery = ref('');
 
 const formData = ref({
     status: 'pending' as 'pending' | 'approved' | 'denied' | 'inactive',
@@ -93,9 +95,11 @@ async function loadMembers() {
         const result = await MembershipService.getMyMembers();
         if (result) {
             members.value = result;
+            filterMembers();
             console.log(`Loaded ${result.length} members`);
         } else {
             members.value = [];
+            filteredMembers.value = [];
         }
     } catch (error) {
         console.error('Error loading members:', error);
@@ -108,6 +112,26 @@ async function loadMembers() {
     } finally {
         loading.value = false;
     }
+}
+
+function filterMembers() {
+    if (!searchQuery.value.trim()) {
+        filteredMembers.value = members.value;
+        return;
+    }
+
+    const query = searchQuery.value.toLowerCase().trim();
+    filteredMembers.value = members.value.filter((member) => {
+        const firstName = (member.firstName || '').toLowerCase();
+        const lastName = (member.lastName || '').toLowerCase();
+        const email = (member.email || '').toLowerCase();
+        const phone = (member.phone || '').toLowerCase();
+
+        return firstName.includes(query) ||
+               lastName.includes(query) ||
+               email.includes(query) ||
+               phone.includes(query);
+    });
 }
 
 async function loadPlans() {
@@ -609,6 +633,11 @@ function getBillingStatusLabel(isBilled: boolean): string {
     return isBilled ? t('charges.billed') : t('charges.unbilled');
 }
 
+// Watch for search query changes
+watch(searchQuery, () => {
+    filterMembers();
+});
+
 onMounted(() => {
     loadMembers();
     loadPlans();
@@ -626,10 +655,28 @@ onMounted(() => {
                 <template #title>{{ t('memberships.title') }}</template>
                 <template #subtitle>{{ t('memberships.subtitle') }}</template>
                 <template #content>
-                    <div class="flex justify-content-end mb-3">
-                        <Button icon="pi pi-plus" :label="t('memberships.newMember')" @click="openNewMemberDialog" />
+                    <div class="flex items-center mb-3 w-full">
+                        <div class="flex items-center gap-3 flex-1">
+                            <div class="p-input-icon-left">
+                                <InputText
+                                    v-model="searchQuery"
+                                    :placeholder="t('memberships.searchPlaceholder')"
+                                    class="w-80 pl-10"
+                                />
+                            </div>
+                            <span class="text-sm text-gray-600 whitespace-nowrap">
+                                {{ filteredMembers.length }} {{ t('memberships.membersFound') }}
+                            </span>
+                        </div>
+                        <div class="flex gap-2 flex-shrink-0">
+                            <Button
+                                icon="pi pi-plus"
+                                :label="t('memberships.newMember')"
+                                @click="openNewMemberDialog"
+                            />
+                        </div>
                     </div>
-                    <DataTable :value="members" paginator :rows="10" responsiveLayout="scroll">
+                    <DataTable :value="filteredMembers" paginator :rows="10" responsiveLayout="scroll">
                         <Column field="firstName" :header="t('memberships.memberName')" sortable>
                             <template #body="{ data }">
                                 <div>
