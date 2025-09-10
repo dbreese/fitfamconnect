@@ -43,6 +43,7 @@ const searchQuery = ref('');
 const formData = ref({
     status: 'pending' as 'pending' | 'approved' | 'denied' | 'inactive',
     planIds: [] as string[],
+    startDate: new Date(),
     notes: ''
 });
 
@@ -59,6 +60,7 @@ const newMemberFormData = ref({
         country: 'US'
     },
     memberType: 'member' as 'owner' | 'coach' | 'member',
+    startDate: new Date(),
     notes: ''
 });
 
@@ -178,6 +180,7 @@ function openEditDialog(member: any) {
     formData.value = {
         status: member.status,
         planIds: member.plans ? member.plans.map((plan: any) => plan._id) : [],
+        startDate: member.startDate ? new Date(member.startDate) : new Date(),
         notes: member.notes || ''
     };
     showDialog.value = true;
@@ -230,6 +233,7 @@ function resetNewMemberForm() {
             country: 'US'
         },
         memberType: 'member',
+        startDate: new Date(),
         notes: ''
     };
 }
@@ -309,6 +313,7 @@ async function handleSubmit() {
         // Update member status
         const result = await MembershipService.updateMember((selectedMember.value as any)._id, {
             status: formData.value.status,
+            startDate: formData.value.startDate,
             notes: formData.value.notes.trim() || undefined
         });
 
@@ -391,7 +396,7 @@ async function handleNewMemberSubmit() {
                     ? newMemberFormData.value.address
                     : undefined,
             memberType: newMemberFormData.value.memberType,
-            startDate: new Date(),
+            startDate: newMemberFormData.value.startDate,
             isActive: true,
             notes: newMemberFormData.value.notes.trim() || undefined
         };
@@ -695,9 +700,14 @@ onMounted(() => {
                                 {{ formatPlans(data.plans) }}
                             </template>
                         </Column>
-                        <Column field="joinRequestDate" :header="t('memberships.joinDate')" sortable>
+                        <Column field="joinRequestDate" :header="t('memberships.joinRequestDate')" sortable>
                             <template #body="{ data }">
                                 {{ formatJoinDate(data.joinRequestDate) }}
+                            </template>
+                        </Column>
+                        <Column field="startDate" :header="t('memberships.startDate')" sortable>
+                            <template #body="{ data }">
+                                {{ formatJoinDate(data.startDate) }}
                             </template>
                         </Column>
                         <Column field="notes" :header="t('memberships.notes')">
@@ -753,8 +763,15 @@ onMounted(() => {
                                 <div>{{ formatMemberContact(selectedMember) }}</div>
                             </div>
                             <div>
-                                <label class="font-medium text-sm text-gray-600">{{ t('memberships.joinDate') }}</label>
+                                <label class="font-medium text-sm text-gray-600">{{ t('memberships.joinRequestDate') }}</label>
                                 <div>{{ formatJoinDate(selectedMember.joinRequestDate) }}</div>
+                            </div>
+                            <div>
+                                <label class="font-medium text-sm text-gray-600">{{ t('memberships.startDate') }}</label>
+                                <Calendar
+                                    v-model="formData.startDate"
+                                    class="w-full"
+                                />
                             </div>
                             <div>
                                 <label class="font-medium text-sm text-gray-600">{{
@@ -895,16 +912,27 @@ onMounted(() => {
                         </div>
                     </div>
 
-                    <div class="field">
-                        <label for="newMemberType" class="font-medium">{{ t('memberships.memberType') }}</label>
-                        <Select
-                            id="newMemberType"
-                            v-model="newMemberFormData.memberType"
-                            :options="memberTypeOptions"
-                            optionLabel="label"
-                            optionValue="value"
-                            class="w-full"
-                        />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="field">
+                            <label for="newMemberType" class="font-medium">{{ t('memberships.memberType') }}</label>
+                            <Select
+                                id="newMemberType"
+                                v-model="newMemberFormData.memberType"
+                                :options="memberTypeOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                            />
+                        </div>
+                        <div class="field">
+                            <label for="newStartDate" class="font-medium">{{ t('memberships.startDate') }} *</label>
+                            <Calendar
+                                id="newStartDate"
+                                v-model="newMemberFormData.startDate"
+                                class="w-full"
+                                required
+                            />
+                        </div>
                     </div>
 
                     <div class="field">
