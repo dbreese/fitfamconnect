@@ -146,6 +146,16 @@ Set up user admin:
 https://stackoverflow.com/questions/38921414/mongodb-what-are-the-default-user-and-password  
 admin/test1234
 
+## BACKUP AND RESTORE
+
+```sh
+brew tap mongodb/brew
+brew install mongodb-database-tools
+brew install mongodb-compass mongosh # for compass ui
+mongodump --db fitfam --excludeCollection users --uri="mongodb://root@localhost:27017/fitfam?authSource=admin"
+mongorestore --uri="mongodb://root@localhost:27017/fitfam?authSource=admin" --dir dump/fitfam
+```
+
 # Plans and Members
 
 Ignore this section it is just used for my brainstorming.
