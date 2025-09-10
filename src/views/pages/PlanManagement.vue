@@ -37,7 +37,6 @@ const formData = ref({
     currency: 'USD',
     startDateTime: new Date(),
     endDateTime: null as Date | null,
-    isRecurring: true,
     recurringPeriod: 'monthly' as 'weekly' | 'monthly' | 'quarterly' | 'yearly'
 });
 
@@ -95,7 +94,6 @@ function openEditDialog(plan: IPlan) {
         currency: plan.currency,
         startDateTime: new Date(plan.startDateTime),
         endDateTime: plan.endDateTime ? new Date(plan.endDateTime) : null,
-        isRecurring: plan.isRecurring,
         recurringPeriod: plan.recurringPeriod || 'monthly'
     };
     showDialog.value = true;
@@ -109,7 +107,6 @@ function resetForm() {
         currency: 'USD',
         startDateTime: new Date(),
         endDateTime: null,
-        isRecurring: true,
         recurringPeriod: 'monthly'
     };
 }
@@ -129,18 +126,13 @@ function validateForm(): { isValid: boolean; errors: string[] } {
         errors.push(t('plans.validation.startDateRequired'));
     }
 
-    // Non-recurring plans must have end date
-    if (!formData.value.isRecurring && !formData.value.endDateTime) {
-        errors.push(t('plans.validation.endDateRequired'));
-    }
-
     // End date must be after start date if provided
     if (formData.value.endDateTime && formData.value.startDateTime >= formData.value.endDateTime) {
         errors.push(t('plans.validation.endAfterStart'));
     }
 
-    // Recurring plans must have a period
-    if (formData.value.isRecurring && !formData.value.recurringPeriod) {
+    // Recurring period is required
+    if (!formData.value.recurringPeriod) {
         errors.push(t('plans.validation.periodRequired'));
     }
 
@@ -172,8 +164,7 @@ async function handleSubmit() {
             ...formData.value,
             price: Math.round(formData.value.price * 100), // Convert dollars to cents
             description: formData.value.description.trim() || undefined,
-            endDateTime: formData.value.endDateTime || undefined,
-            recurringPeriod: formData.value.isRecurring ? formData.value.recurringPeriod : undefined
+            endDateTime: formData.value.endDateTime || undefined
         };
 
         if (editMode.value && selectedPlan.value) {
@@ -287,11 +278,7 @@ function getCurrencySymbol(currency: string): string {
 }
 
 function formatPlanType(plan: IPlan): string {
-    if (plan.isRecurring) {
-        return `${t('plans.recurring')} (${plan.recurringPeriod})`;
-    } else {
-        return t('plans.oneTime');
-    }
+    return `${t('plans.recurring')} (${plan.recurringPeriod})`;
 }
 
 function formatDateRange(plan: IPlan): string {
@@ -431,13 +418,6 @@ onMounted(() => {
                     </div>
 
                     <div class="field">
-                        <div class="flex items-center gap-2 mb-2">
-                            <Checkbox v-model="formData.isRecurring" binary />
-                            <label class="font-medium">{{ t('plans.isRecurring') }}</label>
-                        </div>
-                    </div>
-
-                    <div v-if="formData.isRecurring" class="field">
                         <label for="recurringPeriod" class="font-medium">{{ t('plans.recurringPeriod') }} *</label>
                         <Select
                             id="recurringPeriod"
@@ -467,20 +447,7 @@ onMounted(() => {
                         />
                     </div>
 
-                    <div v-if="!formData.isRecurring" class="field">
-                        <label for="endDate" class="font-medium">{{ t('plans.endDate') }} *</label>
-                        <Calendar
-                            id="endDate"
-                            v-model="formData.endDateTime"
-                            showTime
-                            hourFormat="12"
-                            :minDate="formData.startDateTime"
-                            required
-                            class="w-full"
-                        />
-                    </div>
-
-                    <div v-if="formData.isRecurring" class="field">
+                    <div class="field">
                         <label for="endDate" class="font-medium">{{ t('plans.endDateOptional') }}</label>
                         <Calendar
                             id="endDate"

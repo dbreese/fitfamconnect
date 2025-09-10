@@ -74,16 +74,10 @@
                                         <div class="text-sm text-gray-600">{{ t('billing.recurringPlans') }}</div>
                                     </div>
                                     <div class="text-center">
-                                        <div class="text-2xl font-bold text-orange-600">
-                                            {{ preview.summary.nonRecurringPlans }}
-                                        </div>
-                                        <div class="text-sm text-gray-600">{{ t('billing.nonRecurringPlans') }}</div>
-                                    </div>
-                                    <div class="text-center">
                                         <div class="text-2xl font-bold text-yellow-600">
                                             {{ preview.summary.oneTimeCharges }}
                                         </div>
-                                        <div class="text-sm text-gray-600">{{ t('billing.oneTimeCharges') }}</div>
+                                        <div class="text-sm text-gray-600">{{ t('billing.additionalCharges') }}</div>
                                     </div>
                                     <div class="text-center">
                                         <div class="text-2xl font-bold text-green-600">

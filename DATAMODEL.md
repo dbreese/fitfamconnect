@@ -37,7 +37,7 @@ Mongoose schemas will be stored in src/server/db.
 
 - This is basically the member-to-plan relationship table that tracks 1 or more plans that are associated with a member.
 - Over time, multiple plans can be associated with a member and multiple can be active at a given time (ie, multiple
-  recurring plans and non-recurring plans).
+  recurring plans).
 - Members belong to a gym, not to individual locations within the gym.
 
 # Charge
@@ -76,9 +76,9 @@ Mongoose schemas will be stored in src/server/db.
 - Represents billing information
 - Plan Name
 - Price
-- Mandatory Start and optional End DateTime (ie, perhaps a workshop is only active for Saturday Sept 6, from 9-10am)
-- Recurring or not. For example, 1 time charge vs monthly charge.
+- Mandatory Start and optional End DateTime
 - Recurring period (weekly, monthly, quarterly, yearly)
+- Plans are ALWAYS recurring
 - There is no maximum number of members for Plans.
 
 # Classes
@@ -177,10 +177,10 @@ Family Plan - $99/mo billed on the 1st
 
 Family Plan Comp - $0/mo
 
-Joe joins the gym. Owner adds a "Workshop Plan" which is defined as a 1x only charge (non-recurring).
+Joe joins the gym. Owner adds a "Workshop Plan" which is defined as a recurring plan with a specific billing period.
 
 How to know if member is active? Do they have an active recurring plan? If so, then they are active. If not, have to see
-if the plan they are on is in the current time frame.
+if the plan they are on is in the current time frame (for plans with end dates).
 
 Seeding: I will manually create the owner and gym records for now.
 

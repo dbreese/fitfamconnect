@@ -15,7 +15,6 @@ export interface IBillingPreview {
     groupedCharges: IBillingChargeGroup[];
     totalAmount: number;
     summary: {
-        nonRecurringPlans: number;
         oneTimeCharges: number;
         recurringPlans: number;
         totalCharges: number;
@@ -23,7 +22,7 @@ export interface IBillingPreview {
 }
 
 export interface IBillingCharge {
-    type: 'non-recurring-plan' | 'one-time-charge' | 'recurring-plan';
+    type: 'one-time-charge' | 'recurring-plan';
     chargeId?: string;
     memberId: string;
     memberName: string;
@@ -158,8 +157,6 @@ export class BillingService {
      */
     static getChargeTypeDisplayName(type: string): string {
         switch (type) {
-            case 'non-recurring-plan':
-                return 'Non-recurring Plan';
             case 'one-time-charge':
                 return 'One-time Charge';
             case 'recurring-plan':
@@ -174,8 +171,6 @@ export class BillingService {
      */
     static getChargeTypeSeverity(type: string): string {
         switch (type) {
-            case 'non-recurring-plan':
-                return 'info';
             case 'one-time-charge':
                 return 'warning';
             case 'recurring-plan':

@@ -1073,7 +1073,7 @@ onMounted(() => {
                         <div class="field">
                             <div class="flex items-center gap-2">
                                 <Checkbox v-model="formData.isRecurring" binary />
-                                <label class="font-medium">{{ t('schedules.isRecurring') }}</label>
+                                <label class="font-medium">{{ t('schedules.recurring') }}</label>
                             </div>
                         </div>
 
