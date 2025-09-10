@@ -228,10 +228,55 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
         `billingService.generateBillingPreview: Generated ${allCharges.length} charges totaling ${totalAmount} cents`
     );
 
+    // Group charges by member and calculate subtotals
+    const memberChargeGroups = new Map();
+
+    allCharges.forEach((charge) => {
+        const memberId = charge.memberId.toString();
+        if (!memberChargeGroups.has(memberId)) {
+            memberChargeGroups.set(memberId, {
+                memberId,
+                memberName: charge.memberName,
+                charges: [],
+                subtotal: 0
+            });
+        }
+
+        const group = memberChargeGroups.get(memberId);
+        group.charges.push(charge);
+        group.subtotal += charge.amount;
+    });
+
+    // Convert to array and sort by member name
+    const groupedCharges = Array.from(memberChargeGroups.values()).sort((a, b) =>
+        a.memberName.localeCompare(b.memberName)
+    );
+
+    // Create flattened charges array for display, sorted by member
+    const sortedCharges: any[] = [];
+    groupedCharges.forEach((group) => {
+        // Sort charges within each member group by type then description
+        const sortedMemberCharges = group.charges.sort((a: any, b: any) => {
+            if (a.type !== b.type) {
+                // Order: recurring-plan, non-recurring-plan, one-time-charge
+                const typeOrder: { [key: string]: number } = {
+                    'recurring-plan': 1,
+                    'non-recurring-plan': 2,
+                    'one-time-charge': 3
+                };
+                return typeOrder[a.type] - typeOrder[b.type];
+            }
+            return a.description.localeCompare(b.description);
+        });
+
+        sortedCharges.push(...sortedMemberCharges);
+    });
+
     return {
         startDate,
         endDate,
-        charges: allCharges,
+        charges: sortedCharges,
+        groupedCharges,
         totalAmount,
         summary: {
             nonRecurringPlans: nonRecurringCharges.length,

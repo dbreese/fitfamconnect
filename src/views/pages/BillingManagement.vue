@@ -93,44 +93,52 @@
                                     </div>
                                 </div>
 
-                                <!-- Charges Table -->
-                                <DataTable
-                                    :value="preview.charges"
-                                    :loading="loading"
-                                    responsiveLayout="scroll"
-                                    stripedRows
-                                >
-                                    <Column field="memberName" :header="t('billing.member')" sortable>
-                                        <template #body="{ data }">
-                                            <div class="font-medium">{{ data.memberName }}</div>
-                                        </template>
-                                    </Column>
-                                    <Column field="type" :header="t('billing.type')" sortable>
-                                        <template #body="{ data }">
-                                            <Tag
-                                                :value="BillingService.getChargeTypeDisplayName(data.type)"
-                                                :severity="BillingService.getChargeTypeSeverity(data.type)"
-                                            />
-                                        </template>
-                                    </Column>
-                                    <Column field="description" :header="t('billing.description')" sortable>
-                                        <template #body="{ data }">
-                                            <div class="max-w-xs truncate">{{ data.description }}</div>
-                                        </template>
-                                    </Column>
-                                    <Column field="amount" :header="t('billing.amount')" sortable>
-                                        <template #body="{ data }">
-                                            <span class="font-semibold">{{
-                                                BillingService.formatAmount(data.amount)
-                                            }}</span>
-                                        </template>
-                                    </Column>
-                                    <Column field="date" :header="t('billing.date')" sortable>
-                                        <template #body="{ data }">
-                                            {{ BillingService.formatDate(data.date) }}
-                                        </template>
-                                    </Column>
-                                </DataTable>
+                                <!-- Grouped Charges Display -->
+                                <div v-for="group in preview.groupedCharges" :key="group.memberId" class="mb-6">
+                                    <!-- Member Header -->
+                                    <div
+                                        class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg border-b-2 border-gray-300"
+                                    >
+                                        <h4 class="text-lg font-semibold text-gray-800">{{ group.memberName }}</h4>
+                                        <div class="text-lg font-bold text-green-600">
+                                            {{ t('billing.subtotal') }}:
+                                            {{ BillingService.formatAmount(group.subtotal) }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Member Charges Table -->
+                                    <DataTable
+                                        :value="group.charges"
+                                        responsiveLayout="scroll"
+                                        class="border border-t-0 rounded-b-lg"
+                                    >
+                                        <Column field="type" :header="t('billing.type')" style="width: 150px">
+                                            <template #body="{ data }">
+                                                <Tag
+                                                    :value="BillingService.getChargeTypeDisplayName(data.type)"
+                                                    :severity="BillingService.getChargeTypeSeverity(data.type)"
+                                                />
+                                            </template>
+                                        </Column>
+                                        <Column field="description" :header="t('billing.description')">
+                                            <template #body="{ data }">
+                                                <div class="max-w-xs truncate">{{ data.description }}</div>
+                                            </template>
+                                        </Column>
+                                        <Column field="amount" :header="t('billing.amount')" style="width: 120px">
+                                            <template #body="{ data }">
+                                                <span class="font-semibold">{{
+                                                    BillingService.formatAmount(data.amount)
+                                                }}</span>
+                                            </template>
+                                        </Column>
+                                        <Column field="date" :header="t('billing.date')" style="width: 120px">
+                                            <template #body="{ data }">
+                                                {{ BillingService.formatDate(data.date) }}
+                                            </template>
+                                        </Column>
+                                    </DataTable>
+                                </div>
 
                                 <!-- Commit Button -->
                                 <div class="flex justify-end mt-4">

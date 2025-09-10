@@ -3,10 +3,12 @@
 ## Features
 
 - [ ] Member charges
-    - [ ] recurring amount
+    - [x] recurring amount
     - [x] manage one-time charges
     - [ ] view current period
     - [ ] Roll-ups (ie, families where 1 child drank beverages but parents pay)
+    - [ ] UI UPDATE - currently only able to assign a single plan to a user. What about non-recurring charges? Probably
+          need to address this.
 - [ ] Coaches
 - [ ] Scheduling polishing?
 - [ ] Ability to publish schedule to external via snippet

@@ -1,10 +1,18 @@
 import { submit } from './NetworkUtil';
 import type { ServerResponse } from '../shared/ServerResponse';
 
+export interface IBillingChargeGroup {
+    memberId: string;
+    memberName: string;
+    charges: IBillingCharge[];
+    subtotal: number;
+}
+
 export interface IBillingPreview {
     startDate: Date;
     endDate: Date;
     charges: IBillingCharge[];
+    groupedCharges: IBillingChargeGroup[];
     totalAmount: number;
     summary: {
         nonRecurringPlans: number;

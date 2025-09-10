@@ -679,6 +679,7 @@ export const messages = {
         date: 'Date',
         totalAmount: 'Total Amount',
         totalCharges: 'Total Charges',
+        subtotal: 'Subtotal',
         recurringPlans: 'Recurring Plans',
         nonRecurringPlans: 'Non-recurring Plans',
         oneTimeCharges: 'One-time Charges',
