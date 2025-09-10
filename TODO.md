@@ -9,6 +9,8 @@
     - [ ] Roll-ups (ie, families where 1 child drank beverages but parents pay)
     - [ ] UI UPDATE - currently only able to assign a single plan to a user. What about non-recurring charges? Probably
           need to address this.
+- [ ] Billing improvements
+    - [ ] allow editing 1-time charges from billing screen
 - [ ] Coaches
 - [ ] Scheduling polishing?
 - [ ] Ability to publish schedule to external via snippet

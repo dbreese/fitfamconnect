@@ -320,11 +320,12 @@ async function generatePreview() {
         }
     } catch (error) {
         console.error('Error generating preview:', error);
+        const errorMessage = error instanceof Error ? error.message : t('billing.error.previewFailed');
         toast.add({
             severity: 'error',
             summary: t('feedback.errorTitle'),
-            detail: t('billing.error.previewFailed'),
-            life: 3000
+            detail: errorMessage,
+            life: 5000
         });
     } finally {
         loading.value = false;
@@ -368,11 +369,12 @@ async function commitBilling() {
         }
     } catch (error) {
         console.error('Error committing billing:', error);
+        const errorMessage = error instanceof Error ? error.message : t('billing.error.commitFailed');
         toast.add({
             severity: 'error',
             summary: t('feedback.errorTitle'),
-            detail: t('billing.error.commitFailed'),
-            life: 3000
+            detail: errorMessage,
+            life: 5000
         });
     } finally {
         committing.value = false;

@@ -70,12 +70,14 @@ export class BillingService {
                 console.log('BillingService.generatePreview: Response received', serverResponse);
                 return serverResponse.body.data as IBillingPreview;
             } else {
-                console.error('BillingService.generatePreview: Request failed', response.status);
-                return null;
+                const errorResult = await response.json();
+                const errorResponse = errorResult as ServerResponse;
+                console.error('BillingService.generatePreview: Request failed', response.status, errorResponse);
+                throw new Error(errorResponse.body.message || 'Failed to generate billing preview');
             }
         } catch (error) {
             console.error('BillingService.generatePreview: Error:', error);
-            return null;
+            throw error;
         }
     }
 
@@ -104,12 +106,14 @@ export class BillingService {
                 console.log('BillingService.commitBillingRun: Response received', serverResponse);
                 return serverResponse.body.data as IBillingCommitResult;
             } else {
-                console.error('BillingService.commitBillingRun: Request failed', response.status);
-                return null;
+                const errorResult = await response.json();
+                const errorResponse = errorResult as ServerResponse;
+                console.error('BillingService.commitBillingRun: Request failed', response.status, errorResponse);
+                throw new Error(errorResponse.body.message || 'Failed to commit billing run');
             }
         } catch (error) {
             console.error('BillingService.commitBillingRun: Error:', error);
-            return null;
+            throw error;
         }
     }
 
@@ -160,7 +164,7 @@ export class BillingService {
             case 'one-time-charge':
                 return 'One-time Charge';
             case 'recurring-plan':
-                return 'Recurring Plan';
+                return 'Plan';
             default:
                 return 'Unknown';
         }

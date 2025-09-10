@@ -61,6 +61,41 @@ async function getCurrentUserGym(user: IUser | undefined) {
 }
 
 /**
+ * Check if billing period overlaps with existing billing records
+ */
+async function checkBillingPeriodOverlap(user: IUser | undefined, startDate: Date, endDate: Date) {
+    console.log(`billingService.checkBillingPeriodOverlap: Checking for overlaps for period ${startDate} to ${endDate}`);
+
+    // Find existing billing records that overlap with the requested period
+    // Two periods overlap if: start1 < end2 AND start2 < end1
+    const overlappingBilling = await Billing.find({
+        memberId: user!._id,
+        $or: [
+            // Existing billing starts before requested period ends AND existing billing ends after requested period starts
+            {
+                startDate: { $lt: endDate },
+                endDate: { $gt: startDate }
+            }
+        ]
+    });
+
+    console.log(`billingService.checkBillingPeriodOverlap: Found ${overlappingBilling.length} overlapping billing records`);
+
+    if (overlappingBilling.length > 0) {
+        const overlappingPeriods = overlappingBilling.map(billing => ({
+            startDate: billing.startDate,
+            endDate: billing.endDate,
+            billingDate: billing.billingDate
+        }));
+
+        console.log('billingService.checkBillingPeriodOverlap: Overlapping periods:', overlappingPeriods);
+        return overlappingPeriods;
+    }
+
+    return null;
+}
+
+/**
  * Generate billing preview for a given period
  */
 async function generateBillingPreview(user: IUser | undefined, startDate: Date, endDate: Date) {
@@ -106,46 +141,24 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
             memberId: membership.memberId.toString(),
             planId: membership.planId,
             planName: plan?.name,
-            isRecurring: plan?.isRecurring,
             isActive: plan?.isActive,
+            recurringPeriod: plan?.recurringPeriod,
             startDateTime: plan?.startDateTime,
             endDateTime: plan?.endDateTime
         });
     });
 
-    // Arrears billing calculations
-    console.log('billingService.generateBillingPreview: Calculating arrears billing');
+    // All plans are now recurring, so we only need to handle recurring plan billing
+    console.log('billingService.generateBillingPreview: Calculating recurring plan billing');
 
-    const nonRecurringCharges = [];
-    for (const membership of allMemberships) {
-        const plan = planMap.get(membership.planId);
-        if (plan && !plan.isRecurring && plan.isActive) {
-            // Check if plan period overlaps with billing period
-            const planStart = new Date(plan.startDateTime);
-            const planEnd = plan.endDateTime ? new Date(plan.endDateTime) : new Date();
-
-            if (planStart <= endDate && planEnd >= startDate) {
-                const member = members.find((m) => m._id.toString() === membership.memberId.toString());
-                nonRecurringCharges.push({
-                    type: 'non-recurring-plan',
-                    memberId: membership.memberId,
-                    memberName: member ? `${member.firstName} ${member.lastName}` : 'Unknown',
-                    planId: plan._id,
-                    planName: plan.name,
-                    amount: plan.price,
-                    description: `Non-recurring plan: ${plan.name}`,
-                    date: planStart
-                });
-            }
-        }
-    }
-
-    console.log(`billingService.generateBillingPreview: Found ${nonRecurringCharges.length} non-recurring charges`);
-
-    // 2. 1-time charges that haven't been billed yet
+    // 2. 1-time charges that haven't been billed yet and fall within the billing period
     const unbilledCharges = await Charge.find({
         memberId: { $in: memberIds },
-        isBilled: false
+        isBilled: false,
+        chargeDate: {
+            $gte: startDate,
+            $lte: endDate
+        }
     });
 
     const oneTimeCharges = unbilledCharges.map((charge) => {
@@ -168,18 +181,17 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
     for (const membership of allMemberships) {
         const plan = planMap.get(membership.planId);
 
-        console.log(`billingService.generateBillingPreview: Processing membership for recurring:`, {
+        console.log(`billingService.generateBillingPreview: Processing membership for plan:`, {
             memberId: membership.memberId.toString(),
             planExists: !!plan,
             planId: plan?._id?.toString(),
             planName: plan?.name,
-            isRecurring: plan?.isRecurring,
             isActive: plan?.isActive,
             recurringPeriod: plan?.recurringPeriod
         });
 
-        // Only process recurring plans that are active
-        if (plan && plan.isRecurring && plan.isActive) {
+        // Only process plans that are active (all plans are now recurring)
+        if (plan && plan.isActive) {
             console.log(`billingService.generateBillingPreview: Found active recurring plan: ${plan.name}`);
 
             // Check if the recurring plan should be active during the billing period
@@ -221,7 +233,7 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
 
     console.log(`billingService.generateBillingPreview: Found ${recurringCharges.length} recurring charges`);
 
-    const allCharges = [...nonRecurringCharges, ...oneTimeCharges, ...recurringCharges];
+    const allCharges = [...oneTimeCharges, ...recurringCharges];
     const totalAmount = allCharges.reduce((sum, charge) => sum + charge.amount, 0);
 
     console.log(
@@ -258,11 +270,10 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
         // Sort charges within each member group by type then description
         const sortedMemberCharges = group.charges.sort((a: any, b: any) => {
             if (a.type !== b.type) {
-                // Order: recurring-plan, non-recurring-plan, one-time-charge
+                // Order: recurring-plan, one-time-charge
                 const typeOrder: { [key: string]: number } = {
                     'recurring-plan': 1,
-                    'non-recurring-plan': 2,
-                    'one-time-charge': 3
+                    'one-time-charge': 2
                 };
                 return typeOrder[a.type] - typeOrder[b.type];
             }
@@ -279,7 +290,6 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
         groupedCharges,
         totalAmount,
         summary: {
-            nonRecurringPlans: nonRecurringCharges.length,
             oneTimeCharges: oneTimeCharges.length,
             recurringPlans: recurringCharges.length,
             totalCharges: allCharges.length
@@ -390,6 +400,13 @@ router.post(
                 return res.status(400).json(ResponseHelper.error('End date must be after start date', 400));
             }
 
+            // Check for overlapping billing periods
+            const overlappingPeriods = await checkBillingPeriodOverlap(req.user, start, end);
+            if (overlappingPeriods) {
+                const errorMessage = `Billing period overlaps with existing billing records. Overlapping periods: ${overlappingPeriods.map(p => `${p.startDate.toISOString().split('T')[0]} to ${p.endDate.toISOString().split('T')[0]}`).join(', ')}`;
+                return res.status(409).json(ResponseHelper.error(errorMessage, 409));
+            }
+
             const preview = await generateBillingPreview(req.user, start, end);
 
             console.log('billingService.POST /billing/preview: Response sent successfully');
@@ -423,6 +440,17 @@ router.post(
 
             const start = new Date(startDate);
             const end = new Date(endDate);
+
+            if (end <= start) {
+                return res.status(400).json(ResponseHelper.error('End date must be after start date', 400));
+            }
+
+            // Check for overlapping billing periods
+            const overlappingPeriods = await checkBillingPeriodOverlap(req.user, start, end);
+            if (overlappingPeriods) {
+                const errorMessage = `Billing period overlaps with existing billing records. Overlapping periods: ${overlappingPeriods.map(p => `${p.startDate.toISOString().split('T')[0]} to ${p.endDate.toISOString().split('T')[0]}`).join(', ')}`;
+                return res.status(409).json(ResponseHelper.error(errorMessage, 409));
+            }
 
             const result = await commitBillingRun(req.user, start, end, charges);
 
