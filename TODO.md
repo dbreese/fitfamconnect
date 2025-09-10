@@ -4,15 +4,16 @@
 
 - [ ] Member charges
     - [ ] recurring amount
-    - [ ] manage one-time charges
+    - [x] manage one-time charges
     - [ ] view current period
     - [ ] Roll-ups (ie, families where 1 child drank beverages but parents pay)
 - [ ] Coaches
-- [ ] Scheduling
+- [ ] Scheduling polishing?
+- [ ] Ability to publish schedule to external via snippet
 - [ ] Assign coaches to a class
-- [ ] Kiosk check-in
+- [ ] Member and Coach Kiosk check-in
 - [ ] Time tracking
-- [ ] Users vs members database. Currently, gym owner is typed to User.id, not member.id
+- [x] Users vs members database. Currently, gym owner is typed to User.id, not member.id
 - [x] Should be able to manually add/update users
 - [ ] Contracts (perhaps just store PDFs for now like a file library?)
 - [ ] Online payments, recurring payments, etc
@@ -30,7 +31,7 @@
 - [ ] Members MIA
 - [ ] Membership stats (number of classes attended, how long they've been a member, etc)
 - [ ] Scheduling issues (ie, no coaches)
-- [ ]
+- [ ] Expected Charges
 
 ## Security
 

@@ -328,7 +328,16 @@ async function updateChargeByIdAndOwner(
     // Remove fields that shouldn't be updated
     const { memberId, createdAt, updatedAt, ...safeUpdateData } = updateData;
 
-    const updatedCharge = await Charge.findByIdAndUpdate(chargeId, safeUpdateData, { new: true, runValidators: true });
+    // Handle billedDate removal when isBilled is false
+    let updateOperation: any = { ...safeUpdateData };
+    if (safeUpdateData.isBilled === false && safeUpdateData.billedDate === undefined) {
+        updateOperation = {
+            ...safeUpdateData,
+            $unset: { billedDate: 1 }
+        };
+    }
+
+    const updatedCharge = await Charge.findByIdAndUpdate(chargeId, updateOperation, { new: true, runValidators: true });
     console.log(`chargeService.updateChargeByIdAndOwner: Updated charge ${chargeId} for member ${charge.memberId}`);
 
     return updatedCharge;

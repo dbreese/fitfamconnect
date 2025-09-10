@@ -33,8 +33,10 @@ const showDialog = ref(false);
 const showNewMemberDialog = ref(false);
 const showAddChargeDialog = ref(false);
 const showChargeHistoryDialog = ref(false);
+const showEditChargeDialog = ref(false);
 const selectedMember = ref<any | null>(null);
 const memberCharges = ref<any[]>([]);
+const selectedCharge = ref<any | null>(null);
 
 const formData = ref({
     status: 'pending' as 'pending' | 'approved' | 'denied' | 'inactive',
@@ -171,6 +173,23 @@ function openChargeHistoryDialog(member: any) {
 function openAddChargeDialog() {
     resetChargeForm();
     showAddChargeDialog.value = true;
+}
+
+function openEditChargeDialog(charge: any) {
+    selectedCharge.value = charge;
+    chargeFormData.value = {
+        amount: (charge.amount / 100).toFixed(2),
+        chargeDate: new Date(charge.chargeDate),
+        note: charge.note || '',
+        isBilled: charge.isBilled
+    };
+    showEditChargeDialog.value = true;
+}
+
+function closeEditChargeDialog() {
+    showEditChargeDialog.value = false;
+    selectedCharge.value = null;
+    resetChargeForm();
 }
 
 function resetNewMemberForm() {
@@ -409,32 +428,79 @@ async function handleChargeSubmit() {
             isBilled: chargeFormData.value.isBilled
         };
 
-        const result = await ChargeService.createCharge(chargeData);
+        let result;
+        if (selectedCharge.value) {
+            // Update existing charge
+            result = await ChargeService.updateCharge((selectedCharge.value as any)._id, chargeData);
+        } else {
+            // Create new charge
+            result = await ChargeService.createCharge(chargeData);
+        }
 
-        if (result && result.responseCode === 201) {
+        if (result && (result.responseCode === 201 || result.responseCode === 200)) {
             toast.add({
                 severity: 'success',
                 summary: t('feedback.successTitle'),
-                detail: t('charges.success.created'),
+                detail: selectedCharge.value ? t('charges.success.updated') : t('charges.success.created'),
                 life: 3000
             });
             showAddChargeDialog.value = false;
+            closeEditChargeDialog();
             // Refresh the charge list
             await loadMemberCharges();
         } else {
             toast.add({
                 severity: 'error',
                 summary: t('feedback.errorTitle'),
-                detail: t('charges.error.createFailed'),
+                detail: selectedCharge.value ? t('charges.error.updateFailed') : t('charges.error.createFailed'),
                 life: 3000
             });
         }
     } catch (error) {
-        console.error('Error creating charge:', error);
+        console.error('Error saving charge:', error);
         toast.add({
             severity: 'error',
             summary: t('feedback.errorTitle'),
-            detail: t('charges.error.createFailed'),
+            detail: selectedCharge.value ? t('charges.error.updateFailed') : t('charges.error.createFailed'),
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function handleDeleteCharge(charge: any) {
+    if (!confirm(t('charges.confirmDelete'))) {
+        return;
+    }
+
+    loading.value = true;
+    try {
+        const result = await ChargeService.deleteCharge((charge as any)._id);
+
+        if (result && result.responseCode === 200) {
+            toast.add({
+                severity: 'success',
+                summary: t('feedback.successTitle'),
+                detail: t('charges.success.deleted'),
+                life: 3000
+            });
+            // Refresh the charge list
+            await loadMemberCharges();
+        } else {
+            toast.add({
+                severity: 'error',
+                summary: t('feedback.errorTitle'),
+                detail: t('charges.error.deleteFailed'),
+                life: 3000
+            });
+        }
+    } catch (error) {
+        console.error('Error deleting charge:', error);
+        toast.add({
+            severity: 'error',
+            summary: t('feedback.errorTitle'),
+            detail: t('charges.error.deleteFailed'),
             life: 3000
         });
     } finally {
@@ -904,6 +970,26 @@ onMounted(() => {
                                     <span v-else class="text-gray-400 text-sm">-</span>
                                 </template>
                             </Column>
+                            <Column :header="t('charges.actions')" :exportable="false" style="min-width: 8rem">
+                                <template #body="{ data }">
+                                    <div class="flex gap-2">
+                                        <Button
+                                            icon="pi pi-pencil"
+                                            size="small"
+                                            severity="info"
+                                            :label="t('charges.edit')"
+                                            @click="openEditChargeDialog(data)"
+                                        />
+                                        <Button
+                                            icon="pi pi-trash"
+                                            size="small"
+                                            severity="danger"
+                                            :label="t('charges.delete')"
+                                            @click="handleDeleteCharge(data)"
+                                        />
+                                    </div>
+                                </template>
+                            </Column>
                         </DataTable>
                     </div>
                 </div>
@@ -985,6 +1071,72 @@ onMounted(() => {
                             @click="showAddChargeDialog = false"
                         />
                         <Button :label="t('charges.create')" type="submit" @click="handleChargeSubmit" />
+                    </div>
+                </template>
+            </Dialog>
+
+            <!-- Edit Charge Dialog -->
+            <Dialog
+                v-model:visible="showEditChargeDialog"
+                :modal="true"
+                :header="t('charges.editCharge')"
+                :pt="{ root: { class: 'w-[90vw] md:w-[50vw] lg:w-[40vw]' } }"
+            >
+                <div v-if="selectedMember" class="space-y-4">
+                    <!-- Member Information (Read-only) -->
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <h4 class="text-sm font-semibold mb-2">{{ t('charges.chargingMember') }}</h4>
+                        <div class="text-lg font-medium">{{ formatMemberName(selectedMember) }}</div>
+                        <div class="text-sm text-gray-600">{{ selectedMember.email }}</div>
+                    </div>
+
+                    <form @submit.prevent="handleChargeSubmit" class="space-y-4">
+                        <div class="field">
+                            <label for="editChargeAmount" class="font-medium">{{ t('charges.amount') }} *</label>
+                            <InputText
+                                id="editChargeAmount"
+                                v-model="chargeFormData.amount"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                class="w-full"
+                                :placeholder="t('charges.amountPlaceholder')"
+                                required
+                            />
+                            <small class="text-gray-500">{{ t('charges.amountHelp') }}</small>
+                        </div>
+
+                        <div class="field">
+                            <label for="editChargeDate" class="font-medium">{{ t('charges.date') }} *</label>
+                            <Calendar id="editChargeDate" v-model="chargeFormData.chargeDate" class="w-full" required />
+                        </div>
+
+                        <div class="field">
+                            <label for="editChargeNote" class="font-medium">{{ t('charges.note') }}</label>
+                            <Textarea
+                                id="editChargeNote"
+                                v-model="chargeFormData.note"
+                                rows="3"
+                                class="w-full"
+                                :placeholder="t('charges.notePlaceholder')"
+                            />
+                            <small class="text-gray-500">{{ t('charges.noteHelp') }}</small>
+                        </div>
+
+                        <div class="field">
+                            <div class="flex items-center gap-2">
+                                <Checkbox v-model="chargeFormData.isBilled" binary />
+                                <label class="font-medium">{{ t('charges.isBilled') }}</label>
+                            </div>
+                            <small class="text-gray-500">{{ t('charges.isBilledHelp') }}</small>
+                        </div>
+                    </form>
+                </div>
+
+                <template #footer>
+                    <div class="flex justify-end gap-2">
+                        <Button :label="t('charges.cancel')" severity="secondary" @click="closeEditChargeDialog" />
+                        <Button :label="t('charges.update')" type="submit" @click="handleChargeSubmit" />
                     </div>
                 </template>
             </Dialog>

@@ -637,16 +637,26 @@ export const messages = {
         close: 'Close',
         cancel: 'Cancel',
         create: 'Create Charge',
+        edit: 'Edit',
+        delete: 'Delete',
+        editCharge: 'Edit Charge',
+        update: 'Update Charge',
+        actions: 'Actions',
+        confirmDelete: 'Are you sure you want to delete this charge?',
         validation: {
             validationError: 'Validation Error',
             amountRequired: 'Amount is required and must be greater than 0',
             dateRequired: 'Date is required'
         },
         success: {
-            created: 'Charge created successfully'
+            created: 'Charge created successfully',
+            updated: 'Charge updated successfully',
+            deleted: 'Charge deleted successfully'
         },
         error: {
             createFailed: 'Failed to create charge',
+            updateFailed: 'Failed to update charge',
+            deleteFailed: 'Failed to delete charge',
             loadFailed: 'Failed to load charges'
         }
     },
