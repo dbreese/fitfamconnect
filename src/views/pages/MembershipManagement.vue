@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { MembershipService } from '@/service/MembershipService';
 import { PlanService } from '@/service/PlanService';
+import { ChargeService } from '@/service/ChargeService';
 import type { IMember } from '@/server/db/member';
 import type { IPlan } from '@/server/db/plan';
+import type { ICharge } from '@/server/db/charge';
 import Card from 'primevue/card';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
@@ -12,6 +14,8 @@ import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Select from 'primevue/select';
 import MultiSelect from 'primevue/multiselect';
+import Calendar from 'primevue/calendar';
+import Checkbox from 'primevue/checkbox';
 import Toast from 'primevue/toast';
 import ProgressSpinner from 'primevue/progressspinner';
 import Tag from 'primevue/tag';
@@ -27,6 +31,7 @@ const plans = ref<IPlan[]>([]);
 const loading = ref(false);
 const showDialog = ref(false);
 const showNewMemberDialog = ref(false);
+const showAddChargeDialog = ref(false);
 const selectedMember = ref<any | null>(null);
 
 const formData = ref({
@@ -49,6 +54,13 @@ const newMemberFormData = ref({
     },
     memberType: 'member' as 'owner' | 'coach' | 'member',
     notes: ''
+});
+
+const chargeFormData = ref({
+    amount: '',
+    chargeDate: new Date(),
+    note: '',
+    isBilled: false
 });
 
 const statusOptions = [
@@ -123,6 +135,12 @@ function openNewMemberDialog() {
     showNewMemberDialog.value = true;
 }
 
+function openAddChargeDialog(member: any) {
+    selectedMember.value = member;
+    resetChargeForm();
+    showAddChargeDialog.value = true;
+}
+
 function resetNewMemberForm() {
     newMemberFormData.value = {
         email: '',
@@ -138,6 +156,15 @@ function resetNewMemberForm() {
         },
         memberType: 'member',
         notes: ''
+    };
+}
+
+function resetChargeForm() {
+    chargeFormData.value = {
+        amount: '',
+        chargeDate: new Date(),
+        note: '',
+        isBilled: false
     };
 }
 
@@ -165,6 +192,22 @@ function validateNewMemberForm(): { isValid: boolean; errors: string[] } {
     }
     if (!newMemberFormData.value.lastName) {
         errors.push(t('memberships.validation.lastNameRequired'));
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
+}
+
+function validateChargeForm(): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    if (!chargeFormData.value.amount || parseFloat(chargeFormData.value.amount) <= 0) {
+        errors.push(t('charges.validation.amountRequired'));
+    }
+    if (!chargeFormData.value.chargeDate) {
+        errors.push(t('charges.validation.dateRequired'));
     }
 
     return {
@@ -310,6 +353,61 @@ async function handleNewMemberSubmit() {
     }
 }
 
+async function handleChargeSubmit() {
+    // Validate form before submission
+    const validation = validateChargeForm();
+    if (!validation.isValid) {
+        toast.add({
+            severity: 'warn',
+            summary: t('charges.validation.validationError'),
+            detail: validation.errors[0],
+            life: 5000
+        });
+        return;
+    }
+
+    loading.value = true;
+    try {
+        // Prepare charge data
+        const chargeData = {
+            memberId: (selectedMember.value as any)._id,
+            amount: Math.round(parseFloat(chargeFormData.value.amount) * 100), // Convert to cents
+            chargeDate: chargeFormData.value.chargeDate,
+            note: chargeFormData.value.note.trim() || undefined,
+            isBilled: chargeFormData.value.isBilled
+        };
+
+        const result = await ChargeService.createCharge(chargeData);
+
+        if (result && result.responseCode === 201) {
+            toast.add({
+                severity: 'success',
+                summary: t('feedback.successTitle'),
+                detail: t('charges.success.created'),
+                life: 3000
+            });
+            showAddChargeDialog.value = false;
+        } else {
+            toast.add({
+                severity: 'error',
+                summary: t('feedback.errorTitle'),
+                detail: t('charges.error.createFailed'),
+                life: 3000
+            });
+        }
+    } catch (error) {
+        console.error('Error creating charge:', error);
+        toast.add({
+            severity: 'error',
+            summary: t('feedback.errorTitle'),
+            detail: t('charges.error.createFailed'),
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
 function getStatusSeverity(status: string): string {
     switch (status) {
         case 'approved':
@@ -446,13 +544,22 @@ onMounted(() => {
                         </Column>
                         <Column :header="t('memberships.actions')">
                             <template #body="{ data }">
-                                <Button
-                                    icon="pi pi-pencil"
-                                    size="small"
-                                    severity="secondary"
-                                    :label="t('memberships.manage')"
-                                    @click="openEditDialog(data)"
-                                />
+                                <div class="flex gap-2">
+                                    <Button
+                                        icon="pi pi-pencil"
+                                        size="small"
+                                        severity="secondary"
+                                        :label="t('memberships.manage')"
+                                        @click="openEditDialog(data)"
+                                    />
+                                    <Button
+                                        icon="pi pi-dollar"
+                                        size="small"
+                                        severity="info"
+                                        :label="t('charges.addCharge')"
+                                        @click="openAddChargeDialog(data)"
+                                    />
+                                </div>
                             </template>
                         </Column>
                     </DataTable>
@@ -682,6 +789,76 @@ onMounted(() => {
                             @click="showNewMemberDialog = false"
                         />
                         <Button :label="t('memberships.create')" type="submit" @click="handleNewMemberSubmit" />
+                    </div>
+                </template>
+            </Dialog>
+
+            <!-- Add Charge Dialog -->
+            <Dialog
+                v-model:visible="showAddChargeDialog"
+                :modal="true"
+                :header="t('charges.addCharge')"
+                :pt="{ root: { class: 'w-[90vw] md:w-[50vw] lg:w-[40vw]' } }"
+            >
+                <div v-if="selectedMember" class="space-y-4">
+                    <!-- Member Information (Read-only) -->
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <h4 class="text-sm font-semibold mb-2">{{ t('charges.chargingMember') }}</h4>
+                        <div class="text-lg font-medium">{{ formatMemberName(selectedMember) }}</div>
+                        <div class="text-sm text-gray-600">{{ selectedMember.email }}</div>
+                    </div>
+
+                    <form @submit.prevent="handleChargeSubmit" class="space-y-4">
+                        <div class="field">
+                            <label for="chargeAmount" class="font-medium">{{ t('charges.amount') }} *</label>
+                            <InputText
+                                id="chargeAmount"
+                                v-model="chargeFormData.amount"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                class="w-full"
+                                :placeholder="t('charges.amountPlaceholder')"
+                                required
+                            />
+                            <small class="text-gray-500">{{ t('charges.amountHelp') }}</small>
+                        </div>
+
+                        <div class="field">
+                            <label for="chargeDate" class="font-medium">{{ t('charges.date') }} *</label>
+                            <Calendar id="chargeDate" v-model="chargeFormData.chargeDate" class="w-full" required />
+                        </div>
+
+                        <div class="field">
+                            <label for="chargeNote" class="font-medium">{{ t('charges.note') }}</label>
+                            <Textarea
+                                id="chargeNote"
+                                v-model="chargeFormData.note"
+                                rows="3"
+                                class="w-full"
+                                :placeholder="t('charges.notePlaceholder')"
+                            />
+                            <small class="text-gray-500">{{ t('charges.noteHelp') }}</small>
+                        </div>
+
+                        <div class="field">
+                            <div class="flex items-center gap-2">
+                                <Checkbox v-model="chargeFormData.isBilled" binary />
+                                <label class="font-medium">{{ t('charges.isBilled') }}</label>
+                            </div>
+                            <small class="text-gray-500">{{ t('charges.isBilledHelp') }}</small>
+                        </div>
+                    </form>
+                </div>
+
+                <template #footer>
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            :label="t('charges.cancel')"
+                            severity="secondary"
+                            @click="showAddChargeDialog = false"
+                        />
+                        <Button :label="t('charges.create')" type="submit" @click="handleChargeSubmit" />
                     </div>
                 </template>
             </Dialog>

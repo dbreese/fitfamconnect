@@ -558,7 +558,7 @@ export const messages = {
     },
     memberships: {
         title: 'Membership Management',
-        menuTitle: 'Membership',
+        menuTitle: 'Members',
         subtitle: 'Manage member status, plans, and notes',
         newMember: 'New Member',
         editMembership: 'Edit Membership',
@@ -614,6 +614,32 @@ export const messages = {
             approved: 'Approved',
             denied: 'Denied',
             inactive: 'Inactive'
+        }
+    },
+    charges: {
+        addCharge: 'Add Charge',
+        chargingMember: 'Charging Member',
+        amount: 'Amount',
+        amountPlaceholder: '0.00',
+        amountHelp: 'Enter amount in dollars (e.g., 25.00)',
+        date: 'Date',
+        note: 'Note',
+        notePlaceholder: 'Enter description (e.g., "Shirt", "Beverage purchase")',
+        noteHelp: 'Optional description of what this charge is for',
+        isBilled: 'Mark as Billed',
+        isBilledHelp: 'Check this if the charge has already been billed to the member',
+        cancel: 'Cancel',
+        create: 'Create Charge',
+        validation: {
+            validationError: 'Validation Error',
+            amountRequired: 'Amount is required and must be greater than 0',
+            dateRequired: 'Date is required'
+        },
+        success: {
+            created: 'Charge created successfully'
+        },
+        error: {
+            createFailed: 'Failed to create charge'
         }
     },
     schedules: {

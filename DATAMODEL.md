@@ -40,6 +40,14 @@ Mongoose schemas will be stored in src/server/db.
   recurring plans and non-recurring plans).
 - Members belong to a gym, not to individual locations within the gym.
 
+# Charge
+
+- This is an audit table used for billing purposes.
+- A charge is associated to a member.
+- It can include either a charge for a given plan, or a 1-time charge such as for a "beverage"
+- Tracks the date the charge occurred, an optional plan id, and an amount and a note.
+- Should have an indicator for if it has been billed yet.
+
 # Gym
 
 - Billing address and description of a gym or workout facility.
