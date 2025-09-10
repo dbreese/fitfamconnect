@@ -560,9 +560,19 @@ export const messages = {
         title: 'Membership Management',
         menuTitle: 'Membership',
         subtitle: 'Manage member status, plans, and notes',
+        newMember: 'New Member',
         editMembership: 'Edit Membership',
         memberName: 'Member Name',
+        firstName: 'First Name',
+        lastName: 'Last Name',
+        email: 'Email',
+        phone: 'Phone',
         contact: 'Contact',
+        address: 'Address',
+        street: 'Street',
+        city: 'City',
+        state: 'State',
+        zipCode: 'ZIP Code',
         statusField: 'Status',
         plans: 'Plans',
         joinDate: 'Join Date',
@@ -582,15 +592,21 @@ export const messages = {
         memberInfoNote: 'Member contact information can only be updated by the member themselves',
         cancel: 'Cancel',
         save: 'Save',
+        create: 'Create',
         success: {
+            created: 'Member created successfully',
             updated: 'Membership updated successfully'
         },
         error: {
             loadFailed: 'Failed to load memberships',
+            createFailed: 'Failed to create member',
             updateFailed: 'Failed to update membership'
         },
         validation: {
             statusRequired: 'Status is required',
+            emailRequired: 'Email is required',
+            firstNameRequired: 'First name is required',
+            lastNameRequired: 'Last name is required',
             validationError: 'Validation Error'
         },
         statuses: {

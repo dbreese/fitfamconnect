@@ -9,24 +9,34 @@ Mongoose schemas will be stored in src/server/db.
 - Do not use a pattern where an interface is defined with `export type IMember = Document & {` syntax because that is
   just for User.
 - Where it makes sense, use optional fields unless otherwise specified.
+- Pay important notice to any security settings.
+
+# User
+
+- A user is an authenticated end-user.
+- This entity contains information from the authentication system, Clerk.
+- Users are unique across all gyms.
+- Users are related to one or more Member records which represent
+- When a user signs in, they will be able to enter a "gym code" to join a gym, which will create their Member record.
 
 # Member
 
+- Security: Members can only be edited either by theirselves, or by an owner.
 - Members can be an owner, coach, or member.
 - Basic profile information such as email, mailing address, mobile phone, etc, should be included.
 - Start date
+- This entity relates a member to a single gym.
 - Each member will have a list of classes they have attended based on a scheduled class, but this needs to be in a
   different entity somehow so it can be sharded to a different location for reporting.
-- Each member can belong to one or more gyms.
-- When a member signs in, they will be able to enter a "gym code" to join a gym.
-
-# Membership
-
-- This entity relates a member to a gym.
+- A member record is related to a single User record.
 - For a member to join a gym, they must enter a gym code that is given to them by the owner of the gym.
 - When they enter this gym code, the owner of the gym will be able to approve their membership, so we need to track this
   approval along with the date/time of the approval.
-- Over time, multiple plans can be associated with a membership and multiple can be active at a given time (ie, multiple
+
+# Membership
+
+- This is basically the member-to-plan relationship table that tracks 1 or more plans that are associated with a member.
+- Over time, multiple plans can be associated with a member and multiple can be active at a given time (ie, multiple
   recurring plans and non-recurring plans).
 - Members belong to a gym, not to individual locations within the gym.
 
@@ -72,12 +82,21 @@ Mongoose schemas will be stored in src/server/db.
 - A schedule is for a location.
 - It associates a class with a location at a specific time and date.
 - The class can be a 1-time, or recurring.
+- Use the following information to determine the best data model:
+    - If it is a 1-time, then it should have a date/time field for the single occurance.
+    - If it is a recurring, then it will have just a start date and end date that specifies when it starts and ends.
+    - If it is a recurring, then a separate time field can be populated to indicate the time of day it occurs on.
+    - The start and end dates should be separate from the time field.
 - Scheduling should be easy for the owner to do. It would be nice to see a week and month at a time and easily add
   classes to the schedule.
 - A class can be scheduled multiple times in a day, but look for an overlap to ensure multiple classes are not scheduled
   at the same time by accident for the same location. For example, a "HIIT Class" might be scheduled at 5am-6am,
   6am-7am, 12pm-1pm, and 4:30pm-5:30pm, every Monday. I might have another class, a "Strength Class" scheduled from
   7am-8am and 5:30-6:30pm every Monday.
+
+# Addresses
+
+- When creating an address field, make all fields optional.
 
 # Security
 

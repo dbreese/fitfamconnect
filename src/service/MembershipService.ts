@@ -1,75 +1,79 @@
 import type { ServerResponse } from '@/shared/ServerResponse';
 import type { IMembership } from '@/server/db/membership';
+import type { IMember } from '@/server/db/member';
 import { submit } from './NetworkUtil';
 
 export const MembershipService = {
-    async getMyMemberships(): Promise<IMembership[] | undefined> {
-        console.log("MembershipService.getMyMemberships: Starting to fetch gym's memberships");
+    async getMyMembers(): Promise<IMember[] | undefined> {
+        console.log("MembershipService.getMyMembers: Starting to fetch gym's members");
         return await submit('GET', '/memberships')
             .then(async (result) => {
-                console.log('MembershipService.getMyMemberships: Received response', {
+                console.log('MembershipService.getMyMembers: Received response', {
                     status: result.status,
                     ok: result.ok
                 });
                 if (result.ok) {
                     const json = await result.json();
                     const response = json as ServerResponse;
-                    const memberships = response.body.data as IMembership[];
-                    console.log('MembershipService.getMyMemberships: Successfully fetched memberships', {
-                        count: memberships?.length
+                    const members = response.body.data as IMember[];
+                    console.log('MembershipService.getMyMembers: Successfully fetched members', {
+                        count: members?.length
                     });
-                    return memberships;
+                    return members;
                 }
-                console.log('MembershipService.getMyMemberships: Response not OK');
+                console.log('MembershipService.getMyMembers: Response not OK');
                 return undefined;
             })
             .catch((error) => {
-                console.error('MembershipService.getMyMemberships: Error fetching memberships:', error);
-                return Promise.reject('Error fetching memberships.');
+                console.error('MembershipService.getMyMembers: Error fetching members:', error);
+                return Promise.reject('Error fetching members.');
             });
     },
 
-    async createMembership(
-        membershipData: Omit<IMembership, 'gymId' | 'gymCode' | 'status' | 'createdAt' | 'updatedAt'>
+    async createMember(
+        memberData: Omit<
+            IMember,
+            'gymId' | 'status' | 'approvedBy' | 'approvedAt' | 'joinRequestDate' | 'createdAt' | 'updatedAt'
+        >
     ): Promise<ServerResponse | undefined> {
-        console.log('MembershipService.createMembership: Starting to create membership', {
-            memberId: membershipData.memberId
+        console.log('MembershipService.createMember: Starting to create member', {
+            email: memberData.email
         });
-        return await submit('POST', '/memberships', membershipData)
+        return await submit('POST', '/memberships', memberData)
             .then(async (result) => {
-                console.log('MembershipService.createMembership: Received response', {
-                    memberId: membershipData.memberId,
+                console.log('MembershipService.createMember: Received response', {
+                    email: memberData.email,
                     status: result.status,
                     ok: result.ok
                 });
                 if (result.ok) {
                     const json = await result.json();
                     const response = json as ServerResponse;
-                    console.log('MembershipService.createMembership: Successfully created membership', {
-                        memberId: membershipData.memberId,
+                    console.log('MembershipService.createMember: Successfully created member', {
+                        email: memberData.email,
                         responseCode: response.responseCode
                     });
                     return response;
                 }
-                console.log('MembershipService.createMembership: Response not OK', {
-                    memberId: membershipData.memberId
+                console.log('MembershipService.createMember: Response not OK', {
+                    email: memberData.email
                 });
                 return undefined;
             })
             .catch((error) => {
-                console.error('MembershipService.createMembership: Error creating membership:', {
-                    memberId: membershipData.memberId,
+                console.error('MembershipService.createMember: Error creating member:', {
+                    email: memberData.email,
                     error
                 });
-                return Promise.reject('Error creating membership.');
+                return Promise.reject('Error creating member.');
             });
     },
 
-    async getMembershipById(id: string): Promise<IMembership | undefined> {
-        console.log('MembershipService.getMembershipById: Starting to fetch membership', { id });
+    async getMemberById(id: string): Promise<IMember | undefined> {
+        console.log('MembershipService.getMemberById: Starting to fetch member', { id });
         return await submit('GET', `/memberships/${id}`)
             .then(async (result) => {
-                console.log('MembershipService.getMembershipById: Received response', {
+                console.log('MembershipService.getMemberById: Received response', {
                     id,
                     status: result.status,
                     ok: result.ok
@@ -77,64 +81,142 @@ export const MembershipService = {
                 if (result.ok) {
                     const json = await result.json();
                     const response = json as ServerResponse;
-                    const membership = response.body.data as IMembership;
-                    console.log('MembershipService.getMembershipById: Successfully fetched membership', {
+                    const member = response.body.data as IMember;
+                    console.log('MembershipService.getMemberById: Successfully fetched member', {
                         id,
-                        memberId: membership?.memberId
+                        email: member?.email
                     });
-                    return membership;
+                    return member;
                 } else if (result.status === 404) {
-                    console.log('MembershipService.getMembershipById: Membership not found', { id });
+                    console.log('MembershipService.getMemberById: Member not found', { id });
                     return undefined;
                 }
-                console.log('MembershipService.getMembershipById: Response not OK', { id });
+                console.log('MembershipService.getMemberById: Response not OK', { id });
                 return undefined;
             })
             .catch((error) => {
-                console.error('MembershipService.getMembershipById: Error fetching membership:', { id, error });
-                return Promise.reject('Error fetching membership.');
+                console.error('MembershipService.getMemberById: Error fetching member:', { id, error });
+                return Promise.reject('Error fetching member.');
             });
     },
 
-    async updateMembership(id: string, membershipData: Partial<IMembership>): Promise<ServerResponse | undefined> {
-        console.log('MembershipService.updateMembership: Starting to update membership', {
+    async updateMember(id: string, memberData: Partial<IMember>): Promise<ServerResponse | undefined> {
+        console.log('MembershipService.updateMember: Starting to update member', {
             id,
-            status: membershipData.status
+            status: memberData.status
         });
-        return await submit('PUT', `/memberships/${id}`, membershipData)
+        return await submit('PUT', `/memberships/${id}`, memberData)
             .then(async (result) => {
-                console.log('MembershipService.updateMembership: Received response', {
+                console.log('MembershipService.updateMember: Received response', {
                     id,
-                    status: membershipData.status,
+                    status: memberData.status,
                     resultStatus: result.status,
                     ok: result.ok
                 });
                 if (result.ok) {
                     const json = await result.json();
                     const response = json as ServerResponse;
-                    console.log('MembershipService.updateMembership: Successfully updated membership', {
+                    console.log('MembershipService.updateMember: Successfully updated member', {
                         id,
-                        status: membershipData.status,
+                        status: memberData.status,
                         responseCode: response.responseCode
                     });
                     return response;
                 } else if (result.status === 404) {
-                    console.log('MembershipService.updateMembership: Membership not found', { id });
+                    console.log('MembershipService.updateMember: Member not found', { id });
                     return undefined;
                 }
-                console.log('MembershipService.updateMembership: Response not OK', {
+                console.log('MembershipService.updateMember: Response not OK', {
                     id,
-                    status: membershipData.status
+                    status: memberData.status
                 });
                 return undefined;
             })
             .catch((error) => {
-                console.error('MembershipService.updateMembership: Error updating membership:', {
+                console.error('MembershipService.updateMember: Error updating member:', {
                     id,
-                    status: membershipData.status,
+                    status: memberData.status,
                     error
                 });
-                return Promise.reject('Error updating membership.');
+                return Promise.reject('Error updating member.');
+            });
+    },
+
+    async assignPlan(memberId: string, planId: string, notes?: string): Promise<ServerResponse | undefined> {
+        console.log('MembershipService.assignPlan: Starting to assign plan', {
+            memberId,
+            planId
+        });
+        return await submit('POST', `/memberships/${memberId}/plans`, { planId, notes })
+            .then(async (result) => {
+                console.log('MembershipService.assignPlan: Received response', {
+                    memberId,
+                    planId,
+                    status: result.status,
+                    ok: result.ok
+                });
+                if (result.ok) {
+                    const json = await result.json();
+                    const response = json as ServerResponse;
+                    console.log('MembershipService.assignPlan: Successfully assigned plan', {
+                        memberId,
+                        planId,
+                        responseCode: response.responseCode
+                    });
+                    return response;
+                }
+                console.log('MembershipService.assignPlan: Response not OK', {
+                    memberId,
+                    planId
+                });
+                return undefined;
+            })
+            .catch((error) => {
+                console.error('MembershipService.assignPlan: Error assigning plan:', {
+                    memberId,
+                    planId,
+                    error
+                });
+                return Promise.reject('Error assigning plan.');
+            });
+    },
+
+    async removePlan(memberId: string, planId: string): Promise<ServerResponse | undefined> {
+        console.log('MembershipService.removePlan: Starting to remove plan', {
+            memberId,
+            planId
+        });
+        return await submit('DELETE', `/memberships/${memberId}/plans/${planId}`)
+            .then(async (result) => {
+                console.log('MembershipService.removePlan: Received response', {
+                    memberId,
+                    planId,
+                    status: result.status,
+                    ok: result.ok
+                });
+                if (result.ok) {
+                    const json = await result.json();
+                    const response = json as ServerResponse;
+                    console.log('MembershipService.removePlan: Successfully removed plan', {
+                        memberId,
+                        planId,
+                        responseCode: response.responseCode
+                    });
+                    return response;
+                }
+                console.log('MembershipService.removePlan: Response not OK', {
+                    memberId,
+                    planId
+                });
+                return undefined;
+            })
+            .catch((error) => {
+                console.error('MembershipService.removePlan: Error removing plan:', {
+                    memberId,
+                    planId,
+                    error
+                });
+                return Promise.reject('Error removing plan.');
             });
     }
 };

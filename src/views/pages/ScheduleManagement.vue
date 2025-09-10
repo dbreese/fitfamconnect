@@ -802,8 +802,6 @@ onMounted(() => {
                                         icon="pi pi-plus"
                                         :label="t('schedules.newSchedule')"
                                         @click="openNewDialog"
-                                        size="small"
-                                        class="compact-button"
                                     />
                                 </div>
                             </div>
@@ -899,8 +897,7 @@ onMounted(() => {
                                     icon="pi pi-plus"
                                     :label="t('schedules.newSchedule')"
                                     @click="openNewDialog"
-                                    size="small"
-                                    class="ml-auto compact-button"
+                                    class="ml-auto"
                                 />
                             </div>
 
