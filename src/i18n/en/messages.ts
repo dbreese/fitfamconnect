@@ -772,5 +772,36 @@ export const messages = {
             daysRequired: 'At least one day must be selected for recurring schedules',
             validationError: 'Validation Error'
         }
+    },
+    coaches: {
+        title: 'Coach Management',
+        menuTitle: 'Coaches',
+        subtitle: 'Manage coaches for your gym',
+        newCoach: 'New Coach',
+        addCoachTitle: 'Add Coach',
+        totalCoaches: 'coaches',
+        name: 'Name',
+        contact: 'Contact',
+        startDate: 'Start Date',
+        actions: 'Actions',
+        add: 'Add',
+        remove: 'Remove',
+        cancel: 'Cancel',
+        searchMembers: 'Search Members',
+        searchPlaceholder: 'Search by name, email, or phone...',
+        searchHelp: 'Search for members to add as coaches',
+        noMembersFound: 'No members found',
+        removeMessage: 'Are you sure you want to remove {name} as a coach?',
+        removeConfirmation: 'Remove Coach',
+        success: {
+            coachAdded: '{name} has been added as a coach',
+            coachRemoved: '{name} has been removed as a coach'
+        },
+        error: {
+            loadFailed: 'Failed to load coaches',
+            searchFailed: 'Failed to search members',
+            addFailed: 'Failed to add coach',
+            removeFailed: 'Failed to remove coach'
+        }
     }
 };

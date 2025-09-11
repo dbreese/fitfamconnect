@@ -166,6 +166,11 @@ const router = createRouter({
                     path: '/billing',
                     name: 'billing',
                     component: () => import('@/views/pages/BillingManagement.vue')
+                },
+                {
+                    path: '/coaches',
+                    name: 'coaches',
+                    component: () => import('@/views/pages/CoachManagement.vue')
                 }
             ]
         }

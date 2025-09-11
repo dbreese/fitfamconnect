@@ -18,6 +18,7 @@ const model = ref([
             { label: translate('memberships.menuTitle'), icon: 'pi pi-users', to: '/memberships' },
             { label: translate('schedules.menuTitle'), icon: 'pi pi-calendar-plus', to: '/schedules' },
             { label: translate('billing.menuTitle'), icon: 'pi pi-dollar', to: '/billing' },
+            { label: translate('coaches.menuTitle'), icon: 'pi pi-id-card', to: '/coaches' },
 
             { separator: true }
         ]

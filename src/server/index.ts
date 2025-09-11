@@ -20,6 +20,7 @@ import { router as scheduleRouter } from './schedule/scheduleService';
 import { router as chargeRouter } from './charge/chargeService';
 import { router as billingRouter } from './billing/billingService';
 import { status } from './status/status';
+import { coachRouter } from './coach/coachService';
 import { recents } from './recents/recents';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -75,6 +76,7 @@ app.use(membershipRouter);
 app.use(scheduleRouter);
 app.use(chargeRouter);
 app.use(billingRouter);
+app.use(coachRouter);
 app.use(status);
 app.use(recents);
 
@@ -115,6 +117,7 @@ console.log(listEndpoints(membershipRouter));
 console.log(listEndpoints(scheduleRouter));
 console.log(listEndpoints(chargeRouter));
 console.log(listEndpoints(billingRouter));
+console.log(listEndpoints(coachRouter));
 console.log(listEndpoints(recents));
 
 const port = process.env['PORT'] || 3002;
