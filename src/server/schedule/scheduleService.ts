@@ -805,7 +805,32 @@ async function updateScheduleByIdAndOwner(
     // Remove fields that shouldn't be updated
     const { createdAt, updatedAt, ...safeUpdateData } = updateData;
 
-    const updatedSchedule = await Schedule.findByIdAndUpdate(scheduleId, safeUpdateData, {
+    // Handle coachId removal explicitly
+    console.log(`scheduleService.updateScheduleByIdAndOwner: Raw update data:`, safeUpdateData);
+
+    // If coachId is explicitly undefined, we need to unset it
+    const mongoUpdate: any = { $set: {} };
+
+    Object.keys(safeUpdateData).forEach(key => {
+        const value = safeUpdateData[key as keyof typeof safeUpdateData];
+        if (key === 'coachId' && (value === undefined || value === null || value === '' || value === '__REMOVE__')) {
+            // Explicitly unset coachId field
+            if (!mongoUpdate.$unset) mongoUpdate.$unset = {};
+            mongoUpdate.$unset.coachId = 1;
+            console.log(`scheduleService.updateScheduleByIdAndOwner: Will unset coachId (value was: ${value})`);
+        } else if (value !== undefined && value !== null && value !== '__REMOVE__') {
+            mongoUpdate.$set[key] = value;
+        }
+    });
+
+    // Clean up empty $set
+    if (Object.keys(mongoUpdate.$set).length === 0) {
+        delete mongoUpdate.$set;
+    }
+
+    console.log(`scheduleService.updateScheduleByIdAndOwner: MongoDB update query:`, mongoUpdate);
+
+    const updatedSchedule = await Schedule.findByIdAndUpdate(scheduleId, mongoUpdate, {
         new: true,
         runValidators: true
     });

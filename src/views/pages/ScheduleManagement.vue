@@ -2,6 +2,7 @@
 import { ScheduleService } from '@/service/ScheduleService';
 import { ClassService } from '@/service/ClassService';
 import { LocationService } from '@/service/LocationService';
+import { CoachService } from '@/service/CoachService';
 import type { ISchedule } from '@/server/db/schedule';
 import type { IClass } from '@/server/db/class';
 import type { ILocation } from '@/server/db/location';
@@ -33,6 +34,7 @@ const confirm = useConfirm();
 const schedules = ref<any[]>([]);
 const classes = ref<IClass[]>([]);
 const locations = ref<ILocation[]>([]);
+const coaches = ref<any[]>([]);
 const loading = ref(false);
 const showDialog = ref(false);
 const editMode = ref(false);
@@ -98,6 +100,16 @@ const locationOptions = computed(() => {
         label: loc.name,
         value: loc._id
     }));
+});
+
+const coachOptions = computed(() => {
+    return [
+        { label: t('schedules.noCoachOption'), value: '' },
+        ...coaches.value.map((coach) => ({
+            label: `${coach.firstName} ${coach.lastName}`,
+            value: coach._id
+        }))
+    ];
 });
 
 const filteredSchedules = computed(() => {
@@ -209,6 +221,18 @@ async function loadLocations() {
         }
     } catch (error) {
         console.error('Error loading locations:', error);
+    }
+}
+
+async function loadCoaches() {
+    try {
+        const result = await CoachService.getCoaches();
+        if (result) {
+            coaches.value = result;
+            console.log(`Loaded ${result.length} coaches`);
+        }
+    } catch (error) {
+        console.error('Error loading coaches:', error);
     }
 }
 
@@ -355,7 +379,7 @@ async function handleSubmit() {
             timeOfDay: formData.value.isRecurring ? formData.value.timeOfDay || undefined : undefined,
             maxAttendees: formData.value.maxAttendees ? parseInt(formData.value.maxAttendees) : undefined,
             notes: formData.value.notes.trim() || undefined,
-            coachId: formData.value.coachId || undefined,
+            coachId: formData.value.coachId && formData.value.coachId.trim() ? formData.value.coachId : undefined,
             recurringPattern: formData.value.isRecurring
                 ? {
                       ...formData.value.recurringPattern,
@@ -364,8 +388,19 @@ async function handleSubmit() {
                 : undefined
         };
 
+        console.log('ScheduleManagement.handleSubmit: submitData.coachId =', submitData.coachId);
+        console.log('ScheduleManagement.handleSubmit: formData.coachId =', formData.value.coachId);
+
+        // Explicitly handle coachId removal by using a special marker
+        const finalSubmitData = { ...submitData };
+        if (submitData.coachId === undefined) {
+            finalSubmitData.coachId = '__REMOVE__';
+        }
+
+        console.log('ScheduleManagement.handleSubmit: finalSubmitData.coachId =', finalSubmitData.coachId);
+
         if (editMode.value && selectedSchedule.value) {
-            result = await ScheduleService.updateSchedule((selectedSchedule.value as any)._id, submitData);
+            result = await ScheduleService.updateSchedule((selectedSchedule.value as any)._id, finalSubmitData);
         } else {
             result = await ScheduleService.createSchedule(submitData);
         }
@@ -747,6 +782,7 @@ onMounted(() => {
     loadSchedules();
     loadClasses();
     loadLocations();
+    loadCoaches();
 });
 </script>
 
@@ -1012,6 +1048,19 @@ onMounted(() => {
                                 class="w-full"
                                 required
                             />
+                        </div>
+
+                        <div class="field">
+                            <label for="coach" class="font-medium">{{ t('schedules.coach') }}</label>
+                            <Select
+                                id="coach"
+                                v-model="formData.coachId"
+                                :options="coachOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                            />
+                            <small class="text-gray-500">{{ t('schedules.coachHelp') }}</small>
                         </div>
 
                         <!-- One-time schedule fields -->

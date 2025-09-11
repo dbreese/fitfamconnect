@@ -723,6 +723,8 @@ export const messages = {
         duration: 'Duration',
         coach: 'Coach',
         noCoach: 'No coach assigned',
+        noCoachOption: '-- No Coach --',
+        coachHelp: 'Optional: Select a coach to assign to this schedule',
         actions: 'Actions',
         startTime: 'Start Time',
         endTime: 'End Time',

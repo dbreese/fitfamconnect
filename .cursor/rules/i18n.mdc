@@ -1,0 +1,6 @@
+---
+description: Internationalization
+globs:
+alwaysApply: true
+---
+- Any end-user-visible strings should be stored in /i18n/en/messages.ts and accessed via vue-i18n.
