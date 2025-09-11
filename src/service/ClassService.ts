@@ -148,5 +148,83 @@ export const ClassService = {
                 console.error('ClassService.deleteClass: Error deleting class:', { id, error });
                 return Promise.reject('Error deleting class.');
             });
+    },
+
+    /**
+     * Get available classes for a gym on a specific date with signup status
+     */
+    async getClassesForDate(gymId: string, date: string) {
+        console.log('ClassService.getClassesForDate: Getting classes for', { gymId, date });
+
+        try {
+            const response = await submit('GET', `/signups/classes?gymId=${encodeURIComponent(gymId)}&date=${encodeURIComponent(date)}`);
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('ClassService.getClassesForDate: Response received', serverResponse);
+                return serverResponse.body.data;
+            } else {
+                const errorResult = await response.json();
+                const errorResponse = errorResult as ServerResponse;
+                console.error('ClassService.getClassesForDate: Request failed', response.status, errorResponse);
+                throw new Error(errorResponse.body.message || 'Failed to get classes');
+            }
+        } catch (error) {
+            console.error('ClassService.getClassesForDate: Error:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Toggle signup for a class (sign up or cancel)
+     */
+    async toggleSignup(scheduleId: string, classDate: string) {
+        console.log('ClassService.toggleSignup: Toggling signup for schedule', { scheduleId, classDate });
+
+        try {
+            const response = await submit('POST', '/signups/toggle', { scheduleId, classDate });
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('ClassService.toggleSignup: Response received', serverResponse);
+                return serverResponse.body.data;
+            } else {
+                const errorResult = await response.json();
+                const errorResponse = errorResult as ServerResponse;
+                console.error('ClassService.toggleSignup: Request failed', response.status, errorResponse);
+                throw new Error(errorResponse.body.message || 'Failed to toggle signup');
+            }
+        } catch (error) {
+            console.error('ClassService.toggleSignup: Error:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get user's upcoming signups (today and future)
+     */
+    async getUpcomingSignups() {
+        console.log('ClassService.getUpcomingSignups: Getting upcoming signups');
+
+        try {
+            const response = await submit('GET', '/signups/upcoming');
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('ClassService.getUpcomingSignups: Response received', serverResponse);
+                return serverResponse.body.data;
+            } else {
+                const errorResult = await response.json();
+                const errorResponse = errorResult as ServerResponse;
+                console.error('ClassService.getUpcomingSignups: Request failed', response.status, errorResponse);
+                throw new Error(errorResponse.body.message || 'Failed to get upcoming signups');
+            }
+        } catch (error) {
+            console.error('ClassService.getUpcomingSignups: Error:', error);
+            throw error;
+        }
     }
 };

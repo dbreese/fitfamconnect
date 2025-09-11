@@ -88,6 +88,11 @@ const router = createRouter({
                             name: 'mygyms',
                             component: () => import('@/views/pages/MyGyms.vue')
                         },
+                        {
+                            path: '/signups',
+                            name: 'signups',
+                            component: () => import('@/views/pages/Signups.vue')
+                        },
 
                         // Owner-only routes
                         {

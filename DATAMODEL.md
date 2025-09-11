@@ -100,6 +100,11 @@ Mongoose schemas will be stored in src/server/db.
 - Max members allowed
 - There is no difficulty level for this entity.
 
+# Signups
+- represents the scheduled classes members have signed up for
+- schedule to member relationship table for tracking purposes
+- the signup is only for a specific day and time, not an ongoing signup.
+
 # Schedule
 
 - A schedule is for a location.

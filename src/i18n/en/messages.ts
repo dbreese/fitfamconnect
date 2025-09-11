@@ -858,5 +858,45 @@ export const messages = {
             lookupFailed: 'Failed to lookup gym',
             joinFailed: 'Failed to join gym'
         }
+    },
+    signups: {
+        title: 'Class Signups',
+        menuTitle: 'Signups',
+        subtitle: 'Sign up for classes at your gym',
+        browseClasses: 'Browse Classes',
+        upcoming: 'Upcoming',
+        selectGym: 'Select Gym',
+        selectGymPlaceholder: 'Choose a gym...',
+        selectDate: 'Select Date',
+        today: 'Today',
+        loadingClasses: 'Loading classes...',
+        loadingUpcoming: 'Loading upcoming signups...',
+        noGyms: 'No Gym Memberships',
+        noGymsMessage: 'You need to join a gym before you can sign up for classes.',
+        noClassesAvailable: 'No classes available for this date',
+        noUpcomingSignups: 'No upcoming signups',
+        classesFor: 'Classes for {date}',
+        maxAttendees: 'Max: {max}',
+        signUp: 'Sign Up',
+        cancel: 'Cancel',
+        className: 'Class',
+        gym: 'Gym',
+        date: 'Date',
+        time: 'Time',
+        location: 'Location',
+        coach: 'Coach',
+        noCoach: 'No coach assigned',
+        actions: 'Actions',
+        upcomingFound: 'upcoming signups',
+        success: {
+            signedUp: 'Successfully signed up for {className}',
+            cancelled: 'Successfully cancelled signup for {className}'
+        },
+        error: {
+            loadGymsFailed: 'Failed to load your gyms',
+            loadClassesFailed: 'Failed to load classes',
+            loadUpcomingFailed: 'Failed to load upcoming signups',
+            toggleFailed: 'Failed to update signup'
+        }
     }
 };

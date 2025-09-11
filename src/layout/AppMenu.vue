@@ -11,10 +11,14 @@ const isOwner = computed(() => {
     return user.roles && user.roles.includes('owner');
 });
 
+const isMember = computed(() => {
+    return user.roles && user.roles.includes('member');
+});
+
 const model = computed(() => {
     const menu = [];
 
-    // Owner-only sections
+    // OWNER MANAGEMENT SECTION
     if (isOwner.value) {
         menu.push({
             label: translate('menu.management'),
@@ -31,7 +35,24 @@ const model = computed(() => {
                 { separator: true }
             ]
         });
+    }
 
+    // MEMBER SECTION
+    if (isMember.value) {
+        menu.push({
+            label: translate('menu.user'),
+            items: [
+                { label: translate('mygyms.menuTitle'), icon: 'pi pi-building-columns', to: '/mygyms' },
+                { label: translate('signups.menuTitle'), icon: 'pi pi-calendar-plus', to: '/signups' },
+                { label: translate('feedback.menuTitle'), icon: 'pi pi-send', to: '/feedback' },
+
+                { separator: true }
+            ]
+        });
+    }
+
+    // REPORTS
+    if (isOwner.value) {
         menu.push({
             label: translate('menu.reports'),
             items: [
@@ -44,25 +65,13 @@ const model = computed(() => {
                 { separator: true }
             ]
         });
-    } else {
-        // Member-only section
-        menu.push({
-            label: translate('menu.user'),
-            items: [
-                { label: translate('mygyms.menuTitle'), icon: 'pi pi-building-columns', to: '/mygyms' },
-                { label: translate('help.title'), icon: 'pi pi-question-circle', to: '/app' },
-                { label: translate('feedback.menuTitle'), icon: 'pi pi-send', to: '/feedback' },
-
-                { separator: true }
-            ]
-        });
     }
-
     // System section (common for all users)
     menu.push({
         label: translate('menu.system'),
         items: [
             { label: translate('profile.title'), icon: 'pi pi-user', to: '/user/profile' },
+            { label: translate('help.title'), icon: 'pi pi-question-circle', to: '/app' },
             {
                 label: translate('buttons.logout'),
                 icon: 'pi pi-sign-out',
