@@ -59,86 +59,88 @@ const router = createRouter({
             component: () => import('@/views/pages/auth/Error.vue')
         },
 
-        {
-            path: '/app',
-            component: () => import('@/layout/AppLayout.vue'),
-            meta: {
-                requiresAuth: true,
-                roles: ['owner']
-            },
-            children: [
                 {
                     path: '/app',
-                    name: 'app',
-                    component: () => import('@/views/Dashboard.vue')
-                },
+                    component: () => import('@/layout/AppLayout.vue'),
+                    meta: {
+                        requiresAuth: true,
+                        roles: ['member', 'owner']
+                    },
+                    children: [
+                        // Common routes for all authenticated users
+                        {
+                            path: '/app',
+                            name: 'app',
+                            component: () => import('@/views/Dashboard.vue')
+                        },
+                        {
+                            path: '/user/profile',
+                            name: 'profile',
+                            component: () => import('@/views/user/Profile.vue')
+                        },
+                        {
+                            path: '/feedback',
+                            name: 'feedback',
+                            component: () => import('@/views/pages/Feedback.vue')
+                        },
 
-                {
-                    path: '/tools/help',
-                    name: 'help',
-                    component: () => import('@/views/tools/HelpOverview.vue')
-                },
-
-                {
-                    path: '/user/profile',
-                    name: 'profile',
-                    component: () => import('@/views/user/Profile.vue')
-                },
-
-                {
-                    path: '/feedback',
-                    name: 'feedback',
-                    component: () => import('@/views/pages/Feedback.vue')
-                },
-
-                {
-                    path: '/gym',
-                    name: 'gym',
-                    component: () => import('@/views/pages/GymManagement.vue')
-                },
-
-                {
-                    path: '/classes',
-                    name: 'classes',
-                    component: () => import('@/views/pages/ClassManagement.vue')
-                },
-
-                {
-                    path: '/plans',
-                    name: 'plans',
-                    component: () => import('@/views/pages/PlanManagement.vue')
-                },
-
-                {
-                    path: '/locations',
-                    name: 'locations',
-                    component: () => import('@/views/pages/LocationManagement.vue')
-                },
-
-                {
-                    path: '/memberships',
-                    name: 'memberships',
-                    component: () => import('@/views/pages/MembershipManagement.vue')
-                },
-
-                {
-                    path: '/schedules',
-                    name: 'schedules',
-                    component: () => import('@/views/pages/ScheduleManagement.vue')
-                },
-
-                {
-                    path: '/billing',
-                    name: 'billing',
-                    component: () => import('@/views/pages/BillingManagement.vue')
-                },
-                {
-                    path: '/coaches',
-                    name: 'coaches',
-                    component: () => import('@/views/pages/CoachManagement.vue')
+                        // Owner-only routes
+                        {
+                            path: '/tools/help',
+                            name: 'help',
+                            component: () => import('@/views/tools/HelpOverview.vue'),
+                            meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/gym',
+                            name: 'gym',
+                            component: () => import('@/views/pages/GymManagement.vue'),
+                            meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/classes',
+                            name: 'classes',
+                            component: () => import('@/views/pages/ClassManagement.vue'),
+                            meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/plans',
+                            name: 'plans',
+                            component: () => import('@/views/pages/PlanManagement.vue'),
+                            meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/locations',
+                            name: 'locations',
+                            component: () => import('@/views/pages/LocationManagement.vue'),
+                            meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/memberships',
+                            name: 'memberships',
+                            component: () => import('@/views/pages/MembershipManagement.vue'),
+                            meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/schedules',
+                            name: 'schedules',
+                            component: () => import('@/views/pages/ScheduleManagement.vue'),
+                            meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/billing',
+                            name: 'billing',
+                            component: () => import('@/views/pages/BillingManagement.vue'),
+                            meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/coaches',
+                            name: 'coaches',
+                            component: () => import('@/views/pages/CoachManagement.vue'),
+                            meta: { roles: ['owner'] }
+                        }
+                    ]
                 }
-            ]
-        }
     ],
     scrollBehavior(to, from, savedPosition) {
         if (savedPosition) {
@@ -190,12 +192,17 @@ router.beforeEach(async (to, from, next) => {
         }
 
         if (user.username && user.email) {
-            if (to.meta.roles && !to.meta.roles.includes(user.roles[0])) {
-                console.log(`Routing to ${to.path} NOT allowed due to missing required role ${to.meta.roles} - redirecting to home`);
-                next({ name: 'home' });
-                return;
+            // Check if route has specific role requirements
+            if (to.meta.roles && Array.isArray(to.meta.roles)) {
+                const hasRequiredRole = user.roles && user.roles.some(role => to.meta.roles.includes(role));
+                if (!hasRequiredRole) {
+                    console.log(`Routing to ${to.path} denied - user roles ${user.roles} not in required roles ${to.meta.roles}`);
+                    next({ name: 'app' }); // Redirect to dashboard instead of home
+                    return;
+                }
             }
-            console.log(`Routing to ${to.path} allowed for user: ${user.username}`);
+
+            console.log(`Routing to ${to.path} allowed for user: ${user.username} with roles: ${user.roles}`);
             next();
         } else {
             console.log(`Routing to ${to.path} NOT allowed - redirecting to home`);
