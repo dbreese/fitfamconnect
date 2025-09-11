@@ -20,6 +20,7 @@ export const messages = {
         aitools: 'AI Tools',
         management: 'Management',
         reports: 'Reports',
+        user: 'User',
         system: 'System'
     },
     recents: {
