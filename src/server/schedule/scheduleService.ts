@@ -304,8 +304,8 @@ async function findSchedulesByOwner(user: IUser | undefined): Promise<any[]> {
             // Get location details
             const location = await Location.findById(schedule.locationId);
 
-            // Get instructor details
-            const instructor = schedule.instructorId ? await Member.findById(schedule.instructorId) : null;
+            // Get coach details
+            const coach = schedule.coachId ? await Member.findById(schedule.coachId) : null;
 
             return {
                 ...(schedule.toObject ? schedule.toObject() : schedule),
@@ -326,12 +326,12 @@ async function findSchedulesByOwner(user: IUser | undefined): Promise<any[]> {
                           description: location.description
                       }
                     : null,
-                instructor: instructor
+                coach: coach
                     ? {
-                          _id: instructor._id,
-                          firstName: instructor.firstName,
-                          lastName: instructor.lastName,
-                          email: instructor.email
+                          _id: coach._id,
+                          firstName: coach.firstName,
+                          lastName: coach.lastName,
+                          email: coach.email
                       }
                     : null
             };
@@ -402,7 +402,7 @@ function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Da
             // Preserve class data if it exists
             class: schedule.class || null,
             location: schedule.location || null,
-            instructor: schedule.instructor || null
+            coach: schedule.coach || null
         });
 
         // Move to next occurrence
@@ -645,8 +645,8 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
             // Get location details
             const location = await Location.findById(schedule.locationId);
 
-            // Get instructor details
-            const instructor = schedule.instructorId ? await Member.findById(schedule.instructorId) : null;
+            // Get coach details
+            const coach = schedule.coachId ? await Member.findById(schedule.coachId) : null;
 
             return {
                 ...(schedule.toObject ? schedule.toObject() : schedule),
@@ -667,12 +667,12 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
                           description: location.description
                       }
                     : null,
-                instructor: instructor
+                coach: coach
                     ? {
-                          _id: instructor._id,
-                          firstName: instructor.firstName,
-                          lastName: instructor.lastName,
-                          email: instructor.email
+                          _id: coach._id,
+                          firstName: coach.firstName,
+                          lastName: coach.lastName,
+                          email: coach.email
                       }
                     : null
             };
@@ -731,9 +731,9 @@ async function findScheduleByIdAndOwner(scheduleId: string, user: IUser | undefi
         return null;
     }
 
-    // Enrich with class, location, and instructor details
+    // Enrich with class, location, and coach details
     const location = await Location.findById(schedule.locationId);
-    const instructor = schedule.instructorId ? await Member.findById(schedule.instructorId) : null;
+    const coach = schedule.coachId ? await Member.findById(schedule.coachId) : null;
 
     const enrichedSchedule = {
         ...schedule.toObject(),
@@ -752,12 +752,12 @@ async function findScheduleByIdAndOwner(scheduleId: string, user: IUser | undefi
                   description: location.description
               }
             : null,
-        instructor: instructor
+        coach: coach
             ? {
-                  _id: instructor._id,
-                  firstName: instructor.firstName,
-                  lastName: instructor.lastName,
-                  email: instructor.email
+                  _id: coach._id,
+                  firstName: coach.firstName,
+                  lastName: coach.lastName,
+                  email: coach.email
               }
             : null
     };

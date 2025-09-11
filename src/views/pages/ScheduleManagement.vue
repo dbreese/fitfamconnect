@@ -46,7 +46,7 @@ const scheduleFilter = ref('all');
 const formData = ref({
     classId: '',
     locationId: '',
-    instructorId: '',
+    coachId: '',
     // For one-time schedules
     startDateTime: new Date(),
     endDateTime: null as Date | null,
@@ -240,7 +240,7 @@ async function openEditDialog(schedule: any) {
     formData.value = {
         classId: originalSchedule.classId,
         locationId: originalSchedule.locationId,
-        instructorId: originalSchedule.instructorId || '',
+        coachId: originalSchedule.coachId || '',
         // For one-time schedules
         startDateTime: originalSchedule.startDateTime ? new Date(originalSchedule.startDateTime) : new Date(),
         endDateTime: originalSchedule.endDateTime ? new Date(originalSchedule.endDateTime) : null,
@@ -274,7 +274,7 @@ function resetForm() {
     formData.value = {
         classId: '',
         locationId: '',
-        instructorId: '',
+        coachId: '',
         // For one-time schedules
         startDateTime: defaultStartTime,
         endDateTime: null,
@@ -355,7 +355,7 @@ async function handleSubmit() {
             timeOfDay: formData.value.isRecurring ? formData.value.timeOfDay || undefined : undefined,
             maxAttendees: formData.value.maxAttendees ? parseInt(formData.value.maxAttendees) : undefined,
             notes: formData.value.notes.trim() || undefined,
-            instructorId: formData.value.instructorId || undefined,
+            coachId: formData.value.coachId || undefined,
             recurringPattern: formData.value.isRecurring
                 ? {
                       ...formData.value.recurringPattern,
@@ -946,15 +946,15 @@ onMounted(() => {
                                         {{ data.maxAttendees || t('schedules.unlimited') }}
                                     </template>
                                 </Column>
-                                <Column field="instructor" :header="t('schedules.instructor')">
-                                    <template #body="{ data }">
-                                        {{
-                                            data.instructor
-                                                ? `${data.instructor.firstName} ${data.instructor.lastName}`
-                                                : t('schedules.noInstructor')
-                                        }}
-                                    </template>
-                                </Column>
+                        <Column field="coach" :header="t('schedules.coach')">
+                            <template #body="{ data }">
+                                {{
+                                    data.coach
+                                        ? `${data.coach.firstName} ${data.coach.lastName}`
+                                        : t('schedules.noCoach')
+                                }}
+                            </template>
+                        </Column>
                                 <Column :header="t('schedules.actions')">
                                     <template #body="{ data }">
                                         <div class="flex gap-2">

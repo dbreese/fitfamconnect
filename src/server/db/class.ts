@@ -9,7 +9,7 @@ export interface IClass {
     category?: string; // e.g., 'Cardio', 'Strength', 'Yoga', 'Spinning'
     equipment?: string[]; // Required equipment
     gymId: string; // Reference to Gym
-    instructorId?: string; // Reference to Member with type 'coach'
+    coachId?: string; // Reference to Member with type 'coach'
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -24,7 +24,7 @@ const classSchema = new mongoose.Schema<IClass>(
         category: { type: String },
         equipment: [{ type: String }],
         gymId: { type: String, required: true }, // Reference to Gym._id
-        instructorId: { type: String }, // Reference to Member._id (coach)
+        coachId: { type: String }, // Reference to Member._id (coach)
         isActive: { type: Boolean, default: true }
     },
     { timestamps: true }
@@ -32,7 +32,7 @@ const classSchema = new mongoose.Schema<IClass>(
 
 // Indexes for performance
 classSchema.index({ gymId: 1 });
-classSchema.index({ instructorId: 1 });
+classSchema.index({ coachId: 1 });
 classSchema.index({ category: 1 });
 classSchema.index({ isActive: 1 });
 

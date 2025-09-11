@@ -4,7 +4,7 @@ export interface ISchedule {
     _id?: string;
     classId: string; // Reference to Class
     locationId: string; // Reference to Location
-    instructorId?: string; // Reference to Member (coach)
+    coachId?: string; // Reference to Member (coach)
 
     // For one-time schedules
     startDateTime?: Date; // Single occurrence date/time
@@ -34,7 +34,7 @@ const scheduleSchema = new mongoose.Schema<ISchedule>(
     {
         classId: { type: String, required: true },
         locationId: { type: String, required: true },
-        instructorId: { type: String },
+        coachId: { type: String },
 
         // For one-time schedules
         startDateTime: { type: Date },
@@ -65,7 +65,7 @@ const scheduleSchema = new mongoose.Schema<ISchedule>(
 // Indexes for performance
 scheduleSchema.index({ classId: 1 });
 scheduleSchema.index({ locationId: 1 });
-scheduleSchema.index({ instructorId: 1 });
+scheduleSchema.index({ coachId: 1 });
 scheduleSchema.index({ startDateTime: 1 });
 scheduleSchema.index({ startDate: 1 });
 scheduleSchema.index({ isRecurring: 1 });

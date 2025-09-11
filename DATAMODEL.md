@@ -81,6 +81,14 @@ Mongoose schemas will be stored in src/server/db.
 - Plans are ALWAYS recurring
 - There is no maximum number of members for Plans.
 
+# Product
+- this represents a thing that can be sold to a member.
+- Examples: LMNT drink, a Tshirt, or perhaps a 1-time class offering such as a squat clinic.
+- Fields should include:
+    - name & description
+    - status 
+    - price
+
 # Classes
 
 - This entity describes a specific class. For example, "Spinning".

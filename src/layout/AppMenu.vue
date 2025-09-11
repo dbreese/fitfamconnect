@@ -16,9 +16,9 @@ const model = ref([
             { label: translate('classes.menuTitle'), icon: 'pi pi-calendar', to: '/classes' },
             { label: translate('plans.menuTitle'), icon: 'pi pi-credit-card', to: '/plans' },
             { label: translate('memberships.menuTitle'), icon: 'pi pi-users', to: '/memberships' },
+            { label: translate('coaches.menuTitle'), icon: 'pi pi-id-card', to: '/coaches' },
             { label: translate('schedules.menuTitle'), icon: 'pi pi-calendar-plus', to: '/schedules' },
             { label: translate('billing.menuTitle'), icon: 'pi pi-dollar', to: '/billing' },
-            { label: translate('coaches.menuTitle'), icon: 'pi pi-id-card', to: '/coaches' },
 
             { separator: true }
         ]
