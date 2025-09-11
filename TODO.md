@@ -13,11 +13,10 @@
     - [ ] allow editing 1-time charges from billing screen
     - [ ] ability to see past billings
 - [ ] Coaches
-    - how to assign a coach to a class.
+    - [x] how to assign a coach to a class.
     - how to see classes which are not coached
 - [ ] Scheduling polishing?
 - [ ] Ability to publish schedule to external via snippet
-- [ ] Assign coaches to a class
 - [ ] Member and Coach Kiosk check-in
 - [ ] Time tracking
 - [x] Users vs members database. Currently, gym owner is typed to User.id, not member.id
@@ -32,6 +31,11 @@
 - [ ] Inventory
 - [ ] Unit tests to lock things in
 
+## Member site
+- [ ] My Gyms, with ability to add by gym code
+- [ ] Schedules for gyms
+- [ ] Sign up/cancel for scheduled items
+
 ## Reports
 
 - [ ] Time tracking for payroll
@@ -43,6 +47,8 @@
 
 ## Security
 
+- [ ] make sure owner endpoints can only modify the gyms they are owners of
+- [ ] make sure members can only modify their member info
 - [ ] minify code via config (see commit 1e0559e0)
 - [ ] Need to ensure database is locked down
 - [ ] CSS issues with data?

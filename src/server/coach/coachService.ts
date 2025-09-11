@@ -31,7 +31,7 @@ async function getCurrentUserGym(user: IUser | undefined) {
 router.get(
     '/coaches',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('coachService.GET /coaches: Request received');
@@ -56,7 +56,7 @@ router.get(
 router.get(
     '/coaches/search-members',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('coachService.GET /coaches/search-members: Request received', req.query);
@@ -93,7 +93,7 @@ router.get(
 router.post(
     '/coaches/set',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('coachService.POST /coaches/set: Request received', req.body);
@@ -123,7 +123,7 @@ router.post(
 router.post(
     '/coaches/unset',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('coachService.POST /coaches/unset: Request received', req.body);

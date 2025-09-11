@@ -8,7 +8,7 @@ import { type ServerResponse } from '../../shared/ServerResponse';
 export const router = Router();
 router.use(express.json());
 
-router.post('/feedback', authenticateUser, authorizeRoles('user'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/feedback', authenticateUser, authorizeRoles('user', 'owner'), async (req: AuthenticatedRequest, res: Response) => {
     console.log(`feedback=${JSON.stringify(req.body)}`);
     const params = req.body;
     const user = req.user;

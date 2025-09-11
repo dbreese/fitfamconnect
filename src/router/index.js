@@ -63,7 +63,8 @@ const router = createRouter({
             path: '/app',
             component: () => import('@/layout/AppLayout.vue'),
             meta: {
-                requiresAuth: true
+                requiresAuth: true,
+                roles: ['owner']
             },
             children: [
                 {
@@ -76,42 +77,6 @@ const router = createRouter({
                     path: '/tools/help',
                     name: 'help',
                     component: () => import('@/views/tools/HelpOverview.vue')
-                },
-
-                {
-                    path: '/tools/textleveler',
-                    name: 'textleveler',
-                    component: () => import('@/views/tools/TextLeveler.vue')
-                },
-
-                {
-                    path: '/tools/grammarchecker',
-                    name: 'grammarchecker',
-                    component: () => import('@/views/tools/GrammarChecker.vue')
-                },
-
-                {
-                    path: '/tools/letterwriter',
-                    name: 'letterwriter',
-                    component: () => import('@/views/tools/LetterWriter.vue')
-                },
-
-                {
-                    path: '/tools/newsletter',
-                    name: 'newsletter',
-                    component: () => import('@/views/tools/NewsLetter.vue')
-                },
-
-                {
-                    path: '/tools/quizes',
-                    name: 'quizes',
-                    component: () => import('@/views/tools/Quizes.vue')
-                },
-
-                {
-                    path: '/tools/rubric',
-                    name: 'rubric',
-                    component: () => import('@/views/tools/Rubric.vue')
                 },
 
                 {
@@ -225,6 +190,11 @@ router.beforeEach(async (to, from, next) => {
         }
 
         if (user.username && user.email) {
+            if (to.meta.roles && !to.meta.roles.includes(user.roles[0])) {
+                console.log(`Routing to ${to.path} NOT allowed due to missing required role ${to.meta.roles} - redirecting to home`);
+                next({ name: 'home' });
+                return;
+            }
             console.log(`Routing to ${to.path} allowed for user: ${user.username}`);
             next();
         } else {

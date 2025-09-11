@@ -9,7 +9,7 @@ export const router = Router();
 router.use(express.json());
 
 // GET /gym - Get the current user's gym
-router.get('/gym', authenticateUser, authorizeRoles('user'), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/gym', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
     console.log('DUSTIN WAS HERE');
     console.log('gymService.getGym: API invoked');
     const user = req.user;
@@ -39,7 +39,7 @@ router.get('/gym', authenticateUser, authorizeRoles('user'), async (req: Authent
 });
 
 // PUT /gym - Update the current user's gym
-router.put('/gym', authenticateUser, authorizeRoles('user'), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/gym', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
     console.log(`gymService.updateGym: API invoked with payload=${JSON.stringify(req.body)}`);
     const user = req.user;
     const updateData = req.body;

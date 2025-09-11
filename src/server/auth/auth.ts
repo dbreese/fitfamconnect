@@ -61,8 +61,7 @@ export const authorizeRoles = (...roles: string[]) => {
                 username: clerkUser.username ?? 'unknown',
                 fullname: clerkUser.fullName ?? 'unknown',
                 email: clerkEmail ?? 'unknown',
-                preferences: defaultPreferences,
-                roles: ['user']
+                preferences: defaultPreferences
             });
             await localUser.save();
         }
@@ -80,7 +79,7 @@ export const authorizeRoles = (...roles: string[]) => {
     };
 };
 
-router.get('/auth/user', authenticateUser, authorizeRoles('user'), (req: AuthenticatedRequest, res: Response) => {
+router.get('/auth/user', authenticateUser, authorizeRoles('member', 'owner'), (req: AuthenticatedRequest, res: Response) => {
     console.log('Returning user: ' + JSON.stringify(req.user));
     res.json(req.user);
 });

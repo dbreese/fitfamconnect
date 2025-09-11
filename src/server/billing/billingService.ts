@@ -490,7 +490,7 @@ async function getBillingDetails(user: IUser | undefined, billingId: string) {
 router.post(
     '/billing/preview',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('billingService.POST /billing/preview: Request received', req.body);
@@ -533,7 +533,7 @@ router.post(
 router.post(
     '/billing/commit',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('billingService.POST /billing/commit: Request received', req.body);
@@ -578,7 +578,7 @@ router.post(
 router.get(
     '/billing/history',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('billingService.GET /billing/history: Request received');
@@ -601,7 +601,7 @@ router.get(
 router.get(
     '/billing/details/:billingId',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             const { billingId } = req.params;

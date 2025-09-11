@@ -10,7 +10,7 @@ export const router = Router();
 router.use(express.json());
 
 // GET /classes - Get all classes for the current user's gym
-router.get('/classes', authenticateUser, authorizeRoles('user'), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/classes', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
     console.log('classService.getClasses: API invoked');
     const user = req.user;
 
@@ -37,7 +37,7 @@ router.get('/classes', authenticateUser, authorizeRoles('user'), async (req: Aut
 router.get(
     '/classes/:id',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(`classService.getClass: API invoked with id=${id}`);
@@ -69,7 +69,7 @@ router.get(
 );
 
 // POST /classes - Create new class for user's gym
-router.post('/classes', authenticateUser, authorizeRoles('user'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/classes', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
     console.log(`classService.createClass: API invoked with payload=${JSON.stringify(req.body)}`);
     const user = req.user;
     const classData = req.body;
@@ -102,7 +102,7 @@ router.post('/classes', authenticateUser, authorizeRoles('user'), async (req: Au
 router.put(
     '/classes/:id',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(`classService.updateClass: API invoked with id=${id} and payload=${JSON.stringify(req.body)}`);
@@ -138,7 +138,7 @@ router.put(
 router.delete(
     '/classes/:id',
     authenticateUser,
-    authorizeRoles('user'),
+    authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(`classService.deleteClass: API invoked with id=${id}`);

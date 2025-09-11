@@ -7,7 +7,7 @@ This file explains how new pages are added to the website.
 - Functional pages are vue templates located in src/views/pages.
 - Almost all pages are protected and for authenticated users only.
 - the vue router is located in src/router/index.js and all new pages (unless otherwise instructed) should be a child of
-  the /app route.
+  the /owner or /member route.
 - each page should use consistent look and feel and utilize existing styles.
 - for data CRUD operations for each entity, we should have a service that exposes the operations that are available to
   use.

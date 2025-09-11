@@ -18,6 +18,7 @@ Mongoose schemas will be stored in src/server/db.
 - Users are unique across all gyms.
 - Users are related to one or more Member records which represent
 - When a user signs in, they will be able to enter a "gym code" to join a gym, which will create their Member record.
+- Roles: 
 
 # Member
 
@@ -122,8 +123,8 @@ Mongoose schemas will be stored in src/server/db.
 
 # Security
 
-- A location and sub location can only be created or updated by an owner member.
-- Plans, classes, schedules, can only be created or updated by an owner member.
+- Plans, classes, charges, schedules, coaches, memberships, etc, can only be created or updated by a user who is an owner of the gym.
+- @auth.ts contains logic to authorize a role against an endpoint via middleware. See authorizeRoles().
 
 # TODO
 

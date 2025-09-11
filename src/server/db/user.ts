@@ -6,7 +6,7 @@ export type IUser = Document & {
     username: string;
     fullname: string;
     email: string;
-    roles: string[];
+    roles: ('member' | 'owner')[];
     preferences: Record<string, any>;
 };
 
@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema<IUser>({
     username: { type: String, required: true },
     fullname: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    roles: { type: [String], required: true, default: ['user'] },
+    roles: { type: [String], required: true, enum: ['member', 'owner'], default: ['member'] },
     preferences: { type: Map, of: Schema.Types.Mixed, default: {} }
 });
 
