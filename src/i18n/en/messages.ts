@@ -701,8 +701,12 @@ export const messages = {
         },
         error: {
             previewFailed: 'Failed to generate billing preview',
-            commitFailed: 'Failed to commit billing run'
-        }
+            commitFailed: 'Failed to commit billing run',
+            detailsFailed: 'Failed to load billing details'
+        },
+        close: 'Close',
+        billingDetails: 'Billing Details',
+        chargeDetails: 'Charge Details'
     },
     schedules: {
         title: 'Schedule Management',

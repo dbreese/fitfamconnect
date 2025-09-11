@@ -53,99 +53,11 @@
                         </Card>
 
                         <!-- Preview Results -->
-                        <Card v-if="preview">
-                            <template #title>
-                                <div class="flex justify-content-between align-items-center">
-                                    <span>{{ t('billing.previewResults') }}</span>
-                                    <Tag
-                                        :value="BillingService.formatAmount(preview.totalAmount)"
-                                        severity="success"
-                                        class="text-lg"
-                                    />
-                                </div>
-                            </template>
-                            <template #content>
-                                <!-- Summary -->
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                    <div class="text-center">
-                                        <div class="text-2xl font-bold text-blue-600">
-                                            {{ preview.summary.recurringPlans }}
-                                        </div>
-                                        <div class="text-sm text-gray-600">{{ t('billing.recurringPlans') }}</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-2xl font-bold text-yellow-600">
-                                            {{ preview.summary.oneTimeCharges }}
-                                        </div>
-                                        <div class="text-sm text-gray-600">{{ t('billing.additionalCharges') }}</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-2xl font-bold text-green-600">
-                                            {{ preview.summary.totalCharges }}
-                                        </div>
-                                        <div class="text-sm text-gray-600">{{ t('billing.totalCharges') }}</div>
-                                    </div>
-                                </div>
-
-                                <!-- Grouped Charges Display -->
-                                <div v-for="group in preview.groupedCharges" :key="group.memberId" class="mb-6">
-                                    <!-- Member Header -->
-                                    <div
-                                        class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg border-b-2 border-gray-300"
-                                    >
-                                        <h4 class="text-lg font-semibold text-gray-800">{{ group.memberName }}</h4>
-                                        <div class="text-lg font-bold text-green-600">
-                                            {{ t('billing.subtotal') }}:
-                                            {{ BillingService.formatAmount(group.subtotal) }}
-                                        </div>
-                                    </div>
-
-                                    <!-- Member Charges Table -->
-                                    <DataTable
-                                        :value="group.charges"
-                                        responsiveLayout="scroll"
-                                        class="border border-t-0 rounded-b-lg"
-                                    >
-                                        <Column field="type" :header="t('billing.type')" style="width: 150px">
-                                            <template #body="{ data }">
-                                                <Tag
-                                                    :value="BillingService.getChargeTypeDisplayName(data.type)"
-                                                    :severity="BillingService.getChargeTypeSeverity(data.type)"
-                                                />
-                                            </template>
-                                        </Column>
-                                        <Column field="description" :header="t('billing.description')">
-                                            <template #body="{ data }">
-                                                <div class="max-w-xs truncate">{{ data.description }}</div>
-                                            </template>
-                                        </Column>
-                                        <Column field="amount" :header="t('billing.amount')" style="width: 120px">
-                                            <template #body="{ data }">
-                                                <span class="font-semibold">{{
-                                                    BillingService.formatAmount(data.amount)
-                                                }}</span>
-                                            </template>
-                                        </Column>
-                                        <Column field="date" :header="t('billing.date')" style="width: 120px">
-                                            <template #body="{ data }">
-                                                {{ BillingService.formatDate(data.date) }}
-                                            </template>
-                                        </Column>
-                                    </DataTable>
-                                </div>
-
-                                <!-- Commit Button -->
-                                <div class="flex justify-end mt-4">
-                                    <Button
-                                        :label="t('billing.commitBilling')"
-                                        icon="pi pi-check"
-                                        severity="success"
-                                        @click="showCommitDialog = true"
-                                        :disabled="preview.charges.length === 0"
-                                    />
-                                </div>
-                            </template>
-                        </Card>
+                        <BillingPreview
+                            :preview="preview"
+                            :show-commit-button="true"
+                            @commit="showCommitDialog = true"
+                        />
                     </div>
                 </TabPanel>
 
@@ -159,6 +71,9 @@
                                 :loading="loadingHistory"
                                 responsiveLayout="scroll"
                                 stripedRows
+                                selectionMode="single"
+                                @row-select="showBillingDetails($event.data)"
+                                class="cursor-pointer"
                             >
                                 <Column field="billingDate" :header="t('billing.billingDate')" sortable>
                                     <template #body="{ data }">
@@ -237,6 +152,55 @@
                 </template>
             </Dialog>
 
+            <!-- Billing Details Dialog -->
+            <Dialog
+                v-model:visible="showDetailsDialog"
+                :modal="true"
+                :header="t('billing.billingDetails')"
+                :pt="{ root: { class: 'w-[95vw] md:w-[85vw] lg:w-[75vw]' } }"
+            >
+                <div v-if="loadingDetails" class="text-center py-8">
+                    <ProgressSpinner />
+                </div>
+
+                <div v-else-if="selectedBilling" class="space-y-4">
+                    <!-- Billing Info -->
+                    <div class="p-4 bg-gray-50 rounded-lg">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="font-medium text-sm text-gray-600">{{ t('billing.billingDate') }}</label>
+                                <div>{{ BillingService.formatDate(selectedBilling.billingDate) }}</div>
+                            </div>
+                            <div>
+                                <label class="font-medium text-sm text-gray-600">{{ t('billing.startDate') }}</label>
+                                <div>{{ BillingService.formatDate(selectedBilling.startDate) }}</div>
+                            </div>
+                            <div>
+                                <label class="font-medium text-sm text-gray-600">{{ t('billing.endDate') }}</label>
+                                <div>{{ BillingService.formatDate(selectedBilling.endDate) }}</div>
+                            </div>
+                            <div>
+                                <label class="font-medium text-sm text-gray-600">{{ t('billing.totalAmount') }}</label>
+                                <div class="text-lg font-bold text-green-600">{{ BillingService.formatAmount(billingDetailsPreview?.totalAmount || 0) }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Billing Details Preview -->
+                    <BillingPreview
+                        :preview="billingDetailsPreview"
+                        :title="t('billing.chargeDetails')"
+                        :show-commit-button="false"
+                    />
+                </div>
+
+                <template #footer>
+                    <div class="flex justify-end">
+                        <Button :label="t('billing.close')" @click="showDetailsDialog = false" />
+                    </div>
+                </template>
+            </Dialog>
+
             <Toast />
         </div>
     </Fluid>
@@ -258,6 +222,8 @@ import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
 import Toast from 'primevue/toast';
+import ProgressSpinner from 'primevue/progressspinner';
+import BillingPreview from '@/components/BillingPreview.vue';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -275,6 +241,10 @@ const billingPeriod = ref({
 
 const preview = ref<IBillingPreview | null>(null);
 const billingHistory = ref<IBillingHistory[]>([]);
+const selectedBilling = ref<any | null>(null);
+const billingDetailsPreview = ref<any | null>(null);
+const showDetailsDialog = ref(false);
+const loadingDetails = ref(false);
 
 // Functions
 async function generatePreview() {
@@ -397,6 +367,47 @@ async function loadBillingHistory() {
         billingHistory.value = [];
     } finally {
         loadingHistory.value = false;
+    }
+}
+
+async function showBillingDetails(billing: any) {
+    selectedBilling.value = billing;
+    loadingDetails.value = true;
+    showDetailsDialog.value = true;
+
+    try {
+        const result = await BillingService.getBillingDetails(billing._id);
+        if (result) {
+            // Convert billing details to preview format for the dialog
+            billingDetailsPreview.value = {
+                startDate: result.billingRecord.startDate,
+                endDate: result.billingRecord.endDate,
+                charges: result.charges,
+                groupedCharges: result.groupedCharges,
+                totalAmount: result.totalAmount,
+                summary: result.summary
+            };
+            console.log(`Loaded billing details for ${billing._id}`);
+        } else {
+            toast.add({
+                severity: 'error',
+                summary: t('feedback.errorTitle'),
+                detail: t('billing.error.detailsFailed'),
+                life: 3000
+            });
+            showDetailsDialog.value = false;
+        }
+    } catch (error) {
+        console.error('Error loading billing details:', error);
+        toast.add({
+            severity: 'error',
+            summary: t('feedback.errorTitle'),
+            detail: t('billing.error.detailsFailed'),
+            life: 3000
+        });
+        showDetailsDialog.value = false;
+    } finally {
+        loadingDetails.value = false;
     }
 }
 

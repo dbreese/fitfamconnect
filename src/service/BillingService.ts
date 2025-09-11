@@ -142,6 +142,30 @@ export class BillingService {
     }
 
     /**
+     * Get billing details for a specific billing run
+     */
+    static async getBillingDetails(billingId: string) {
+        console.log('BillingService.getBillingDetails: Retrieving billing details for', billingId);
+
+        try {
+            const response = await submit('GET', `${this.baseUrl}/details/${billingId}`);
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('BillingService.getBillingDetails: Response received', serverResponse);
+                return serverResponse.body.data;
+            } else {
+                console.error('BillingService.getBillingDetails: Request failed', response.status);
+                return null;
+            }
+        } catch (error) {
+            console.error('BillingService.getBillingDetails: Error:', error);
+            return null;
+        }
+    }
+
+    /**
      * Format amount in cents to currency string
      */
     static formatAmount(amountInCents: number): string {

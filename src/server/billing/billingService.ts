@@ -335,9 +335,15 @@ async function commitBillingRun(user: IUser | undefined, startDate: Date, endDat
     const savedBilling = await billingRecord.save();
     console.log(`billingService.commitBillingRun: Created billing record ${savedBilling._id}`);
 
-    // Create charge records for each item
+    // Separate recurring plan charges (create new) from one-time charges (mark existing as billed)
+    const recurringPlanCharges = charges.filter((c) => c.type === 'recurring-plan');
+    const oneTimeCharges = charges.filter((c) => c.type === 'one-time-charge' && c.chargeId);
+
+    console.log(`billingService.commitBillingRun: Processing ${recurringPlanCharges.length} recurring charges and ${oneTimeCharges.length} one-time charges`);
+
+    // Create NEW charge records only for recurring plans
     const createdCharges = [];
-    for (const charge of charges) {
+    for (const charge of recurringPlanCharges) {
         const newCharge = new Charge({
             memberId: charge.memberId,
             planId: charge.planId || undefined,
@@ -353,8 +359,8 @@ async function commitBillingRun(user: IUser | undefined, startDate: Date, endDat
         createdCharges.push(savedCharge);
     }
 
-    // Mark existing one-time charges as billed
-    const oneTimeChargeIds = charges.filter((c) => c.type === 'one-time-charge' && c.chargeId).map((c) => c.chargeId);
+    // Mark existing one-time charges as billed (don't create new records)
+    const oneTimeChargeIds = oneTimeCharges.map((c) => c.chargeId);
 
     if (oneTimeChargeIds.length > 0) {
         await Charge.updateMany(
@@ -365,7 +371,7 @@ async function commitBillingRun(user: IUser | undefined, startDate: Date, endDat
                 billingId: savedBilling._id.toString() // Link to the billing record
             }
         );
-        console.log(`billingService.commitBillingRun: Marked ${oneTimeChargeIds.length} existing charges as billed`);
+        console.log(`billingService.commitBillingRun: Marked ${oneTimeChargeIds.length} existing one-time charges as billed`);
     }
 
     console.log(`billingService.commitBillingRun: Created ${createdCharges.length} new charge records`);
@@ -390,6 +396,89 @@ async function getBillingHistory(user: IUser | undefined) {
     console.log(`billingService.getBillingHistory: Found ${billingRecords.length} billing records`);
 
     return billingRecords;
+}
+
+/**
+ * Get billing details (charges) for a specific billing run
+ */
+async function getBillingDetails(user: IUser | undefined, billingId: string) {
+    console.log(`billingService.getBillingDetails: Getting details for billing ${billingId} by user ${user?._id}`);
+
+    const gym = await getCurrentUserGym(user);
+
+    // Verify the billing record belongs to this user
+    const billingRecord = await Billing.findOne({ _id: billingId, memberId: user!._id });
+    if (!billingRecord) {
+        console.log(`billingService.getBillingDetails: Billing record not found or access denied`);
+        return null;
+    }
+
+    // Get all charges for this billing run
+    const charges = await Charge.find({ billingId: billingId });
+    console.log(`billingService.getBillingDetails: Found ${charges.length} charges for billing ${billingId}`);
+
+    // Get member details for each charge
+    const memberIds = [...new Set(charges.map(c => c.memberId))];
+    const members = await Member.find({ _id: { $in: memberIds } });
+    const memberMap = new Map(members.map(m => [m._id.toString(), m]));
+
+    // Get plan details for charges that have planId
+    const planIds = [...new Set(charges.filter(c => c.planId).map(c => c.planId))];
+    const plans = await Plan.find({ _id: { $in: planIds } });
+    const planMap = new Map(plans.map(p => [p._id.toString(), p]));
+
+    // Format charges with member and plan details
+    const formattedCharges = charges.map(charge => {
+        const member = memberMap.get(charge.memberId.toString());
+        const plan = charge.planId ? planMap.get(charge.planId.toString()) : null;
+
+        return {
+            type: plan ? 'recurring-plan' : 'one-time-charge',
+            chargeId: charge._id,
+            memberId: charge.memberId,
+            memberName: member ? `${member.firstName} ${member.lastName}` : 'Unknown',
+            planId: charge.planId,
+            planName: plan ? plan.name : null,
+            amount: charge.amount,
+            description: charge.note || (plan ? `Recurring plan: ${plan.name}` : 'One-time charge'),
+            date: charge.chargeDate
+        };
+    });
+
+    // Group charges by member
+    const memberChargeGroups = new Map();
+    formattedCharges.forEach(charge => {
+        const memberId = charge.memberId.toString();
+        if (!memberChargeGroups.has(memberId)) {
+            memberChargeGroups.set(memberId, {
+                memberId,
+                memberName: charge.memberName,
+                charges: [],
+                subtotal: 0
+            });
+        }
+        const group = memberChargeGroups.get(memberId);
+        group.charges.push(charge);
+        group.subtotal += charge.amount;
+    });
+
+    const groupedCharges = Array.from(memberChargeGroups.values()).sort((a, b) =>
+        a.memberName.localeCompare(b.memberName)
+    );
+
+    const totalAmount = formattedCharges.reduce((sum, charge) => sum + charge.amount, 0);
+
+    return {
+        billingRecord,
+        charges: formattedCharges,
+        groupedCharges,
+        totalAmount,
+        summary: {
+            oneTimeCharges: formattedCharges.filter(c => c.type === 'one-time-charge').length,
+            recurringPlans: formattedCharges.filter(c => c.type === 'recurring-plan').length,
+            totalCharges: formattedCharges.length
+        }
+    };
 }
 
 // API Endpoints
@@ -501,6 +590,34 @@ router.get(
         } catch (error) {
             console.error('billingService.GET /billing/history: Error:', error);
             res.status(500).json(ResponseHelper.error('Failed to retrieve billing history', 500));
+        }
+    }
+);
+
+/**
+ * GET /billing/details/:billingId
+ * Get billing details for a specific billing run
+ */
+router.get(
+    '/billing/details/:billingId',
+    authenticateUser,
+    authorizeRoles('user'),
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const { billingId } = req.params;
+            console.log('billingService.GET /billing/details: Request received', { billingId });
+
+            const details = await getBillingDetails(req.user, billingId);
+
+            if (!details) {
+                return res.status(404).json(ResponseHelper.error('Billing record not found', 404));
+            }
+
+            console.log('billingService.GET /billing/details: Response sent successfully');
+            res.status(200).json(ResponseHelper.success(details, 'Billing details retrieved successfully'));
+        } catch (error) {
+            console.error('billingService.GET /billing/details: Error:', error);
+            res.status(500).json(ResponseHelper.error('Failed to retrieve billing details', 500));
         }
     }
 );
