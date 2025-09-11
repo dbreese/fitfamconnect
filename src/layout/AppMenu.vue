@@ -27,6 +27,7 @@ const model = computed(() => {
                 { label: translate('locations.menuTitle'), icon: 'pi pi-map-marker', to: '/locations' },
                 { label: translate('classes.menuTitle'), icon: 'pi pi-calendar', to: '/classes' },
                 { label: translate('plans.menuTitle'), icon: 'pi pi-credit-card', to: '/plans' },
+                { label: translate('products.menuTitle'), icon: 'pi pi-shopping-bag', to: '/products' },
                 { label: translate('memberships.menuTitle'), icon: 'pi pi-users', to: '/memberships' },
                 { label: translate('coaches.menuTitle'), icon: 'pi pi-id-card', to: '/coaches' },
                 { label: translate('schedules.menuTitle'), icon: 'pi pi-calendar-plus', to: '/schedules' },

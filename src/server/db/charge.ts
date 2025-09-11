@@ -4,6 +4,7 @@ export interface ICharge {
     _id?: string;
     memberId: string; // Reference to Member._id
     planId?: string; // Optional reference to Plan._id for plan-based charges
+    productId?: string; // Optional reference to Product._id for product-based charges
     amount: number; // Charge amount (in cents to avoid floating point issues)
     note?: string; // Description of the charge (e.g., "Monthly membership", "Beverage purchase")
     chargeDate: Date; // When the charge occurred
@@ -18,6 +19,7 @@ const chargeSchema = new mongoose.Schema<ICharge>(
     {
         memberId: { type: String, required: true },
         planId: { type: String }, // Optional - for plan-based charges
+        productId: { type: String }, // Optional - for product-based charges
         amount: { type: Number, required: true, min: 0 }, // Amount in cents
         note: { type: String },
         chargeDate: { type: Date, required: true, default: Date.now },
@@ -31,6 +33,7 @@ const chargeSchema = new mongoose.Schema<ICharge>(
 // Indexes for performance
 chargeSchema.index({ memberId: 1 });
 chargeSchema.index({ planId: 1 });
+chargeSchema.index({ productId: 1 });
 chargeSchema.index({ chargeDate: 1 });
 chargeSchema.index({ isBilled: 1 });
 chargeSchema.index({ billingId: 1 });

@@ -628,6 +628,9 @@ export const messages = {
         note: 'Note',
         notePlaceholder: 'Enter description (e.g., "Shirt", "Beverage purchase")',
         noteHelp: 'Optional description of what this charge is for',
+        product: 'Product',
+        productHelp: 'Optional: Select a product to auto-populate amount and description',
+        noProduct: '-- No Product --',
         isBilled: 'Mark as Billed',
         isBilledHelp: 'Check this if the charge has already been billed to the member',
         billingStatus: 'Billing Status',
@@ -812,6 +815,50 @@ export const messages = {
             searchFailed: 'Failed to search members',
             addFailed: 'Failed to add coach',
             removeFailed: 'Failed to remove coach'
+        }
+    },
+    products: {
+        title: 'Product Management',
+        menuTitle: 'Products',
+        subtitle: 'Manage products for sale at your gym',
+        newProduct: 'New Product',
+        editProduct: 'Edit Product',
+        deleteProduct: 'Delete Product',
+        deleteMessage: 'Are you sure you want to delete "{name}"?',
+        deleteConfirmation: 'Confirm Deletion',
+        name: 'Product Name',
+        description: 'Description',
+        descriptionPlaceholder: 'Enter product description...',
+        price: 'Price',
+        priceHelp: 'Enter the selling price in dollars',
+        cost: 'Cost',
+        costHelp: 'Optional: Enter your cost in dollars',
+        status: 'Status',
+        actions: 'Actions',
+        productsFound: 'products found',
+        cancel: 'Cancel',
+        save: 'Save',
+        delete: 'Delete',
+        statuses: {
+            active: 'Active',
+            inactive: 'Inactive'
+        },
+        validation: {
+            nameRequired: 'Product name is required',
+            priceRequired: 'Price must be 0 or greater',
+            costInvalid: 'Cost must be 0 or greater',
+            validationError: 'Validation Error'
+        },
+        success: {
+            created: 'Product created successfully',
+            updated: 'Product updated successfully',
+            deleted: 'Product deleted successfully'
+        },
+        error: {
+            loadFailed: 'Failed to load products',
+            createFailed: 'Failed to create product',
+            updateFailed: 'Failed to update product',
+            deleteFailed: 'Failed to delete product'
         }
     },
     mygyms: {

@@ -23,6 +23,7 @@ import { status } from './status/status';
 import { coachRouter } from './coach/coachService';
 import { myGymsRouter } from './mygyms/myGymsService';
 import { signupsRouter } from './signups/signupsService';
+import { productRouter } from './product/productService';
 import { recents } from './recents/recents';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -81,6 +82,7 @@ app.use(billingRouter);
 app.use(coachRouter);
 app.use(myGymsRouter);
 app.use(signupsRouter);
+app.use(productRouter);
 app.use(status);
 app.use(recents);
 
@@ -124,6 +126,7 @@ console.log(listEndpoints(billingRouter));
 console.log(listEndpoints(coachRouter));
 console.log(listEndpoints(myGymsRouter));
 console.log(listEndpoints(signupsRouter));
+console.log(listEndpoints(productRouter));
 console.log(listEndpoints(recents));
 
 const port = process.env['PORT'] || 3002;

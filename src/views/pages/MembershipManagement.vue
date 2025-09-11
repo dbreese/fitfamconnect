@@ -2,6 +2,7 @@
 import { MembershipService } from '@/service/MembershipService';
 import { PlanService } from '@/service/PlanService';
 import { ChargeService } from '@/service/ChargeService';
+import { ProductService } from '@/service/ProductService';
 import type { IMember } from '@/server/db/member';
 import type { IPlan } from '@/server/db/plan';
 import type { ICharge } from '@/server/db/charge';
@@ -29,6 +30,7 @@ const toast = useToast();
 const members = ref<any[]>([]);
 const filteredMembers = ref<any[]>([]);
 const plans = ref<IPlan[]>([]);
+const products = ref<any[]>([]);
 const loading = ref(false);
 const showDialog = ref(false);
 const showNewMemberDialog = ref(false);
@@ -69,7 +71,8 @@ const chargeFormData = ref({
     amount: '',
     chargeDate: new Date(),
     note: '',
-    isBilled: false
+    isBilled: false,
+    productId: ''
 });
 
 const statusOptions = [
@@ -90,6 +93,18 @@ const planOptions = computed(() => {
         label: `${plan.name} - ${formatPrice(plan.price, plan.currency)}`,
         value: plan._id
     }));
+});
+
+const productOptions = computed(() => {
+    return [
+        { label: t('charges.noProduct'), value: '' },
+        ...products.value
+            .filter((product) => product.status === 'active')
+            .map((product) => ({
+                label: `${product.name} - ${formatPrice(product.price, 'USD')}`,
+                value: product._id
+            }))
+    ];
 });
 
 async function loadMembers() {
@@ -151,6 +166,20 @@ async function loadPlans() {
     }
 }
 
+async function loadProducts() {
+    try {
+        const result = await ProductService.getMyProducts();
+        if (result) {
+            products.value = result;
+            console.log(`Loaded ${result.length} products`);
+        } else {
+            products.value = [];
+        }
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
 async function loadMemberCharges() {
     if (!selectedMember.value) return;
 
@@ -209,7 +238,8 @@ function openEditChargeDialog(charge: any) {
         amount: (charge.amount / 100).toFixed(2),
         chargeDate: new Date(charge.chargeDate),
         note: charge.note || '',
-        isBilled: charge.isBilled
+        isBilled: charge.isBilled,
+        productId: charge.productId || ''
     };
     showEditChargeDialog.value = true;
 }
@@ -220,9 +250,21 @@ function openViewChargeDialog(charge: any) {
         amount: (charge.amount / 100).toFixed(2),
         chargeDate: new Date(charge.chargeDate),
         note: charge.note || '',
-        isBilled: charge.isBilled
+        isBilled: charge.isBilled,
+        productId: charge.productId || ''
     };
     showViewChargeDialog.value = true;
+}
+
+function onProductSelect() {
+    if (chargeFormData.value.productId) {
+        const selectedProduct = products.value.find(p => p._id === chargeFormData.value.productId);
+        if (selectedProduct) {
+            // Auto-populate amount and note from product
+            chargeFormData.value.amount = (selectedProduct.price / 100).toFixed(2);
+            chargeFormData.value.note = selectedProduct.name;
+        }
+    }
 }
 
 function closeEditChargeDialog() {
@@ -255,7 +297,8 @@ function resetChargeForm() {
         amount: '',
         chargeDate: new Date(),
         note: '',
-        isBilled: false
+        isBilled: false,
+        productId: ''
     };
 }
 
@@ -466,7 +509,8 @@ async function handleChargeSubmit() {
             amount: Math.round(parseFloat(chargeFormData.value.amount) * 100), // Convert to cents
             chargeDate: chargeFormData.value.chargeDate,
             note: chargeFormData.value.note.trim() || undefined,
-            isBilled: chargeFormData.value.isBilled
+            isBilled: chargeFormData.value.isBilled,
+            productId: chargeFormData.value.productId || undefined
         };
 
         let result;
@@ -647,6 +691,7 @@ watch(searchQuery, () => {
 onMounted(() => {
     loadMembers();
     loadPlans();
+    loadProducts();
 });
 </script>
 
@@ -1107,6 +1152,20 @@ onMounted(() => {
                     </div>
 
                     <form @submit.prevent="handleChargeSubmit" class="space-y-4">
+                        <div class="field">
+                            <label for="product" class="font-medium">{{ t('charges.product') }}</label>
+                            <Select
+                                id="product"
+                                v-model="chargeFormData.productId"
+                                :options="productOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                class="w-full"
+                                @change="onProductSelect"
+                            />
+                            <small class="text-gray-500">{{ t('charges.productHelp') }}</small>
+                        </div>
+
                         <div class="field">
                             <label for="chargeAmount" class="font-medium">{{ t('charges.amount') }} *</label>
                             <InputText

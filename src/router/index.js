@@ -148,6 +148,12 @@ const router = createRouter({
                             name: 'coaches',
                             component: () => import('@/views/pages/CoachManagement.vue'),
                             meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/products',
+                            name: 'products',
+                            component: () => import('@/views/pages/ProductManagement.vue'),
+                            meta: { roles: ['owner'] }
                         }
                     ]
                 }
