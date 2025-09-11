@@ -49,6 +49,7 @@ const model = computed(() => {
         menu.push({
             label: translate('menu.user'),
             items: [
+                { label: translate('mygyms.menuTitle'), icon: 'pi pi-building-columns', to: '/mygyms' },
                 { label: translate('help.title'), icon: 'pi pi-question-circle', to: '/app' },
                 { label: translate('feedback.menuTitle'), icon: 'pi pi-send', to: '/feedback' },
 

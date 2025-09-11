@@ -565,18 +565,7 @@ function getStatusSeverity(status: string): string {
 }
 
 function getStatusLabel(status: string): string {
-    switch (status) {
-        case 'approved':
-            return t('memberships.statuses.approved');
-        case 'pending':
-            return t('memberships.statuses.pending');
-        case 'denied':
-            return t('memberships.statuses.denied');
-        case 'inactive':
-            return t('memberships.statuses.inactive');
-        default:
-            return status;
-    }
+    return t(`membershipStatus.${status}`) || status;
 }
 
 function formatPrice(priceInCents: number, currency: string): string {

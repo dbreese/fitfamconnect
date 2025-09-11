@@ -23,6 +23,12 @@ export const messages = {
         user: 'User',
         system: 'System'
     },
+    membershipStatus: {
+        pending: 'Pending',
+        approved: 'Approved',
+        denied: 'Denied',
+        inactive: 'Inactive'
+    },
     recents: {
         dialogTitle: 'Recent Items'
     },
@@ -609,12 +615,6 @@ export const messages = {
             firstNameRequired: 'First name is required',
             lastNameRequired: 'Last name is required',
             validationError: 'Validation Error'
-        },
-        statuses: {
-            pending: 'Pending',
-            approved: 'Approved',
-            denied: 'Denied',
-            inactive: 'Inactive'
         }
     },
     charges: {
@@ -812,6 +812,51 @@ export const messages = {
             searchFailed: 'Failed to search members',
             addFailed: 'Failed to add coach',
             removeFailed: 'Failed to remove coach'
+        }
+    },
+    mygyms: {
+        title: 'My Gyms',
+        menuTitle: 'My Gyms',
+        subtitle: 'View all gyms where you have a membership',
+        gymName: 'Gym Name',
+        address: 'Address',
+        memberType: 'Member Type',
+        status: 'Status',
+        joinDate: 'Join Date',
+        startDate: 'Start Date',
+        gymsFound: 'gyms found',
+        unknownGym: 'Unknown Gym',
+        unknownStatus: 'Unknown',
+        unknownType: 'Unknown Type',
+        memberTypes: {
+            owner: 'Owner',
+            coach: 'Coach',
+            member: 'Member'
+        },
+        noGyms: 'No Gym Memberships',
+        noGymsMessage: 'You are not a member of any gyms yet. Enter a gym code to join!',
+        joinGym: 'Join a Gym!',
+        joinAnotherGym: 'Join Another Gym',
+        joinGymTitle: 'Join a Gym',
+        gymCode: 'Gym Code',
+        gymCodePlaceholder: 'ABC123',
+        gymCodeHelp: 'Enter the 6-character gym code provided by the gym',
+        lookupGym: 'Look Up Gym',
+        gymFound: 'Gym Found!',
+        description: 'Description',
+        contact: 'Contact',
+        cancel: 'Cancel',
+        join: 'Join',
+        validation: {
+            gymCodeRequired: 'Gym code is required'
+        },
+        success: {
+            joinRequested: 'Join request submitted for {gymName}. Awaiting approval from gym owner.'
+        },
+        error: {
+            loadFailed: 'Failed to load gym memberships',
+            lookupFailed: 'Failed to lookup gym',
+            joinFailed: 'Failed to join gym'
         }
     }
 };

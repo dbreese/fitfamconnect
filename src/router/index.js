@@ -83,6 +83,11 @@ const router = createRouter({
                             name: 'feedback',
                             component: () => import('@/views/pages/Feedback.vue')
                         },
+                        {
+                            path: '/mygyms',
+                            name: 'mygyms',
+                            component: () => import('@/views/pages/MyGyms.vue')
+                        },
 
                         // Owner-only routes
                         {
