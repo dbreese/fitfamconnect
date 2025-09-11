@@ -105,19 +105,36 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
 
     const gym = await getCurrentUserGym(user);
 
-    // Get all members for this gym with approved status
-    const members = await Member.find({ gymId: gym._id, status: 'approved' });
-    const memberIds = members.map((m) => m._id);
-    console.log(`billingService.generateBillingPreview: Found ${members.length} approved members in gym ${gym._id}`);
+    // Get all members for this gym with approved status and active during billing period
+    const allApprovedMembers = await Member.find({ gymId: gym._id, status: 'approved' });
+    console.log(`billingService.generateBillingPreview: Found ${allApprovedMembers.length} approved members in gym ${gym._id}`);
+
+    // Filter members who are active during the billing period (startDate <= billing period end)
+    const activeMembers = allApprovedMembers.filter(member => {
+        const memberStartDate = new Date(member.startDate);
+        const isActiveDuringPeriod = memberStartDate <= endDate;
+
+        console.log(`billingService.generateBillingPreview: Member ${member.firstName} ${member.lastName}:`, {
+            memberId: member._id.toString(),
+            startDate: memberStartDate.toISOString(),
+            billingPeriodEnd: endDate.toISOString(),
+            isActiveDuringPeriod
+        });
+
+        return isActiveDuringPeriod;
+    });
+
+    const memberIds = activeMembers.map((m) => m._id);
+    console.log(`billingService.generateBillingPreview: Found ${activeMembers.length} active members during billing period`);
     console.log(
-        'billingService.generateBillingPreview: Approved member IDs:',
+        'billingService.generateBillingPreview: Active member IDs:',
         memberIds.map((id) => id.toString())
     );
 
-    // Get all memberships for approved members
+    // Get all memberships for active members
     const allMemberships = await Membership.find({ memberId: { $in: memberIds } });
     console.log(
-        `billingService.generateBillingPreview: Found ${allMemberships.length} memberships for approved members`
+        `billingService.generateBillingPreview: Found ${allMemberships.length} memberships for active members`
     );
 
     // Get all unique plan IDs from memberships
@@ -162,7 +179,7 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
     });
 
     const oneTimeCharges = unbilledCharges.map((charge) => {
-        const member = members.find((m) => m._id.toString() === charge.memberId.toString());
+        const member = activeMembers.find((m) => m._id.toString() === charge.memberId.toString());
         return {
             type: 'one-time-charge',
             chargeId: charge._id,
@@ -213,7 +230,7 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
             console.log(`billingService.generateBillingPreview: Plan active in period: ${planActiveInPeriod}`);
 
             if (planActiveInPeriod) {
-                const member = members.find((m) => m._id.toString() === membership.memberId.toString());
+                const member = activeMembers.find((m) => m._id.toString() === membership.memberId.toString());
                 const charge = {
                     type: 'recurring-plan',
                     memberId: membership.memberId,
@@ -328,7 +345,8 @@ async function commitBillingRun(user: IUser | undefined, startDate: Date, endDat
             note: charge.description,
             chargeDate: charge.date,
             isBilled: true, // Mark as billed since this is a billing run
-            billedDate: new Date()
+            billedDate: new Date(),
+            billingId: savedBilling._id.toString() // Link to the billing record
         });
 
         const savedCharge = await newCharge.save();
@@ -343,7 +361,8 @@ async function commitBillingRun(user: IUser | undefined, startDate: Date, endDat
             { _id: { $in: oneTimeChargeIds } },
             {
                 isBilled: true,
-                billedDate: new Date()
+                billedDate: new Date(),
+                billingId: savedBilling._id.toString() // Link to the billing record
             }
         );
         console.log(`billingService.commitBillingRun: Marked ${oneTimeChargeIds.length} existing charges as billed`);

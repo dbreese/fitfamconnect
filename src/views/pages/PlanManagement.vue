@@ -278,7 +278,7 @@ function getCurrencySymbol(currency: string): string {
 }
 
 function formatPlanType(plan: IPlan): string {
-    return `${t('plans.recurring')} (${plan.recurringPeriod})`;
+    return plan.recurringPeriod;
 }
 
 function formatDateRange(plan: IPlan): string {

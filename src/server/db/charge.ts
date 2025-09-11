@@ -9,6 +9,7 @@ export interface ICharge {
     chargeDate: Date; // When the charge occurred
     isBilled: boolean; // Whether this charge has been billed yet
     billedDate?: Date; // When the charge was billed (if applicable)
+    billingId?: string; // Reference to Billing._id when this charge was billed
     createdAt: Date;
     updatedAt: Date;
 }
@@ -21,7 +22,8 @@ const chargeSchema = new mongoose.Schema<ICharge>(
         note: { type: String },
         chargeDate: { type: Date, required: true, default: Date.now },
         isBilled: { type: Boolean, required: true, default: false },
-        billedDate: { type: Date }
+        billedDate: { type: Date },
+        billingId: { type: String } // Reference to Billing._id when this charge was billed
     },
     { timestamps: true }
 );
@@ -31,8 +33,10 @@ chargeSchema.index({ memberId: 1 });
 chargeSchema.index({ planId: 1 });
 chargeSchema.index({ chargeDate: 1 });
 chargeSchema.index({ isBilled: 1 });
+chargeSchema.index({ billingId: 1 });
 chargeSchema.index({ memberId: 1, chargeDate: 1 }); // Compound index for member billing history
 chargeSchema.index({ memberId: 1, isBilled: 1 }); // Compound index for member billing status
+chargeSchema.index({ billingId: 1, isBilled: 1 }); // Compound index for billing run queries
 
 // Pre-save middleware to set billedDate when isBilled becomes true
 chargeSchema.pre('save', function (next) {

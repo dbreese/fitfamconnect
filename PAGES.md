@@ -11,7 +11,8 @@ This file explains how new pages are added to the website.
 - each page should use consistent look and feel and utilize existing styles.
 - for data CRUD operations for each entity, we should have a service that exposes the operations that are available to
   use.
-- Pages are linked into the navigation bar in AppMenu.vue.
+- The CRUD service uses "submit" from NetworkUtil to make network requests.
+- Pages are linked into the navigation bar in AppMenu.vue. Make sure you use translated strings for the menu titles and all strings in i18n/en/messages.ts
 - Ensure debug logging is added to all services and other important functions.
 
 # Server information
