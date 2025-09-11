@@ -638,9 +638,12 @@ export const messages = {
         cancel: 'Cancel',
         create: 'Create Charge',
         edit: 'Edit',
+        view: 'View',
         delete: 'Delete',
         editCharge: 'Edit Charge',
+        viewCharge: 'View Charge',
         update: 'Update Charge',
+        billedChargeNote: 'This charge has been billed and cannot be modified.',
         actions: 'Actions',
         confirmDelete: 'Are you sure you want to delete this charge?',
         validation: {

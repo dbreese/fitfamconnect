@@ -35,6 +35,7 @@ const showNewMemberDialog = ref(false);
 const showAddChargeDialog = ref(false);
 const showChargeHistoryDialog = ref(false);
 const showEditChargeDialog = ref(false);
+const showViewChargeDialog = ref(false);
 const selectedMember = ref<any | null>(null);
 const memberCharges = ref<any[]>([]);
 const selectedCharge = ref<any | null>(null);
@@ -211,6 +212,17 @@ function openEditChargeDialog(charge: any) {
         isBilled: charge.isBilled
     };
     showEditChargeDialog.value = true;
+}
+
+function openViewChargeDialog(charge: any) {
+    selectedCharge.value = charge;
+    chargeFormData.value = {
+        amount: (charge.amount / 100).toFixed(2),
+        chargeDate: new Date(charge.chargeDate),
+        note: charge.note || '',
+        isBilled: charge.isBilled
+    };
+    showViewChargeDialog.value = true;
 }
 
 function closeEditChargeDialog() {
@@ -1049,6 +1061,15 @@ onMounted(() => {
                                 <template #body="{ data }">
                                     <div class="flex gap-2">
                                         <Button
+                                            v-if="data.isBilled"
+                                            icon="pi pi-eye"
+                                            size="small"
+                                            severity="secondary"
+                                            :label="t('charges.view')"
+                                            @click="openViewChargeDialog(data)"
+                                        />
+                                        <Button
+                                            v-else
                                             icon="pi pi-pencil"
                                             size="small"
                                             severity="info"
@@ -1056,6 +1077,7 @@ onMounted(() => {
                                             @click="openEditChargeDialog(data)"
                                         />
                                         <Button
+                                            v-if="!data.isBilled"
                                             icon="pi pi-trash"
                                             size="small"
                                             severity="danger"
@@ -1212,6 +1234,71 @@ onMounted(() => {
                     <div class="flex justify-end gap-2">
                         <Button :label="t('charges.cancel')" severity="secondary" @click="closeEditChargeDialog" />
                         <Button :label="t('charges.update')" type="submit" @click="handleChargeSubmit" />
+                    </div>
+                </template>
+            </Dialog>
+
+            <!-- View Charge Dialog (Read-only for billed charges) -->
+            <Dialog
+                v-model:visible="showViewChargeDialog"
+                :modal="true"
+                :header="t('charges.viewCharge')"
+                :pt="{ root: { class: 'w-[90vw] md:w-[50vw] lg:w-[40vw]' } }"
+            >
+                <div v-if="selectedMember" class="space-y-4">
+                    <!-- Member Information (Read-only) -->
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <h4 class="text-sm font-semibold mb-2">{{ t('charges.chargingMember') }}</h4>
+                        <div class="text-lg font-medium">{{ formatMemberName(selectedMember) }}</div>
+                        <div class="text-sm text-gray-600">{{ selectedMember.email }}</div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="field">
+                            <label class="font-medium text-sm text-gray-600">{{ t('charges.amount') }}</label>
+                            <div class="text-lg font-semibold">${{ chargeFormData.amount }}</div>
+                        </div>
+
+                        <div class="field">
+                            <label class="font-medium text-sm text-gray-600">{{ t('charges.date') }}</label>
+                            <div>{{ formatChargeDate(chargeFormData.chargeDate) }}</div>
+                        </div>
+
+                        <div class="field">
+                            <label class="font-medium text-sm text-gray-600">{{ t('charges.note') }}</label>
+                            <div>{{ chargeFormData.note || t('charges.noNote') }}</div>
+                        </div>
+
+                        <div class="field">
+                            <label class="font-medium text-sm text-gray-600">{{ t('charges.billingStatus') }}</label>
+                            <div>
+                                <Tag
+                                    :value="getBillingStatusLabel(chargeFormData.isBilled)"
+                                    :severity="getBillingStatusSeverity(chargeFormData.isBilled)"
+                                />
+                            </div>
+                        </div>
+
+                        <div v-if="selectedCharge?.billedDate" class="field">
+                            <label class="font-medium text-sm text-gray-600">{{ t('charges.billedDate') }}</label>
+                            <div>{{ formatChargeDate(selectedCharge.billedDate) }}</div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded">
+                        <p class="text-sm text-blue-800">
+                            <i class="pi pi-info-circle mr-2"></i>
+                            {{ t('charges.billedChargeNote') }}
+                        </p>
+                    </div>
+                </div>
+
+                <template #footer>
+                    <div class="flex justify-end">
+                        <Button
+                            :label="t('charges.close')"
+                            @click="showViewChargeDialog = false"
+                        />
                     </div>
                 </template>
             </Dialog>
