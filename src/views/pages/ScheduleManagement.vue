@@ -159,7 +159,27 @@ async function loadSchedules() {
 
         if (result) {
             schedules.value = result;
-            console.log(`Loaded ${result.length} schedules`);
+            console.log(`Loaded ${result.length} schedules for week view`);
+
+            // Debug: Check what we actually got
+            const withStartDateTime = result.filter(s => s.startDateTime);
+            const withoutStartDateTime = result.filter(s => !s.startDateTime);
+            console.log(`Schedules WITH startDateTime: ${withStartDateTime.length}`);
+            console.log(`Schedules WITHOUT startDateTime: ${withoutStartDateTime.length}`);
+
+            if (withStartDateTime.length > 0) {
+                console.log('First schedule with startDateTime:', {
+                    id: withStartDateTime[0]._id,
+                    isRecurring: withStartDateTime[0].isRecurring,
+                    isRecurringInstance: withStartDateTime[0].isRecurringInstance,
+                    startDateTime: withStartDateTime[0].startDateTime,
+                    endDateTime: withStartDateTime[0].endDateTime,
+                    className: withStartDateTime[0].class?.name
+                });
+            }
+            if (withoutStartDateTime.length > 0) {
+                console.log('First schedule without startDateTime:', withoutStartDateTime[0]);
+            }
         } else {
             schedules.value = [];
         }
@@ -527,7 +547,12 @@ function formatScheduleTimes(schedule: any): string {
     if (schedule.isRecurring) {
         return schedule.timeOfDay ? formatTime(schedule.timeOfDay) : '';
     } else {
-        return `${formatTime(schedule.startDateTime)} - ${formatTime(schedule.endDateTime)}`;
+        if (!schedule.startDateTime) return '';
+        const startTime = formatTime(schedule.startDateTime);
+        if (schedule.endDateTime) {
+            return `${startTime} - ${formatTime(schedule.endDateTime)}`;
+        }
+        return startTime;
     }
 }
 
@@ -615,19 +640,46 @@ function getSchedulesForTimeSlot(dayDate: Date, timeSlot: { hour: number; minute
     const slotEnd = new Date(dayDate);
     slotEnd.setHours(timeSlot.hour, timeSlot.minute + 15, 0, 0);
 
-    return schedules.value.filter((schedule) => {
+    const matchingSchedules = schedules.value.filter((schedule) => {
+        // Handle both recurring and non-recurring schedules
+        if (!schedule.startDateTime) {
+            return false;
+        }
+
         const scheduleStart = new Date(schedule.startDateTime);
-        const scheduleEnd = new Date(schedule.endDateTime);
 
         // Check if schedule is on the same day
         if (scheduleStart < dayStart || scheduleStart > dayEnd) {
             return false;
         }
 
+        // For schedules without endDateTime, assume a default duration (e.g., 60 minutes)
+        let scheduleEnd;
+        if (schedule.endDateTime) {
+            scheduleEnd = new Date(schedule.endDateTime);
+        } else {
+            // Default to 60 minutes if no end time is specified
+            scheduleEnd = new Date(scheduleStart.getTime() + 60 * 60 * 1000);
+        }
+
         // Check if schedule overlaps with this time slot
         // Schedule overlaps if: schedule starts before slot ends AND schedule ends after slot starts
-        return scheduleStart < slotEnd && scheduleEnd > slotStart;
+        const overlaps = scheduleStart < slotEnd && scheduleEnd > slotStart;
+
+        // Debug: Log when we find a match
+        if (overlaps) {
+            console.log(`✅ MATCH: ${schedule.class?.name} on ${dayDate.toDateString()} at ${timeSlot.hour}:${timeSlot.minute.toString().padStart(2, '0')}`, {
+                scheduleStart: scheduleStart.toISOString(),
+                scheduleEnd: scheduleEnd.toISOString(),
+                slotStart: slotStart.toISOString(),
+                slotEnd: slotEnd.toISOString()
+            });
+        }
+
+        return overlaps;
     });
+
+    return matchingSchedules;
 }
 
 function hasSchedulesInTimeSlot(timeSlot: { hour: number; minute: number }): boolean {
@@ -639,14 +691,22 @@ function hasSchedulesInTimeSlot(timeSlot: { hour: number; minute: number }): boo
 }
 
 function getScheduleSpan(schedule: any): number {
-    if (!schedule.endDateTime) return 1;
+    if (!schedule.startDateTime) return 1;
 
     const startTime = new Date(schedule.startDateTime);
-    const endTime = new Date(schedule.endDateTime);
+    let endTime;
+
+    if (schedule.endDateTime) {
+        endTime = new Date(schedule.endDateTime);
+    } else {
+        // Default to 60 minutes if no end time is specified
+        endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+    }
+
     const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
 
-    // Calculate how many 15-minute slots this spans
-    return Math.ceil(durationMinutes / 15);
+    // Calculate how many 15-minute slots this spans (minimum 1 slot)
+    return Math.max(1, Math.ceil(durationMinutes / 15));
 }
 
 function isFirstSlotForSchedule(schedule: any, dayDate: Date, timeSlot: { hour: number; minute: number }): boolean {
@@ -899,8 +959,10 @@ onMounted(() => {
                                                 </div>
                                                 <div class="text-xs opacity-90">{{ schedule.location?.name }}</div>
                                                 <div class="text-xs opacity-90">
-                                                    {{ formatTime(schedule.startDateTime) }} -
-                                                    {{ formatTime(schedule.endDateTime) }}
+                                                    {{ formatTime(schedule.startDateTime) }}
+                                                    <template v-if="schedule.endDateTime">
+                                                        - {{ formatTime(schedule.endDateTime) }}
+                                                    </template>
                                                 </div>
                                             </template>
                                             <!-- Show continuation indicator in subsequent slots -->

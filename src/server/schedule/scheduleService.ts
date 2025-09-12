@@ -398,6 +398,7 @@ function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Da
             ...(schedule.toObject ? schedule.toObject() : schedule),
             startDateTime: instanceStart,
             endDateTime: instanceEnd,
+            isRecurring: false, // Individual instances are not recurring
             isRecurringInstance: true,
             // Preserve class data if it exists
             class: schedule.class || null,
@@ -550,14 +551,24 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
 
+    // Extend end date to include the entire day (23:59:59)
+    const extendedEndDateObj = new Date(endDateObj);
+    extendedEndDateObj.setHours(23, 59, 59, 999);
+
+    console.log('findSchedulesByDateRange: Date range', {
+        startDate: startDateObj.toISOString(),
+        endDate: endDateObj.toISOString(),
+        extendedEndDate: extendedEndDateObj.toISOString()
+    });
+
     // Get all schedules that could potentially have instances in this date range
     const query = {
         classId: { $in: classIds.map((id) => id.toString()) },
         $or: [
-            // Direct schedules in the date range
+            // Direct schedules in the date range (use extended end date to include full day)
             {
                 isRecurring: false,
-                startDateTime: { $gte: startDateObj, $lte: endDateObj }
+                startDateTime: { $gte: startDateObj, $lte: extendedEndDateObj }
             },
             // Recurring schedules that could generate instances in this range
             {

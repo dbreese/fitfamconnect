@@ -26,7 +26,7 @@ const tools = [
                     <div class="space-y-6">
                         <div>{{ t('dashboard.intro') }}</div>
 
-                        <ul class="space-y-4 list-none pl-0">
+                        <!-- <ul class="space-y-4 list-none pl-0">
                             <li v-for="({ name, desc }, index) in tools" :key="index" class="flex flex-col md:flex-row">
                                 <span class="font-bold md:min-w-[180px] mb-1 md:mb-0">{{ name }}</span>
                                 <span class="md:pl-4">
@@ -34,7 +34,7 @@ const tools = [
                                 </span>
                                 {{ line }}
                             </li>
-                        </ul>
+                        </ul> -->
 
                         <div>
                             <div class="font-semibold text-xl mb-2">{{ t('disclaimer.title') }}</div>

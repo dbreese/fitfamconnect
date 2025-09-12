@@ -36,139 +36,6 @@ export const messages = {
         title: 'Help',
         subTitle: ''
     },
-    textLeveler: {
-        title: 'Text Leveler',
-        subtitle: 'Enter text and let AI convert it to a particular reading level.',
-        desc: "Struggling to make that complex text just right? Toss it into our Text Leveler, and watch it morph into perfectly grade-appropriate material. It's like having a reading level wizard at your fingertips!",
-        help: [
-            'Convert text to a particular grade level.',
-            'First, select a grade level you want to target and enter text below.'
-        ],
-        textHint: 'Enter the text to level.',
-        submit: 'Level'
-    },
-
-    grammarChecker: {
-        title: 'Grammar Checker',
-        subtitle: 'Let AI do the work to correct, or grade, some text.',
-        desc: "Say goodbye to grammar headaches! Our Grammar Checker not only spots errors but also gives you the 'why' behind them. It's like having a friendly grammar expert right beside you, helping your students master the art of writing.",
-        help: [
-            'Correct grammar for a particular grade level or provide grammar corrections and explanations.',
-            'First, select a grade level you want to target and enter your text.'
-        ],
-        helpModes: 'Modes',
-        textHint: 'Enter the text to check or grade.',
-        submit: 'Check'
-    },
-    letterWriter: {
-        title: 'Letter Writer',
-        subtitle:
-            'Select target audience information and let AI create grammar-correct and punctiation-perfect letters.',
-        desc: "Need to send a quick note to parents or students? Just jot down a few key points, pick your tone, and let our Letter Writer craft the perfect message. It's like having a personal scribe, ready to help you connect!",
-        help: [
-            'Create a letter that includes all of the bullet points and information you put below.',
-            'The more information you put, the more detailed and concise the letter will be.',
-            'Dont worry about grammar or spelling!'
-        ],
-        helpAudience: 'Who is this for?',
-        helpTemperature: 'What is the tone of the response?',
-        to: 'To',
-        from: 'From',
-        subject: 'Subject',
-        textHint: 'Enter bullet points or short phrases to include in the letter.',
-        submit: 'Create'
-    },
-    newsLetter: {
-        title: 'News Letter',
-        subtitle: 'Enter short bits of info and let AI do the work to generate your newsletter.',
-        desc: "Creating engaging newsletters just got a whole lot easier! Simply add your points to each section, and our Newsletter Creator will weave them into a captivating update for parents. It's like having your own newsletter publishing team!",
-        help: [
-            'Add information below to create the text for your newsletter.',
-            'No need to put too much detail! Just add short snippets that describe the gist content you want.',
-            "Based on what you give me, I'll magically generate the rest for you, correcting grammar, adding punctuation, etc!"
-        ],
-        textHint: 'Enter your newsletter gist.',
-        submit: 'Create Newsletter',
-        includeSection: 'Include Section?',
-        sectionsTitle: 'Section Title',
-        sectionsHint: 'Short descriptions (ie, bullet points) of what you want to convey.',
-        defaultTitles: ['Announcements', 'Objectives', 'Note from Your Teacher', 'Misc.']
-    },
-    quizTypes: {
-        multi: 'Multiple Choice',
-        multiDesc: 'Student gets multiple choices and must select the correct answer(s).',
-        fillin: 'Fill In The Blank',
-        fillinDesc: 'The answer must be filled in.',
-        essay: 'Essay',
-        essayDesc: 'Words or sentences can be filled in.'
-    },
-    quizes: {
-        title: 'Quiz Creator',
-        subtitle: 'Create a multiple choice quiz for the material below.',
-        desc: "Time to test those skills! Our Quiz Creator lets you whip up multiple-choice, fill-in-the-blank, or essay quizzes in a flash. Just give it a topic, and watch it generate questions that'll challenge and engage your students. It's like having a quiz-making genie!",
-
-        help: [
-            'Enter details about the quiz you want to create.',
-            'Include as many, or as few, details as you want.',
-            'Be sure to clearly specify the topic you want to create the quiz about.'
-        ],
-        textHint: 'What do you want to create a quiz about?',
-        helpTypes: 'What type of quiz do you want to create?',
-        helpTemperature: 'What is the tone of the quiz?',
-        number: 'Number of questions',
-        submit: 'Create'
-    },
-    rubric: {
-        title: 'Rubric Creator',
-        subtitle: 'Let\s create a rubric! Just enter the information below.',
-        desc: "Create clear and fair rubrics in seconds! Tell our Rubric Creator what you're grading, and it'll generate a detailed rubric with all the criteria you need. It's like having a grading assistant, ensuring consistency and fairness.",
-        help: [
-            'Enter details about the rubric you want to create.',
-            'Include as many, or as few, details as you want.',
-            'Be sure to clearly specify the topic you want to create the rubric about.'
-        ],
-        textHint: 'Important grading details for the rubric.',
-        submit: 'Create Rubric',
-        helpTemperature: 'What is the tone of the rubric?',
-        rubricTitle: 'Assignment Title',
-        overview: 'Assignment Overview',
-        pointScale: 'Point Scale'
-    },
-    grades: {
-        kindergarten: 'Kindergarten',
-        first: 'First Grade',
-        second: 'Second Grade',
-        third: 'Third Grade',
-        fourth: 'Fourth Grade',
-        fifth: 'Fifth Grade',
-        sixth: 'Sixth Grade',
-        seventh: 'Seventh Grade',
-        eight: 'Eighth Grade',
-        ninth: 'Ninth Grade',
-        tenth: 'Tenth Grade',
-        eleventh: 'Eleventh Grade',
-        twelfth: 'Twelfth Grade'
-    },
-    grammarModes: {
-        correctMode: 'Correct',
-        correctDescription: 'Just rewrite the text at the selected grade level.',
-        gradeMode: 'Grade',
-        gradeDescription: 'Give feedback about issues found.'
-    },
-    letterModes: {
-        kidMode: 'For Kids',
-        kidModeDescription: 'Write the letter to the student.',
-        parentMode: 'For Parents',
-        parentModeDescription: "Write the letter to the student's parents."
-    },
-    temperatures: {
-        neutral: 'Neutral',
-        neutralDescription: "Be factual, don't use strong emotions.",
-        light: 'Lighthearted',
-        lightDescription: 'Make it playful, humorous, or cheerful. Use emojis!',
-        urgent: 'Serious',
-        urgentDescription: 'Express more seriousness or more of a stress tone.'
-    },
     editor: {
         undo: 'Undo',
         redo: 'Redo',
@@ -316,11 +183,11 @@ export const messages = {
         subTitle: 'Easily cancel anytime'
     },
     dashboard: {
-        title: 'Welcome to Fit Fam Connect!',
-        subTitle: 'Your gateway to all the AI-powered tools designed to make your teaching life easier.',
-        intro: "You're all set to explore! These tools are designed to streamline your workflow. Here's a quick look at what each one offers:",
+        title: 'Welcome to Fit Fam Connect! 🏋️‍♀️',
+        subTitle: 'Your all-in-one fitness club management powerhouse that makes running a gym as smooth as a perfect burpee!',
+        intro: "Ready to revolutionize your fitness business? From membership magic to billing brilliance, class coordination to coach management – we've got every aspect of your gym covered! Here's what makes us the ultimate fitness management sidekick:",
         haveFun:
-            "Now it's your turn to play! Dive in, explore, and have a blast creating with Fit Fam Connect. Remember, teaching should be fun! And while you're at it, we'd love to hear from you. Got a brilliant idea? Found a tool that's your new best friend? Or maybe you have a suggestion on how we can make things even better? Don't be shy – hit us up with your feedback! Your insights help us make Fit Fam Connect the ultimate teacher's sidekick!"
+            "Time to flex those management muscles! 🎯 Whether you're tracking members, scheduling classes, managing coaches, or processing payments – Fit Fam Connect turns the chaos of gym management into a well-oiled machine. And hey, we're always evolving! Spotted a feature that could make your life even easier? Found something that's absolutely crushing it? We're all ears! Your feedback helps us keep Fit Fam Connect as the ultimate fitness business game-changer. Let's make managing your fitness empire as rewarding as that post-workout high! 💪✨"
     },
     feedback: {
         menuTitle: 'Feedback',
@@ -722,6 +589,10 @@ export const messages = {
         invoiceGenerated: 'Filtered view generated for {memberCount} selected members',
         filterReset: 'Filter reset - showing all members'
     },
+    billingReports: {
+        title: 'Billing Reports',
+        subtitle: 'View and analyze billing history and generate detailed reports'
+    },
     schedules: {
         title: 'Schedule Management',
         menuTitle: 'Schedules',
@@ -763,6 +634,7 @@ export const messages = {
         dates: 'Dates',
         pattern: 'Pattern',
         recurring: 'Recurring',
+        oneTime: 'One-Time',
         noEndDate: 'No end date',
         unlimited: 'Unlimited',
         every: 'Every',

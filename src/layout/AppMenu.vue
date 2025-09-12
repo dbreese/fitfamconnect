@@ -61,7 +61,7 @@ const model = computed(() => {
                 { label: 'Missing Members', icon: 'pi pi-question', to: '/reports/missing-members' },
                 { label: 'Attendance', icon: 'pi pi-calendar', to: '/reports/missing-members' },
                 { label: 'Payroll', icon: 'pi pi-money-bill', to: '/reports/missing-members' },
-                { label: 'Billing', icon: 'pi pi-dollar', to: '/reports/missing-members' },
+                { label: 'Billing', icon: 'pi pi-dollar', to: '/reports/billing' },
 
                 { separator: true }
             ]
