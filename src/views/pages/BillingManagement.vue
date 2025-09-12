@@ -3,12 +3,12 @@
         <div class="card">
             <div class="flex justify-content-between align-items-center mb-3">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900 m-0">{{ t('billing.title') }}</h2>
-                    <p class="text-gray-600 mt-1 mb-0">{{ t('billing.subtitle') }}</p>
+                    <h2 class="text-2xl font-bold text-gray-900 m-0">{{ showTabs ? t('billing.title') : t('billingReports.title') }}</h2>
+                    <p class="text-gray-600 mt-1 mb-0">{{ showTabs ? t('billing.subtitle') : t('billingReports.subtitle') }}</p>
                 </div>
             </div>
 
-            <TabView>
+            <TabView v-if="showTabs" v-model:activeIndex="activeTab">
                 <!-- Billing Run Tab -->
                 <TabPanel :header="t('billing.billingRun')" value="run">
                     <div class="space-y-6">
@@ -44,6 +44,7 @@
                                     <Button
                                         :label="t('billing.generatePreview')"
                                         icon="pi pi-search"
+                                        size="small"
                                         @click="generatePreview"
                                         :loading="loading"
                                         :disabled="!billingPeriod.startDate || !billingPeriod.endDate"
@@ -102,6 +103,43 @@
                 </TabPanel>
             </TabView>
 
+            <!-- Billing History (shown when tabs are hidden) -->
+            <Card v-if="!showTabs">
+                <template #title>{{ t('billing.billingHistory') }}</template>
+                <template #content>
+                    <DataTable
+                        :value="billingHistory"
+                        :loading="loadingHistory"
+                        responsiveLayout="scroll"
+                        stripedRows
+                        selectionMode="single"
+                        @row-select="showBillingDetails($event.data)"
+                        class="cursor-pointer"
+                    >
+                        <Column field="billingDate" :header="t('billing.billingDate')" sortable>
+                            <template #body="{ data }">
+                                {{ BillingService.formatDate(data.billingDate) }}
+                            </template>
+                        </Column>
+                        <Column field="startDate" :header="t('billing.startDate')" sortable>
+                            <template #body="{ data }">
+                                {{ BillingService.formatDate(data.startDate) }}
+                            </template>
+                        </Column>
+                        <Column field="endDate" :header="t('billing.endDate')" sortable>
+                            <template #body="{ data }">
+                                {{ BillingService.formatDate(data.endDate) }}
+                            </template>
+                        </Column>
+                        <Column field="createdAt" :header="t('billing.createdAt')" sortable>
+                            <template #body="{ data }">
+                                {{ BillingService.formatDate(data.createdAt) }}
+                            </template>
+                        </Column>
+                    </DataTable>
+                </template>
+            </Card>
+
             <!-- Commit Confirmation Dialog -->
             <Dialog
                 v-model:visible="showCommitDialog"
@@ -141,11 +179,13 @@
 
                 <template #footer>
                     <div class="flex justify-end gap-2">
-                        <Button :label="t('billing.cancel')" severity="secondary" @click="showCommitDialog = false" />
+                        <Button :label="t('billing.cancel')" severity="secondary" size="small" class="p-button-sm compact-button" @click="showCommitDialog = false" />
                         <Button
                             :label="t('billing.confirmCommit')"
                             severity="success"
                             icon="pi pi-check"
+                            size="small"
+                            class="p-button-sm compact-button"
                             @click="commitBilling"
                             :loading="committing"
                         />
@@ -191,37 +231,41 @@
                     <BillingPreview
                         ref="billingPreviewComponent"
                         :preview="billingDetailsPreview"
-                        :title="t('billing.chargeDetails')"
+                        :title="t('billing.billingDetails')"
                         :show-commit-button="false"
                         :allow-member-selection="true"
+                        :is-filtered="isFiltered"
                         v-model:selectedMembers="selectedMembers"
                     />
                 </div>
 
                 <template #footer>
                     <div class="flex justify-end gap-2">
-                        <Button :label="t('billing.close')" @click="showDetailsDialog = false" />
+                        <Button
+                            :label="t('billing.close')"
+                            size="small"
+                            class="p-button-sm compact-button"
+                            @click="showDetailsDialog = false"
+                        />
                         <Button
                             v-if="billingDetailsPreview"
                             :label="t('billing.generatePdf')"
                             icon="pi pi-file-pdf"
                             severity="secondary"
+                            size="small"
+                            class="p-button-sm compact-button"
                             @click="billingPreviewComponent?.generatePDF()"
                             :disabled="!billingDetailsPreview.charges || billingDetailsPreview.charges.length === 0"
                         />
                         <Button
-                            v-if="isFiltered"
-                            :label="t('billing.reset')"
-                            icon="pi pi-refresh"
-                            severity="secondary"
-                            @click="resetFilter"
-                        />
-                        <Button
-                            v-if="selectedMembers.length > 0"
-                            :label="t('billing.filterSelected')"
-                            icon="pi pi-filter"
-                            severity="info"
-                            @click="generateInvoiceForSelected"
+                            v-if="allowMemberSelection"
+                            :label="isFiltered ? t('billing.reset') : t('billing.filterSelected')"
+                            :icon="isFiltered ? 'pi pi-refresh' : 'pi pi-filter'"
+                            :severity="isFiltered ? 'secondary' : 'info'"
+                            size="small"
+                            class="p-button-sm compact-button"
+                            @click="isFiltered ? resetFilter() : generateInvoiceForSelected()"
+                            :disabled="!isFiltered && selectedMembers.length === 0"
                         />
                     </div>
                 </template>
@@ -233,7 +277,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, withDefaults } from 'vue';
+
+interface Props {
+    showTabs?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    showTabs: true
+});
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import { BillingService, type IBillingPreview, type IBillingHistory } from '../../service/BillingService';
@@ -275,6 +327,8 @@ const loadingDetails = ref(false);
 const selectedMembers = ref<any[]>([]);
 const isFiltered = ref(false);
 const billingPreviewComponent = ref<any>(null);
+const activeTab = ref(0);
+const allowMemberSelection = ref(true);
 
 // Functions
 async function generatePreview() {

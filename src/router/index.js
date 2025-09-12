@@ -154,6 +154,13 @@ const router = createRouter({
                             name: 'products',
                             component: () => import('@/views/pages/ProductManagement.vue'),
                             meta: { roles: ['owner'] }
+                        },
+                        {
+                            path: '/reports/billing',
+                            name: 'billing-reports',
+                            component: () => import('@/views/pages/BillingManagement.vue'),
+                            meta: { roles: ['owner'] },
+                            props: { showTabs: false }
                         }
                     ]
                 }

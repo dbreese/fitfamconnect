@@ -19,6 +19,7 @@ interface Props {
     title?: string;
     allowMemberSelection?: boolean;
     selectedMembers?: any[];
+    isFiltered?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -26,13 +27,13 @@ const props = withDefaults(defineProps<Props>(), {
     showPdfButton: false,
     title: undefined,
     allowMemberSelection: false,
-    selectedMembers: () => []
+    selectedMembers: () => [],
+    isFiltered: false
 });
 
 const emit = defineEmits<{
     commit: [];
     'update:selectedMembers': [members: any[]];
-    generatePdf: [];
 }>();
 
 function handleCommit() {
@@ -233,20 +234,13 @@ defineExpose({
             </div>
 
             <!-- Action Buttons -->
-            <div v-if="showCommitButton || showPdfButton" class="flex justify-end gap-2 mt-4">
+            <div v-if="showCommitButton" class="flex justify-end gap-2 mt-4">
                 <Button
-                    v-if="showPdfButton"
-                    :label="t('billing.generatePdf')"
-                    icon="pi pi-file-pdf"
-                    severity="secondary"
-                    @click="generatePDF"
-                    :disabled="!preview.charges || preview.charges.length === 0"
-                />
-                <Button
-                    v-if="showCommitButton"
                     :label="t('billing.commitBilling')"
                     icon="pi pi-check"
                     severity="success"
+                    size="small"
+                    class="p-button-sm compact-button"
                     @click="handleCommit"
                     :disabled="preview.charges.length === 0"
                 />

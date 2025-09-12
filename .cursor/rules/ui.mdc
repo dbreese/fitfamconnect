@@ -1,0 +1,5 @@
+---
+description: When dealing with VUE or HTML pages.
+alwaysApply: false
+---
+- Make sure buttons are consistent and use the compact-button class.

@@ -88,3 +88,14 @@
 .cl-profileSectionTitleText__danger {
     display: none;
 }
+
+/* Compact Button Styles - Global */
+.compact-button {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    white-space: nowrap !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+}
