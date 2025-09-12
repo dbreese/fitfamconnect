@@ -7,12 +7,15 @@ import Tag from 'primevue/tag';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
 import { useI18n } from 'vue-i18n';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const { t } = useI18n();
 
 interface Props {
     preview: any;
     showCommitButton?: boolean;
+    showPdfButton?: boolean;
     title?: string;
     allowMemberSelection?: boolean;
     selectedMembers?: any[];
@@ -20,6 +23,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     showCommitButton: false,
+    showPdfButton: false,
     title: undefined,
     allowMemberSelection: false,
     selectedMembers: () => []
@@ -28,6 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     commit: [];
     'update:selectedMembers': [members: any[]];
+    generatePdf: [];
 }>();
 
 function handleCommit() {
@@ -55,6 +60,80 @@ function toggleMemberSelection(group: any) {
 function isMemberSelected(group: any): boolean {
     return props.selectedMembers.some(m => m.memberId === group.memberId);
 }
+
+function generatePDF() {
+    if (!props.preview) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Title
+    doc.setFontSize(20);
+    doc.text(props.title || t('billing.billingReport'), pageWidth / 2, 20, { align: 'center' });
+
+    // Billing period
+    doc.setFontSize(12);
+    const startDate = BillingService.formatDate(props.preview.startDate);
+    const endDate = BillingService.formatDate(props.preview.endDate);
+    doc.text(`${t('billing.billingPeriod')}: ${startDate} - ${endDate}`, 20, 35);
+
+    // Summary
+    doc.setFontSize(14);
+    doc.text(t('billing.summary'), 20, 50);
+    doc.setFontSize(10);
+    doc.text(`${t('billing.recurringPlans')}: ${props.preview.summary.recurringPlans}`, 20, 60);
+    doc.text(`${t('billing.additionalCharges')}: ${props.preview.summary.oneTimeCharges}`, 20, 67);
+    doc.text(`${t('billing.totalCharges')}: ${props.preview.summary.totalCharges}`, 20, 74);
+    doc.text(`${t('billing.totalAmount')}: ${BillingService.formatAmount(props.preview.totalAmount)}`, 20, 81);
+
+    let yPosition = 95;
+
+    // Generate table for each member
+    props.preview.groupedCharges.forEach((group: any) => {
+        // Check if we need a new page
+        if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 20;
+        }
+
+        // Member header
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${group.memberName} - ${BillingService.formatAmount(group.subtotal)}`, 20, yPosition);
+        yPosition += 10;
+
+        // Member charges table
+        const tableData = group.charges.map((charge: any) => [
+            BillingService.getChargeTypeDisplayName(charge.type),
+            charge.description,
+            BillingService.formatAmount(charge.amount),
+            BillingService.formatDate(charge.date)
+        ]);
+
+        autoTable(doc, {
+            startY: yPosition,
+            head: [[t('billing.type'), t('billing.description'), t('billing.amount'), t('billing.date')]],
+            body: tableData,
+            margin: { left: 20, right: 20 },
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [66, 139, 202] },
+            didDrawPage: (data: any) => {
+                yPosition = data.cursor.y + 10;
+            }
+        });
+
+        yPosition += 10;
+    });
+
+    // Save the PDF
+    const fileName = `billing-${startDate}-${endDate}.pdf`;
+    doc.save(fileName);
+}
+
+// Expose the generatePDF function so parent components can call it
+defineExpose({
+    generatePDF
+});
 </script>
 
 <template>
@@ -153,9 +232,18 @@ function isMemberSelected(group: any): boolean {
                 </DataTable>
             </div>
 
-            <!-- Commit Button (only show when enabled) -->
-            <div v-if="showCommitButton" class="flex justify-end mt-4">
+            <!-- Action Buttons -->
+            <div v-if="showCommitButton || showPdfButton" class="flex justify-end gap-2 mt-4">
                 <Button
+                    v-if="showPdfButton"
+                    :label="t('billing.generatePdf')"
+                    icon="pi pi-file-pdf"
+                    severity="secondary"
+                    @click="generatePDF"
+                    :disabled="!preview.charges || preview.charges.length === 0"
+                />
+                <Button
+                    v-if="showCommitButton"
                     :label="t('billing.commitBilling')"
                     icon="pi pi-check"
                     severity="success"

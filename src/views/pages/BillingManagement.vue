@@ -56,6 +56,7 @@
                         <BillingPreview
                             :preview="preview"
                             :show-commit-button="true"
+                            :show-pdf-button="true"
                             @commit="showCommitDialog = true"
                         />
                     </div>
@@ -188,6 +189,7 @@
 
                     <!-- Billing Details Preview -->
                     <BillingPreview
+                        ref="billingPreviewComponent"
                         :preview="billingDetailsPreview"
                         :title="t('billing.chargeDetails')"
                         :show-commit-button="false"
@@ -199,6 +201,14 @@
                 <template #footer>
                     <div class="flex justify-end gap-2">
                         <Button :label="t('billing.close')" @click="showDetailsDialog = false" />
+                        <Button
+                            v-if="billingDetailsPreview"
+                            :label="t('billing.generatePdf')"
+                            icon="pi pi-file-pdf"
+                            severity="secondary"
+                            @click="billingPreviewComponent?.generatePDF()"
+                            :disabled="!billingDetailsPreview.charges || billingDetailsPreview.charges.length === 0"
+                        />
                         <Button
                             v-if="isFiltered"
                             :label="t('billing.reset')"
@@ -264,6 +274,7 @@ const showDetailsDialog = ref(false);
 const loadingDetails = ref(false);
 const selectedMembers = ref<any[]>([]);
 const isFiltered = ref(false);
+const billingPreviewComponent = ref<any>(null);
 
 // Functions
 async function generatePreview() {
@@ -494,6 +505,7 @@ function resetFilter() {
         });
     }
 }
+
 
 onMounted(() => {
     loadBillingHistory();

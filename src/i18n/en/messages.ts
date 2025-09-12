@@ -716,6 +716,9 @@ export const messages = {
         chargeDetails: 'Charge Details',
         filterSelected: 'Filter Selected',
         reset: 'Reset',
+        generatePdf: 'Generate PDF',
+        billingReport: 'Billing Report',
+        summary: 'Summary',
         invoiceGenerated: 'Filtered view generated for {memberCount} selected members',
         filterReset: 'Filter reset - showing all members'
     },
