@@ -5,6 +5,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -13,19 +14,46 @@ interface Props {
     preview: any;
     showCommitButton?: boolean;
     title?: string;
+    allowMemberSelection?: boolean;
+    selectedMembers?: any[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     showCommitButton: false,
-    title: undefined
+    title: undefined,
+    allowMemberSelection: false,
+    selectedMembers: () => []
 });
 
 const emit = defineEmits<{
     commit: [];
+    'update:selectedMembers': [members: any[]];
 }>();
 
 function handleCommit() {
     emit('commit');
+}
+
+function toggleMemberSelection(group: any) {
+    const currentSelection = [...props.selectedMembers];
+    const memberIndex = currentSelection.findIndex(m => m.memberId === group.memberId);
+
+    if (memberIndex >= 0) {
+        // Remove member from selection
+        currentSelection.splice(memberIndex, 1);
+    } else {
+        // Add member to selection
+        currentSelection.push({
+            memberId: group.memberId,
+            memberName: group.memberName
+        });
+    }
+
+    emit('update:selectedMembers', currentSelection);
+}
+
+function isMemberSelected(group: any): boolean {
+    return props.selectedMembers.some(m => m.memberId === group.memberId);
 }
 </script>
 
@@ -70,7 +98,21 @@ function handleCommit() {
                 <div
                     class="flex justify-between items-center bg-gray-100 p-3 rounded-t-lg border-b-2 border-gray-300"
                 >
-                    <h4 class="text-lg font-semibold text-gray-800">{{ group.memberName }}</h4>
+                    <div class="flex items-center gap-3">
+                        <Checkbox
+                            v-if="allowMemberSelection"
+                            :modelValue="isMemberSelected(group)"
+                            @update:modelValue="() => toggleMemberSelection(group)"
+                            binary
+                        />
+                        <h4
+                            class="text-lg font-semibold text-gray-800"
+                            :class="{ 'cursor-pointer hover:text-blue-600': allowMemberSelection }"
+                            @click="allowMemberSelection ? toggleMemberSelection(group) : null"
+                        >
+                            {{ group.memberName }}
+                        </h4>
+                    </div>
                     <div class="text-lg font-bold text-green-600">
                         {{ t('billing.subtotal') }}:
                         {{ BillingService.formatAmount(group.subtotal) }}

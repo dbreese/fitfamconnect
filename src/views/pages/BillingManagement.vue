@@ -191,12 +191,28 @@
                         :preview="billingDetailsPreview"
                         :title="t('billing.chargeDetails')"
                         :show-commit-button="false"
+                        :allow-member-selection="true"
+                        v-model:selectedMembers="selectedMembers"
                     />
                 </div>
 
                 <template #footer>
-                    <div class="flex justify-end">
+                    <div class="flex justify-end gap-2">
                         <Button :label="t('billing.close')" @click="showDetailsDialog = false" />
+                        <Button
+                            v-if="isFiltered"
+                            :label="t('billing.reset')"
+                            icon="pi pi-refresh"
+                            severity="secondary"
+                            @click="resetFilter"
+                        />
+                        <Button
+                            v-if="selectedMembers.length > 0"
+                            :label="t('billing.filterSelected')"
+                            icon="pi pi-filter"
+                            severity="info"
+                            @click="generateInvoiceForSelected"
+                        />
                     </div>
                 </template>
             </Dialog>
@@ -243,8 +259,11 @@ const preview = ref<IBillingPreview | null>(null);
 const billingHistory = ref<IBillingHistory[]>([]);
 const selectedBilling = ref<any | null>(null);
 const billingDetailsPreview = ref<any | null>(null);
+const originalBillingDetails = ref<any | null>(null);
 const showDetailsDialog = ref(false);
 const loadingDetails = ref(false);
+const selectedMembers = ref<any[]>([]);
+const isFiltered = ref(false);
 
 // Functions
 async function generatePreview() {
@@ -379,7 +398,7 @@ async function showBillingDetails(billing: any) {
         const result = await BillingService.getBillingDetails(billing._id);
         if (result) {
             // Convert billing details to preview format for the dialog
-            billingDetailsPreview.value = {
+            const detailsData = {
                 startDate: result.billingRecord.startDate,
                 endDate: result.billingRecord.endDate,
                 charges: result.charges,
@@ -387,6 +406,11 @@ async function showBillingDetails(billing: any) {
                 totalAmount: result.totalAmount,
                 summary: result.summary
             };
+
+            billingDetailsPreview.value = detailsData;
+            originalBillingDetails.value = detailsData; // Store original for reset
+            isFiltered.value = false;
+            selectedMembers.value = []; // Clear any previous selections
             console.log(`Loaded billing details for ${billing._id}`);
         } else {
             toast.add({
@@ -408,6 +432,66 @@ async function showBillingDetails(billing: any) {
         showDetailsDialog.value = false;
     } finally {
         loadingDetails.value = false;
+    }
+}
+
+function generateInvoiceForSelected() {
+    if (!billingDetailsPreview.value || selectedMembers.value.length === 0) return;
+
+    // Filter the billing details to only include selected members
+    const selectedMemberIds = new Set(selectedMembers.value.map(m => m.memberId));
+
+    const filteredGroupedCharges = billingDetailsPreview.value.groupedCharges.filter(
+        (group: any) => selectedMemberIds.has(group.memberId)
+    );
+
+    const filteredCharges = billingDetailsPreview.value.charges.filter(
+        (charge: any) => selectedMemberIds.has(charge.memberId.toString())
+    );
+
+    const totalAmount = filteredCharges.reduce((sum: number, charge: any) => sum + charge.amount, 0);
+
+    // Create filtered preview for selected members and update the dialog content
+    const filteredPreview = {
+        startDate: billingDetailsPreview.value.startDate,
+        endDate: billingDetailsPreview.value.endDate,
+        charges: filteredCharges,
+        groupedCharges: filteredGroupedCharges,
+        totalAmount: totalAmount,
+        summary: {
+            oneTimeCharges: filteredCharges.filter((c: any) => c.type === 'one-time-charge').length,
+            recurringPlans: filteredCharges.filter((c: any) => c.type === 'recurring-plan').length,
+            totalCharges: filteredCharges.length
+        }
+    };
+
+    // Update the dialog content to show filtered data
+    billingDetailsPreview.value = filteredPreview;
+
+    // Clear selections and mark as filtered
+    selectedMembers.value = [];
+    isFiltered.value = true;
+
+    toast.add({
+        severity: 'info',
+        summary: t('feedback.successTitle'),
+        detail: t('billing.invoiceGenerated', { memberCount: selectedMemberIds.size }),
+        life: 3000
+    });
+}
+
+function resetFilter() {
+    if (originalBillingDetails.value) {
+        billingDetailsPreview.value = originalBillingDetails.value;
+        selectedMembers.value = [];
+        isFiltered.value = false;
+
+        toast.add({
+            severity: 'info',
+            summary: t('feedback.successTitle'),
+            detail: t('billing.filterReset'),
+            life: 2000
+        });
     }
 }
 

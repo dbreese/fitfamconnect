@@ -12,10 +12,12 @@
 - [ ] Billing improvements
     - [ ] allow editing 1-time charges from billing screen
     - [ ] ability to see past billings
+    - [ ] create receipt/invoice for a set of selected members.
+- [ ] Products
+    - [ ] ability to add quantity when doing a charge. need to use this in billing calculations.
 - [ ] Coaches
     - [x] how to assign a coach to a class.
     - how to see classes which are not coached
-- [ ] Scheduling polishing?
 - [ ] Ability to publish schedule to external via snippet
 - [ ] Member and Coach Kiosk check-in
 - [ ] Time tracking

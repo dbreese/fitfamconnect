@@ -713,7 +713,11 @@ export const messages = {
         },
         close: 'Close',
         billingDetails: 'Billing Details',
-        chargeDetails: 'Charge Details'
+        chargeDetails: 'Charge Details',
+        filterSelected: 'Filter Selected',
+        reset: 'Reset',
+        invoiceGenerated: 'Filtered view generated for {memberCount} selected members',
+        filterReset: 'Filter reset - showing all members'
     },
     schedules: {
         title: 'Schedule Management',
