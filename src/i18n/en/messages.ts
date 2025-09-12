@@ -191,16 +191,16 @@ export const messages = {
     },
     feedback: {
         menuTitle: 'Feedback',
-        title: 'Feedback Fun Zone!',
-        subTitle: 'Ready to make a difference? Your feedback is the key to unlocking even more teaching magic!',
+        title: 'Feedback Zone! 💪',
+        subTitle: 'Help us make Fit Fam Connect the ultimate fitness management powerhouse! Your insights drive our improvements.',
         submit: 'Send Feedback',
         textHint: 'What do you think about Fit Fam Connect?',
-        successTitle: 'Woohoo! Action successful!',
+        successTitle: 'Success! 🎉',
         successMsg:
-            'Your brilliant ideas are now on their way to making Fit Fam Connect even better. Thanks for being awesome!',
+            'Your feedback is fueling our mission to make fitness club management even better. Thanks for helping us level up!',
         errorTitle: 'Oops! Something Went Wrong...',
         errorMsg:
-            "Looks like your feedback got misplaced, like a homework assignment that didn't make it to the right folder! Please try sending it again."
+            "Looks like your feedback got lost in the shuffle! Please try sending it again - we want to hear from you!"
     },
     footer: {
         company: 'Company',
