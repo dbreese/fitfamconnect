@@ -171,10 +171,10 @@ async function loadSchedules() {
                 console.log('First schedule with startDateTime:', {
                     id: withStartDateTime[0]._id,
                     isRecurring: withStartDateTime[0].isRecurring,
-                    isRecurringInstance: withStartDateTime[0].isRecurringInstance,
+                    isRecurringInstance: (withStartDateTime[0] as any).isRecurringInstance,
                     startDateTime: withStartDateTime[0].startDateTime,
                     endDateTime: withStartDateTime[0].endDateTime,
-                    className: withStartDateTime[0].class?.name
+                    className: (withStartDateTime[0] as any).class?.name
                 });
             }
             if (withoutStartDateTime.length > 0) {
@@ -269,7 +269,7 @@ async function openEditDialog(schedule: any) {
 
     // If this is a recurring instance, we need to fetch the original schedule
     let originalSchedule = schedule;
-    if (schedule.isRecurringInstance) {
+    if ((schedule as any).isRecurringInstance) {
         try {
             const result = await ScheduleService.getScheduleById(schedule._id);
             if (result) {
@@ -457,7 +457,7 @@ async function handleSubmit() {
 
 function confirmDelete(schedule: any) {
     confirm.require({
-        message: t('schedules.deleteMessage', { name: schedule.class?.name }),
+        message: t('schedules.deleteMessage', { name: (schedule as any).class?.name }),
         header: t('schedules.deleteConfirmation'),
         icon: 'pi pi-info-circle',
         rejectLabel: t('schedules.cancel'),
@@ -668,7 +668,7 @@ function getSchedulesForTimeSlot(dayDate: Date, timeSlot: { hour: number; minute
 
         // Debug: Log when we find a match
         if (overlaps) {
-            console.log(`✅ MATCH: ${schedule.class?.name} on ${dayDate.toDateString()} at ${timeSlot.hour}:${timeSlot.minute.toString().padStart(2, '0')}`, {
+            console.log(`✅ MATCH: ${(schedule as any).class?.name} on ${dayDate.toDateString()} at ${timeSlot.hour}:${timeSlot.minute.toString().padStart(2, '0')}`, {
                 scheduleStart: scheduleStart.toISOString(),
                 scheduleEnd: scheduleEnd.toISOString(),
                 slotStart: slotStart.toISOString(),
@@ -897,6 +897,7 @@ onMounted(() => {
                                     <Button
                                         icon="pi pi-plus"
                                         :label="t('schedules.newSchedule')"
+                                        class="compact-button"
                                         @click="openNewDialog"
                                     />
                                 </div>
@@ -955,7 +956,7 @@ onMounted(() => {
                                             <!-- Show full class info only in the first time slot -->
                                             <template v-if="isFirstSlotForSchedule(schedule, dayDate, timeSlot)">
                                                 <div class="font-semibold truncate">
-                                                    {{ schedule.class?.name }} ({{ schedule.class?.category }})
+                                                    {{ (schedule as any).class?.name }} ({{ (schedule as any).class?.category }})
                                                 </div>
                                                 <div class="text-xs opacity-90">{{ schedule.location?.name }}</div>
                                                 <div class="text-xs opacity-90">
@@ -995,7 +996,7 @@ onMounted(() => {
                                     icon="pi pi-plus"
                                     :label="t('schedules.newSchedule')"
                                     @click="openNewDialog"
-                                    class="ml-auto"
+                                    class="ml-auto compact-button"
                                 />
                             </div>
 
@@ -1007,7 +1008,7 @@ onMounted(() => {
                                                 class="w-3 h-3 rounded-full"
                                                 :style="{ backgroundColor: getClassColor(data.classId) }"
                                             ></div>
-                                            {{ data.class?.name }}
+                                            {{ (data as any).class?.name }}
                                         </div>
                                     </template>
                                 </Column>
