@@ -47,6 +47,7 @@ const formData = ref({
     status: 'pending' as 'pending' | 'approved' | 'denied' | 'inactive',
     planId: '' as string,
     startDate: new Date(),
+    endDate: null as Date | null,
     notes: ''
 });
 
@@ -217,6 +218,7 @@ function openEditDialog(member: any) {
         status: member.status,
         planId: activePlan ? activePlan._id : '',
         startDate: activePlan?.startDate ? new Date(activePlan.startDate) : new Date(),
+        endDate: activePlan?.endDate ? new Date(activePlan.endDate) : null,
         notes: member.notes || ''
     };
 
@@ -384,7 +386,8 @@ async function handleSubmit() {
             if (newPlanId) {
                 // Server will: 1) End all active memberships, 2) Create new membership record
                 await MembershipService.assignPlan((selectedMember.value as any)._id, newPlanId, {
-                    startDate: formData.value.startDate
+                    startDate: formData.value.startDate,
+                    endDate: formData.value.endDate || undefined
                 });
             } else {
                 // If no plan selected, end all current memberships
@@ -886,15 +889,28 @@ onMounted(() => {
                             <small class="text-gray-500">{{ t('memberships.planHelp') }}</small>
                         </div>
 
-                        <div class="field">
-                            <label for="startDate" class="font-medium">{{ t('memberships.startDate') }} *</label>
-                            <Calendar
-                                id="startDate"
-                                v-model="formData.startDate"
-                                class="w-full"
-                                required
-                            />
-                            <small class="text-gray-500">{{ t('memberships.startDateHelp') }}</small>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="field">
+                                <label for="startDate" class="font-medium">{{ t('memberships.startDate') }} *</label>
+                                <Calendar
+                                    id="startDate"
+                                    v-model="formData.startDate"
+                                    class="w-full"
+                                    required
+                                />
+                                <small class="text-gray-500">{{ t('memberships.startDateHelp') }}</small>
+                            </div>
+
+                            <div class="field">
+                                <label for="endDate" class="font-medium">{{ t('memberships.endDate') }}</label>
+                                <Calendar
+                                    id="endDate"
+                                    v-model="formData.endDate"
+                                    class="w-full"
+                                    :min-date="formData.startDate"
+                                />
+                                <small class="text-gray-500">{{ t('memberships.endDateHelp') }}</small>
+                            </div>
                         </div>
 
                         <div class="field">

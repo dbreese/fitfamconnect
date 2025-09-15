@@ -331,14 +331,14 @@ async function findMembersByOwner(user: IUser | undefined): Promise<any[]> {
     const enrichedMembers = await Promise.all(
         members.map(async (member) => {
             // Get ONLY active plan assignments for this member (no endDate)
-            const activeMemberships = await Membership.find({ 
+            const activeMemberships = await Membership.find({
                 memberId: member._id,
                 $or: [
                     { endDate: { $exists: false } }, // No endDate field
                     { endDate: null } // Explicitly null endDate
                 ]
             });
-            
+
             const plans = await Promise.all(activeMemberships.map((membership) => Plan.findById(membership.planId)));
 
             return {
@@ -501,8 +501,35 @@ async function assignPlanToMember(
 
     console.log(`membershipService.assignPlanToMember: Assigning plan ${planId} to member ${memberId}`);
 
-    // ALWAYS end ALL existing active memberships for this member (for historical tracking)
-    // This ensures we create a new record instead of updating existing ones
+    const requestedStartDate = membershipData.startDate || new Date();
+
+    // Check if there's an existing active membership with the same start date
+    const existingMembershipSameDate = await Membership.findOne({
+        memberId,
+        startDate: {
+            $gte: new Date(requestedStartDate.getFullYear(), requestedStartDate.getMonth(), requestedStartDate.getDate()),
+            $lt: new Date(requestedStartDate.getFullYear(), requestedStartDate.getMonth(), requestedStartDate.getDate() + 1)
+        },
+        $or: [
+            { endDate: { $exists: false } }, // No endDate field
+            { endDate: null } // Explicitly null endDate
+        ]
+    });
+
+    if (existingMembershipSameDate) {
+        console.log(`membershipService.assignPlanToMember: Found existing membership with same start date, updating it instead of creating new record`);
+
+        // Update the existing membership with new plan and end date
+        existingMembershipSameDate.planId = planId;
+        existingMembershipSameDate.endDate = membershipData.endDate;
+
+        const updatedMembership = await existingMembershipSameDate.save();
+        console.log(`membershipService.assignPlanToMember: Updated existing membership ${updatedMembership._id}`);
+
+        return updatedMembership;
+    }
+
+    // If no existing membership with same start date, end all active memberships and create new one
     const activeMemberships = await Membership.find({
         memberId,
         $or: [
@@ -512,7 +539,7 @@ async function assignPlanToMember(
     });
 
     if (activeMemberships.length > 0) {
-        console.log(`membershipService.assignPlanToMember: Found ${activeMemberships.length} active memberships to end for member ${memberId}`);
+        console.log(`membershipService.assignPlanToMember: Found ${activeMemberships.length} active memberships with different start dates, ending them for historical tracking`);
 
         // End all active memberships by setting endDate to now
         const endDate = new Date();

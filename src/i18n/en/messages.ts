@@ -451,6 +451,8 @@ export const messages = {
         joinRequestDate: 'Join Request Date',
         startDate: 'Start Date',
         startDateHelp: 'When this plan assignment becomes active',
+        endDate: 'End Date',
+        endDateHelp: 'When this membership ends (leave blank for ongoing)',
         notes: 'Notes',
         actions: 'Actions',
         manage: 'Manage',

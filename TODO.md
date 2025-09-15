@@ -24,6 +24,8 @@
     - [ ] allow editing 1-time charges from billing screen
     - [ ] ability to see past billings
     - [ ] create receipt/invoice for a set of selected members.
+    - [ ] Allow credits to be added to an account (ie, maybe a member changed a plan and should get money back).
+    
 - [ ] Products
     - [ ] ability to add quantity when doing a charge. need to use this in billing calculations.
 - [ ] Coaches
