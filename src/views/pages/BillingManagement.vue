@@ -18,26 +18,27 @@
                             <template #content>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div class="field">
-                                        <label for="startDate" class="font-medium"
-                                            >{{ t('billing.startDate') }} *</label
+                                        <label for="billingMonth" class="font-medium"
+                                            >{{ t('billing.billingMonth') }} *</label
                                         >
                                         <Calendar
-                                            id="startDate"
+                                            id="billingMonth"
                                             v-model="billingPeriod.startDate"
                                             class="w-full"
                                             required
-                                            @date-select="onStartDateChange"
+                                            view="month"
+                                            dateFormat="mm/yy"
+                                            @date-select="onMonthChange"
                                         />
                                     </div>
                                     <div class="field">
-                                        <label for="endDate" class="font-medium">{{ t('billing.endDate') }} *</label>
-                                        <Calendar
-                                            id="endDate"
-                                            v-model="billingPeriod.endDate"
-                                            class="w-full"
-                                            required
-                                            :min-date="billingPeriod.startDate"
-                                        />
+                                        <label class="font-medium text-gray-600">{{ t('billing.billingPeriod') }}</label>
+                                        <div class="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                            <div class="text-sm text-gray-700">
+                                                <div>{{ t('billing.startDate') }}: {{ formatDate(billingPeriod.startDate) }}</div>
+                                                <div>{{ t('billing.endDate') }}: {{ formatDate(billingPeriod.endDate) }}</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="flex justify-end mt-4">
@@ -47,7 +48,7 @@
                                         size="small"
                                         @click="generatePreview"
                                         :loading="loading"
-                                        :disabled="!billingPeriod.startDate || !billingPeriod.endDate"
+                                        :disabled="!billingPeriod.startDate"
                                     />
                                 </div>
                             </template>
@@ -331,12 +332,21 @@ const activeTab = ref(0);
 const allowMemberSelection = ref(true);
 
 // Functions
-function onStartDateChange() {
+function onMonthChange() {
     if (billingPeriod.value.startDate) {
-        const startDate = new Date(billingPeriod.value.startDate);
-        const lastDayOfMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-        billingPeriod.value.endDate = lastDayOfMonth;
+        const selectedDate = new Date(billingPeriod.value.startDate);
+        // Set start date to the 1st of the selected month
+        const startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        // Set end date to the last day of the selected month
+        const endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+
+        billingPeriod.value.startDate = startDate;
+        billingPeriod.value.endDate = endDate;
     }
+}
+
+function formatDate(date: Date): string {
+    return new Date(date).toLocaleDateString();
 }
 
 async function generatePreview() {
@@ -350,15 +360,7 @@ async function generatePreview() {
         return;
     }
 
-    if (billingPeriod.value.endDate <= billingPeriod.value.startDate) {
-        toast.add({
-            severity: 'warn',
-            summary: t('feedback.errorTitle'),
-            detail: t('billing.validation.endDateAfterStart'),
-            life: 3000
-        });
-        return;
-    }
+    // End date is automatically calculated from start date, so no validation needed
 
     loading.value = true;
     try {
