@@ -1,5 +1,6 @@
 import { submit } from './NetworkUtil';
 import type { ServerResponse } from '../shared/ServerResponse';
+import { translate } from '@/i18n/i18n';
 
 export interface IBillingChargeGroup {
     memberId: string;
@@ -184,13 +185,16 @@ export class BillingService {
      * Get charge type display name
      */
     static getChargeTypeDisplayName(type: string): string {
+        console.log(`BillingService.getChargeTypeDisplayName: Getting charge type display name for ${type}`);
+
         switch (type) {
             case 'one-time-charge':
-                return 'One-time Charge';
+                return translate('billing.chargeTypes.oneTime');
             case 'recurring-plan':
-                return 'Plan';
+            case 'pro-rated-charge':
+                return translate('billing.chargeTypes.recurring');
             default:
-                return 'Unknown';
+                return translate('billing.chargeTypes.unknown');
         }
     }
 
@@ -202,6 +206,7 @@ export class BillingService {
             case 'one-time-charge':
                 return 'warning';
             case 'recurring-plan':
+            case 'pro-rated-charge':
                 return 'success';
             default:
                 return 'secondary';

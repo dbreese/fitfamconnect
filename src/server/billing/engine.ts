@@ -165,7 +165,7 @@ export class BillingEngine {
                 planId: plan._id?.toString(),
                 planName: plan.name,
                 amount: plan.price,
-                note: `Recurring plan: ${plan.name} (${plan.recurringPeriod})`,
+                note: plan.name, // Carry forward the plan name
                 chargeDate: startDate,
                 isBilled: false,
                 type: 'recurring-plan' as const,
@@ -277,7 +277,7 @@ export class BillingEngine {
                     planId: plan._id?.toString(),
                     planName: plan.name,
                     amount: proRatedAmount,
-                    note: `Pro-rated charge: ${plan.name} (${plan.recurringPeriod})`,
+                    note: `${plan.name} (pro-rated)`, // Plan name with pro-rated indicator
                     chargeDate: startDate,
                     isBilled: false,
                     type: 'pro-rated-charge' as const,

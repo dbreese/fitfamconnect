@@ -697,7 +697,7 @@ function convertEngineResultToPreview(engineResult: any) {
             memberId: charge.memberId,
             planId: charge.planId,
             amount: charge.amount,
-            description: charge.description,
+            description: charge.note, // Use the improved note field
             date: charge.chargeDate
         });
         group.subtotal += charge.amount;
@@ -716,7 +716,7 @@ function convertEngineResultToPreview(engineResult: any) {
             memberId: c.memberId,
             planId: c.planId,
             amount: c.amount,
-            description: c.description,
+            description: c.note, // Use the improved note field
             date: c.chargeDate
         })),
         groupedCharges,

@@ -592,7 +592,13 @@ export const messages = {
         billingReport: 'Billing Report',
         summary: 'Summary',
         invoiceGenerated: 'Filtered view generated for {memberCount} selected members',
-        filterReset: 'Filter reset - showing all members'
+        filterReset: 'Filter reset - showing all members',
+        chargeTypes: {
+            oneTime: 'One-time Charge',
+            recurring: 'Plan',
+            proRated: 'Pro-rated',
+            unknown: 'Unknown'
+        }
     },
     billingReports: {
         title: 'Billing Reports',

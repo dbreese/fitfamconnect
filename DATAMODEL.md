@@ -48,7 +48,8 @@ Mongoose schemas will be stored in src/server/db.
 
 - This is an audit table used for billing purposes.
 - A charge is associated to a member.
-- It can include either a charge for a given plan, or a 1-time charge such as for a "beverage"
+- It can include either a charge for a given plan, or a 1-time charge such as for a "beverage".
+- It should have a memo/note field that is a system, or owner specified note.
 - It can also be a charge associated with a Product.
 - Tracks the date the charge occurred, an optional plan id, and an amount and a note.
 - Should have an indicator for if it has been billed yet.
