@@ -14,7 +14,6 @@ export interface IMember {
         country?: string;
     };
     memberType: 'owner' | 'coach' | 'member';
-    startDate: Date;
     isActive: boolean;
     gymId: string; // Reference to Gym
     status: 'pending' | 'approved' | 'denied' | 'inactive';
@@ -45,7 +44,6 @@ const memberSchema = new mongoose.Schema<IMember>(
             enum: ['owner', 'coach', 'member'],
             default: 'member'
         },
-        startDate: { type: Date, required: true, default: Date.now },
         isActive: { type: Boolean, default: true },
         gymId: { type: String, required: true },
         status: {

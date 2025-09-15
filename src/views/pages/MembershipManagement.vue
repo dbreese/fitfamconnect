@@ -45,7 +45,7 @@ const searchQuery = ref('');
 
 const formData = ref({
     status: 'pending' as 'pending' | 'approved' | 'denied' | 'inactive',
-    planIds: [] as string[],
+    planId: '' as string,
     startDate: new Date(),
     notes: ''
 });
@@ -63,7 +63,6 @@ const newMemberFormData = ref({
         country: 'US'
     },
     memberType: 'member' as 'owner' | 'coach' | 'member',
-    startDate: new Date(),
     notes: ''
 });
 
@@ -89,10 +88,13 @@ const memberTypeOptions = [
 ];
 
 const planOptions = computed(() => {
-    return plans.value.map((plan) => ({
-        label: `${plan.name} - ${formatPrice(plan.price, plan.currency)}`,
-        value: plan._id
-    }));
+    return [
+        { label: t('memberships.noPlan'), value: '' },
+        ...plans.value.map((plan) => ({
+            label: `${plan.name} - ${formatPrice(plan.price, plan.currency)}`,
+            value: plan._id
+        }))
+    ];
 });
 
 const productOptions = computed(() => {
@@ -207,12 +209,17 @@ async function loadMemberCharges() {
 
 function openEditDialog(member: any) {
     selectedMember.value = member;
+
+    // Use the first active plan if available, otherwise empty
+    const activePlan = member.plans && member.plans.length > 0 ? member.plans[0] : null;
+
     formData.value = {
         status: member.status,
-        planIds: member.plans ? member.plans.map((plan: any) => plan._id) : [],
-        startDate: member.startDate ? new Date(member.startDate) : new Date(),
+        planId: activePlan ? activePlan._id : '',
+        startDate: activePlan?.startDate ? new Date(activePlan.startDate) : new Date(),
         notes: member.notes || ''
     };
+
     showDialog.value = true;
 }
 
@@ -287,7 +294,6 @@ function resetNewMemberForm() {
             country: 'US'
         },
         memberType: 'member',
-        startDate: new Date(),
         notes: ''
     };
 }
@@ -368,28 +374,26 @@ async function handleSubmit() {
         // Update member status
         const result = await MembershipService.updateMember((selectedMember.value as any)._id, {
             status: formData.value.status,
-            startDate: formData.value.startDate,
             notes: formData.value.notes.trim() || undefined
         });
 
         if (result && result.responseCode === 200) {
-            // Handle plan assignments
-            const currentPlanIds = selectedMember.value.plans
-                ? selectedMember.value.plans.map((plan: any) => plan._id)
-                : [];
-            const newPlanIds = formData.value.planIds;
+            // Handle plan assignment - server automatically ends old memberships and creates new ones
+            const newPlanId = formData.value.planId;
 
-            // Remove plans that are no longer selected
-            for (const planId of currentPlanIds) {
-                if (!newPlanIds.includes(planId)) {
-                    await MembershipService.removePlan((selectedMember.value as any)._id, planId);
-                }
-            }
+            if (newPlanId) {
+                // Server will: 1) End all active memberships, 2) Create new membership record
+                await MembershipService.assignPlan((selectedMember.value as any)._id, newPlanId, {
+                    startDate: formData.value.startDate
+                });
+            } else {
+                // If no plan selected, end all current memberships
+                const currentPlanIds = selectedMember.value.plans
+                    ? selectedMember.value.plans.map((plan: any) => plan._id)
+                    : [];
 
-            // Add new plans
-            for (const planId of newPlanIds) {
-                if (!currentPlanIds.includes(planId)) {
-                    await MembershipService.assignPlan((selectedMember.value as any)._id, planId);
+                for (const planId of currentPlanIds) {
+                    await MembershipService.endMembership((selectedMember.value as any)._id, planId);
                 }
             }
 
@@ -451,7 +455,6 @@ async function handleNewMemberSubmit() {
                     ? newMemberFormData.value.address
                     : undefined,
             memberType: newMemberFormData.value.memberType,
-            startDate: newMemberFormData.value.startDate,
             isActive: true,
             notes: newMemberFormData.value.notes.trim() || undefined
         };
@@ -751,11 +754,6 @@ onMounted(() => {
                                 {{ formatJoinDate(data.joinRequestDate) }}
                             </template>
                         </Column>
-                        <Column field="startDate" :header="t('memberships.startDate')" sortable>
-                            <template #body="{ data }">
-                                {{ formatJoinDate(data.startDate) }}
-                            </template>
-                        </Column>
                         <Column field="notes" :header="t('memberships.notes')">
                             <template #body="{ data }">
                                 <span v-if="data.notes" class="text-sm">{{ data.notes }}</span>
@@ -811,13 +809,6 @@ onMounted(() => {
                             <div>
                                 <label class="font-medium text-sm text-gray-600">{{ t('memberships.joinRequestDate') }}</label>
                                 <div>{{ formatJoinDate(selectedMember.joinRequestDate) }}</div>
-                            </div>
-                            <div>
-                                <label class="font-medium text-sm text-gray-600">{{ t('memberships.startDate') }}</label>
-                                <Calendar
-                                    v-model="formData.startDate"
-                                    class="w-full"
-                                />
                             </div>
                             <div>
                                 <label class="font-medium text-sm text-gray-600">{{
@@ -882,17 +873,28 @@ onMounted(() => {
                         </div>
 
                         <div class="field">
-                            <label for="plans" class="font-medium">{{ t('memberships.plans') }}</label>
-                            <MultiSelect
-                                id="plans"
-                                v-model="formData.planIds"
+                            <label for="plan" class="font-medium">{{ t('memberships.plan') }}</label>
+                            <Select
+                                id="plan"
+                                v-model="formData.planId"
                                 :options="planOptions"
                                 optionLabel="label"
                                 optionValue="value"
                                 class="w-full"
-                                :placeholder="t('memberships.selectPlans')"
+                                :placeholder="t('memberships.selectPlan')"
                             />
-                            <small class="text-gray-500">{{ t('memberships.plansHelp') }}</small>
+                            <small class="text-gray-500">{{ t('memberships.planHelp') }}</small>
+                        </div>
+
+                        <div class="field">
+                            <label for="startDate" class="font-medium">{{ t('memberships.startDate') }} *</label>
+                            <Calendar
+                                id="startDate"
+                                v-model="formData.startDate"
+                                class="w-full"
+                                required
+                            />
+                            <small class="text-gray-500">{{ t('memberships.startDateHelp') }}</small>
                         </div>
 
                         <div class="field">
@@ -906,6 +908,7 @@ onMounted(() => {
                             />
                             <small class="text-gray-500">{{ t('memberships.notesHelp') }}</small>
                         </div>
+
                     </form>
                 </div>
 
@@ -968,15 +971,6 @@ onMounted(() => {
                                 optionLabel="label"
                                 optionValue="value"
                                 class="w-full"
-                            />
-                        </div>
-                        <div class="field">
-                            <label for="newStartDate" class="font-medium">{{ t('memberships.startDate') }} *</label>
-                            <Calendar
-                                id="newStartDate"
-                                v-model="newMemberFormData.startDate"
-                                class="w-full"
-                                required
                             />
                         </div>
                     </div>

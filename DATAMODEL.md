@@ -25,7 +25,6 @@ Mongoose schemas will be stored in src/server/db.
 - Security: Members can only be edited either by theirselves, or by an owner.
 - Members can be an owner, coach, or member.
 - Basic profile information such as email, mailing address, mobile phone, etc, should be included.
-- Start date
 - This entity relates a member to a single gym.
 - Each member will have a list of classes they have attended based on a scheduled class, but this needs to be in a
   different entity somehow so it can be sharded to a different location for reporting.
@@ -33,13 +32,17 @@ Mongoose schemas will be stored in src/server/db.
 - For a member to join a gym, they must enter a gym code that is given to them by the owner of the gym.
 - When they enter this gym code, the owner of the gym will be able to approve their membership, so we need to track this
   approval along with the date/time of the approval.
+- Member entity contains basic profile information but does NOT contain start dates - those are in Membership records.
 
 # Membership
 
-- This is basically the member-to-plan relationship table that tracks 1 or more plans that are associated with a member.
+- This is the member-to-plan relationship table that tracks 1 or more plans that are associated with a member.
+- Contains start and end dates for each plan assignment (moved from Member entity)
 - Over time, multiple plans can be associated with a member and multiple can be active at a given time (ie, multiple
   recurring plans).
 - Members belong to a gym, not to individual locations within the gym.
+- Last billed date should be tracked for each membership record but is an optional field because they may not have been billed yet.
+- Each membership record represents one plan assignment to one member with its own start/end dates and billing tracking.
 
 # Charge
 

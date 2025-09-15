@@ -105,34 +105,22 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
 
     const gym = await getCurrentUserGym(user);
 
-    // Get all members for this gym with approved status and active during billing period
+    // Get all members for this gym with approved status
     const allApprovedMembers = await Member.find({ gymId: gym._id, status: 'approved' });
     console.log(`billingService.generateBillingPreview: Found ${allApprovedMembers.length} approved members in gym ${gym._id}`);
 
-    // Filter members who are active during the billing period (startDate <= billing period end)
-    const activeMembers = allApprovedMembers.filter(member => {
-        const memberStartDate = new Date(member.startDate);
-        const isActiveDuringPeriod = memberStartDate <= endDate;
+    const memberIds = allApprovedMembers.map((m) => m._id);
 
-        console.log(`billingService.generateBillingPreview: Member ${member.firstName} ${member.lastName}:`, {
-            memberId: member._id.toString(),
-            startDate: memberStartDate.toISOString(),
-            billingPeriodEnd: endDate.toISOString(),
-            isActiveDuringPeriod
-        });
-
-        return isActiveDuringPeriod;
+    // Get all active memberships for approved members that are active during the billing period
+    const allMemberships = await Membership.find({
+        memberId: { $in: memberIds },
+        startDate: { $lte: endDate }, // Membership started before or during billing period
+        $or: [
+            { endDate: { $exists: false } }, // No end date (ongoing)
+            { endDate: null }, // Explicitly null
+            { endDate: { $gte: startDate } } // End date is after billing period start
+        ]
     });
-
-    const memberIds = activeMembers.map((m) => m._id);
-    console.log(`billingService.generateBillingPreview: Found ${activeMembers.length} active members during billing period`);
-    console.log(
-        'billingService.generateBillingPreview: Active member IDs:',
-        memberIds.map((id) => id.toString())
-    );
-
-    // Get all memberships for active members
-    const allMemberships = await Membership.find({ memberId: { $in: memberIds } });
     console.log(
         `billingService.generateBillingPreview: Found ${allMemberships.length} memberships for active members`
     );
@@ -179,7 +167,7 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
     });
 
     const oneTimeCharges = unbilledCharges.map((charge) => {
-        const member = activeMembers.find((m) => m._id.toString() === charge.memberId.toString());
+        const member = allApprovedMembers.find((m) => m._id.toString() === charge.memberId.toString());
         return {
             type: 'one-time-charge',
             chargeId: charge._id,
@@ -230,7 +218,63 @@ async function generateBillingPreview(user: IUser | undefined, startDate: Date, 
             console.log(`billingService.generateBillingPreview: Plan active in period: ${planActiveInPeriod}`);
 
             if (planActiveInPeriod) {
-                const member = activeMembers.find((m) => m._id.toString() === membership.memberId.toString());
+                // CRITICAL: Check if member has already been billed for this plan during this billing period
+                const existingBilledCharge = await Charge.findOne({
+                    memberId: membership.memberId,
+                    planId: plan._id,
+                    isBilled: true,
+                    billingId: { $exists: true },
+                    chargeDate: {
+                        $gte: startDate,
+                        $lte: endDate
+                    }
+                });
+
+                if (existingBilledCharge) {
+                    console.log(`billingService.generateBillingPreview: Member ${membership.memberId} already billed for plan ${plan.name} during this period. Skipping.`);
+                    continue;
+                }
+
+                // Additional check: For longer-term plans (yearly, etc.), check if they've been billed recently
+                // This prevents over-billing for plans that should only be billed once per period
+                const planRecurringPeriod = plan.recurringPeriod?.toLowerCase();
+                if (planRecurringPeriod && (planRecurringPeriod.includes('year') || planRecurringPeriod.includes('annual'))) {
+                    // For yearly plans, check if billed in the last 11 months
+                    const elevenMonthsAgo = new Date();
+                    elevenMonthsAgo.setMonth(elevenMonthsAgo.getMonth() - 11);
+
+                    const recentBilledCharge = await Charge.findOne({
+                        memberId: membership.memberId,
+                        planId: plan._id,
+                        isBilled: true,
+                        billingId: { $exists: true },
+                        chargeDate: { $gte: elevenMonthsAgo }
+                    });
+
+                    if (recentBilledCharge) {
+                        console.log(`billingService.generateBillingPreview: Member ${membership.memberId} already billed for yearly plan ${plan.name} within the last 11 months. Skipping.`);
+                        continue;
+                    }
+                } else if (planRecurringPeriod && (planRecurringPeriod.includes('month'))) {
+                    // For monthly plans, check if billed in the last 30 days
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                    const recentBilledCharge = await Charge.findOne({
+                        memberId: membership.memberId,
+                        planId: plan._id,
+                        isBilled: true,
+                        billingId: { $exists: true },
+                        chargeDate: { $gte: thirtyDaysAgo }
+                    });
+
+                    if (recentBilledCharge) {
+                        console.log(`billingService.generateBillingPreview: Member ${membership.memberId} already billed for monthly plan ${plan.name} within the last 30 days. Skipping.`);
+                        continue;
+                    }
+                }
+
+                const member = allApprovedMembers.find((m) => m._id.toString() === membership.memberId.toString());
                 const charge = {
                     type: 'recurring-plan',
                     memberId: membership.memberId,

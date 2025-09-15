@@ -163,12 +163,20 @@ router.post(
     authorizeRoles('owner'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { memberId } = req.params;
-        const { planId, notes } = req.body;
-        console.log(`membershipService.assignPlan: API invoked for member=${memberId}, plan=${planId}`);
+        const { planId, startDate, endDate, notes } = req.body;
+        console.log(`membershipService.assignPlan: API invoked for member=${memberId}, plan=${planId}`, {
+            startDate,
+            endDate,
+            notes
+        });
         const user = req.user;
 
         try {
-            const membership = await assignPlanToMember(memberId, planId, notes, user);
+            const membership = await assignPlanToMember(memberId, planId, {
+                startDate: startDate ? new Date(startDate) : new Date(),
+                endDate: endDate ? new Date(endDate) : undefined,
+                notes
+            }, user);
             if (!membership) {
                 console.log(`membershipService.assignPlan: Failed to assign plan - member not found or access denied`);
                 res.status(404).json({ message: 'Member not found or access denied' });
@@ -188,6 +196,40 @@ router.post(
         } catch (error) {
             console.error(`membershipService.assignPlan: Error assigning plan:`, error);
             res.status(500).json({ message: 'Error assigning plan' });
+        }
+    }
+);
+
+// PUT /memberships/:memberId/plans/:planId/end - End membership (set endDate)
+router.put(
+    '/memberships/:memberId/plans/:planId/end',
+    authenticateUser,
+    authorizeRoles('owner'),
+    async (req: AuthenticatedRequest, res: Response) => {
+        const { memberId, planId } = req.params;
+        console.log(`membershipService.endMembership: API invoked for member=${memberId}, plan=${planId}`);
+        const user = req.user;
+
+        try {
+            const success = await endMembershipByOwner(memberId, planId, user);
+            if (!success) {
+                console.log(`membershipService.endMembership: Failed to end membership - not found or access denied`);
+                res.status(404).json({ message: 'Membership not found or access denied' });
+                return;
+            }
+
+            console.log(`membershipService.endMembership: Ended membership for member ${memberId}, plan ${planId}`);
+            const response: ServerResponse = {
+                responseCode: 200,
+                body: {
+                    message: 'Membership ended successfully'
+                }
+            };
+            res.status(200).json(response);
+            console.log('membershipService.endMembership: Response sent successfully');
+        } catch (error) {
+            console.error(`membershipService.endMembership: Error ending membership:`, error);
+            res.status(500).json({ message: 'Error ending membership' });
         }
     }
 );
@@ -285,22 +327,30 @@ async function findMembersByOwner(user: IUser | undefined): Promise<any[]> {
     // Find all members for this gym
     const members = await Member.find({ gymId: gym._id }).sort({ joinRequestDate: -1 });
 
-    // Enrich with plan assignments
+    // Enrich with ACTIVE plan assignments only
     const enrichedMembers = await Promise.all(
         members.map(async (member) => {
-            // Get plan assignments for this member
-            const memberships = await Membership.find({ memberId: member._id });
-            const plans = await Promise.all(memberships.map((membership) => Plan.findById(membership.planId)));
+            // Get ONLY active plan assignments for this member (no endDate)
+            const activeMemberships = await Membership.find({ 
+                memberId: member._id,
+                $or: [
+                    { endDate: { $exists: false } }, // No endDate field
+                    { endDate: null } // Explicitly null endDate
+                ]
+            });
+            
+            const plans = await Promise.all(activeMemberships.map((membership) => Plan.findById(membership.planId)));
 
             return {
                 ...member.toObject(),
                 plans: plans
                     .filter((plan) => plan !== null)
-                    .map((plan) => ({
+                    .map((plan, index) => ({
                         _id: plan!._id,
                         name: plan!.name,
                         price: plan!.price,
-                        currency: plan!.currency
+                        currency: plan!.currency,
+                        startDate: activeMemberships[index].startDate // Include membership start date
                     }))
             };
         })
@@ -414,7 +464,11 @@ async function updateMemberByIdAndOwner(
 async function assignPlanToMember(
     memberId: string,
     planId: string,
-    notes: string | undefined,
+    membershipData: {
+        startDate?: Date;
+        endDate?: Date;
+        notes?: string;
+    },
     user: IUser | undefined
 ): Promise<IMembership | null> {
     if (!user) {
@@ -447,17 +501,108 @@ async function assignPlanToMember(
 
     console.log(`membershipService.assignPlanToMember: Assigning plan ${planId} to member ${memberId}`);
 
-    // Create membership record
-    const membership = new Membership({
+    // ALWAYS end ALL existing active memberships for this member (for historical tracking)
+    // This ensures we create a new record instead of updating existing ones
+    const activeMemberships = await Membership.find({
         memberId,
-        planId,
-        notes
+        $or: [
+            { endDate: { $exists: false } }, // No endDate field
+            { endDate: null } // Explicitly null endDate
+        ]
     });
 
-    const savedMembership = await membership.save();
-    console.log(`membershipService.assignPlanToMember: Created membership ${savedMembership._id}`);
+    if (activeMemberships.length > 0) {
+        console.log(`membershipService.assignPlanToMember: Found ${activeMemberships.length} active memberships to end for member ${memberId}`);
 
-    return savedMembership;
+        // End all active memberships by setting endDate to now
+        const endDate = new Date();
+        const updateResult = await Membership.updateMany(
+            {
+                memberId,
+                $or: [
+                    { endDate: { $exists: false } },
+                    { endDate: null }
+                ]
+            },
+            {
+                $set: { endDate }
+            }
+        );
+
+        console.log(`membershipService.assignPlanToMember: Ended ${updateResult.modifiedCount} active memberships for member ${memberId}`);
+    } else {
+        console.log(`membershipService.assignPlanToMember: No active memberships found for member ${memberId}`);
+    }
+
+    // Create new membership record
+    const newMembershipData = {
+        memberId,
+        planId,
+        startDate: membershipData.startDate || new Date(),
+        endDate: membershipData.endDate
+    };
+
+    console.log(`membershipService.assignPlanToMember: Creating new membership record:`, newMembershipData);
+
+    try {
+        const membership = new Membership(newMembershipData);
+        const savedMembership = await membership.save();
+
+        console.log(`membershipService.assignPlanToMember: Successfully created new membership ${savedMembership._id} for member ${memberId} with plan ${planId}`);
+        console.log(`membershipService.assignPlanToMember: New membership details:`, savedMembership.toObject());
+
+        return savedMembership;
+    } catch (saveError) {
+        console.error(`membershipService.assignPlanToMember: Error saving new membership:`, saveError);
+        throw saveError;
+    }
+}
+
+/**
+ * End membership by setting endDate
+ */
+async function endMembershipByOwner(memberId: string, planId: string, user: IUser | undefined): Promise<boolean> {
+    if (!user) {
+        console.log('membershipService.endMembershipByOwner: No user provided');
+        return false;
+    }
+
+    // First find the user's gym
+    const gym = await Gym.findOne({ ownerId: user._id, isActive: true });
+    if (!gym) {
+        console.log(`membershipService.endMembershipByOwner: No gym found for user ${user._id}`);
+        return false;
+    }
+
+    // Verify member belongs to user's gym
+    const member = await Member.findOne({ _id: memberId, gymId: gym._id });
+    if (!member) {
+        console.log(
+            `membershipService.endMembershipByOwner: Member ${memberId} not found or doesn't belong to user's gym`
+        );
+        return false;
+    }
+
+    console.log(`membershipService.endMembershipByOwner: Ending membership for member ${memberId}, plan ${planId}`);
+
+    // Find and update the active membership
+    const membership = await Membership.findOne({
+        memberId,
+        planId,
+        endDate: { $exists: false } // Only active memberships (no end date)
+    });
+
+    if (!membership) {
+        console.log(`membershipService.endMembershipByOwner: No active membership found for member ${memberId}, plan ${planId}`);
+        return false;
+    }
+
+    // Set endDate to now
+    membership.endDate = new Date();
+    await membership.save();
+
+    console.log(`membershipService.endMembershipByOwner: Ended membership ${membership._id}`);
+    return true;
 }
 
 /**

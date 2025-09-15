@@ -26,7 +26,7 @@
                                             v-model="billingPeriod.startDate"
                                             class="w-full"
                                             required
-                                            :max-date="billingPeriod.endDate"
+                                            @date-select="onStartDateChange"
                                         />
                                     </div>
                                     <div class="field">
@@ -331,6 +331,14 @@ const activeTab = ref(0);
 const allowMemberSelection = ref(true);
 
 // Functions
+function onStartDateChange() {
+    if (billingPeriod.value.startDate) {
+        const startDate = new Date(billingPeriod.value.startDate);
+        const lastDayOfMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+        billingPeriod.value.endDate = lastDayOfMonth;
+    }
+}
+
 async function generatePreview() {
     if (!billingPeriod.value.startDate || !billingPeriod.value.endDate) {
         toast.add({

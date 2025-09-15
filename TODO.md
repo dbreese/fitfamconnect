@@ -9,6 +9,17 @@
     - [ ] Roll-ups (ie, families where 1 child drank beverages but parents pay)
     - [ ] UI UPDATE - currently only able to assign a single plan to a user. What about non-recurring charges? Probably
           need to address this. Thought: Just use products/inventory?
+    - [ ] Member charges on their own page and bills
+
+- [ ] Batch billings
+    - prorating to 1st?
+    - or bill on each date
+
+- [ ] Messaging
+    - [ ] AI opptys?
+    - [ ] Templates
+
+
 - [ ] Billing improvements
     - [ ] allow editing 1-time charges from billing screen
     - [ ] ability to see past billings

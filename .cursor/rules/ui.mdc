@@ -3,3 +3,4 @@ description: When dealing with VUE or HTML pages.
 alwaysApply: false
 ---
 - Make sure buttons are consistent and use the compact-button class.
+- Any styles that can be reused across the entire app should be created in /src/assets/styles.sccs

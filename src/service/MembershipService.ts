@@ -142,12 +142,23 @@ export const MembershipService = {
             });
     },
 
-    async assignPlan(memberId: string, planId: string, notes?: string): Promise<ServerResponse | undefined> {
+    async assignPlan(memberId: string, planId: string, membershipData?: {
+        startDate?: Date;
+        endDate?: Date;
+    }): Promise<ServerResponse | undefined> {
         console.log('MembershipService.assignPlan: Starting to assign plan', {
             memberId,
-            planId
+            planId,
+            membershipData
         });
-        return await submit('POST', `/memberships/${memberId}/plans`, { planId, notes })
+
+        const requestData = {
+            planId,
+            startDate: membershipData?.startDate,
+            endDate: membershipData?.endDate
+        };
+
+        return await submit('POST', `/memberships/${memberId}/plans`, requestData)
             .then(async (result) => {
                 console.log('MembershipService.assignPlan: Received response', {
                     memberId,
@@ -217,6 +228,45 @@ export const MembershipService = {
                     error
                 });
                 return Promise.reject('Error removing plan.');
+            });
+    },
+
+    async endMembership(memberId: string, planId: string): Promise<ServerResponse | undefined> {
+        console.log('MembershipService.endMembership: Starting to end membership', {
+            memberId,
+            planId
+        });
+        return await submit('PUT', `/memberships/${memberId}/plans/${planId}/end`)
+            .then(async (result) => {
+                console.log('MembershipService.endMembership: Received response', {
+                    memberId,
+                    planId,
+                    status: result.status,
+                    ok: result.ok
+                });
+                if (result.ok) {
+                    const json = await result.json();
+                    const response = json as ServerResponse;
+                    console.log('MembershipService.endMembership: Successfully ended membership', {
+                        memberId,
+                        planId,
+                        responseCode: response.responseCode
+                    });
+                    return response;
+                }
+                console.log('MembershipService.endMembership: Response not OK', {
+                    memberId,
+                    planId
+                });
+                return undefined;
+            })
+            .catch((error) => {
+                console.error('MembershipService.endMembership: Error ending membership:', {
+                    memberId,
+                    planId,
+                    error
+                });
+                return Promise.reject('Error ending membership.');
             });
     }
 };

@@ -65,7 +65,6 @@ router.get(
                         _id: memberRecord?._id,
                         memberType: memberRecord?.memberType,
                         status: memberRecord?.status,
-                        startDate: memberRecord?.startDate,
                         joinRequestDate: memberRecord?.joinRequestDate,
                         approvedAt: memberRecord?.approvedAt,
                         notes: memberRecord?.notes
