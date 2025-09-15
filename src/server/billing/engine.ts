@@ -13,6 +13,7 @@ export interface BillingChargeWithMeta extends Omit<ICharge, '_id' | 'createdAt'
     planName?: string;
     type: 'recurring-plan' | 'one-time-charge' | 'pro-rated-charge';
     membershipId?: string; // Reference to the membership record
+    chargeId?: string; // Original charge ID for one-time charges
 }
 
 export interface BillingResult {
@@ -101,7 +102,8 @@ export class BillingEngine {
                 isBilled: charge.isBilled,
                 billedDate: charge.billedDate,
                 billingId: charge.billingId,
-                type: 'one-time-charge' as const
+                type: 'one-time-charge' as const,
+                chargeId: charge._id?.toString()
             };
         });
     }
@@ -588,20 +590,25 @@ export class BillingEngine {
             // Only create new charge records for recurring and pro-rated charges
             // One-time charges already exist, just need to be marked as billed
             if (charge.type === 'one-time-charge') {
-                // Mark existing charge as billed
-                await Charge.findOneAndUpdate(
-                    {
-                        memberId: charge.memberId,
-                        amount: charge.amount,
-                        chargeDate: charge.chargeDate,
-                        isBilled: false
-                    },
-                    {
-                        isBilled: true,
-                        billedDate: new Date(),
-                        billingId
+                // Mark existing charge as billed using the charge ID
+                if (charge.chargeId) {
+                    const updateResult = await Charge.findByIdAndUpdate(
+                        charge.chargeId,
+                        {
+                            isBilled: true,
+                            billedDate: new Date(),
+                            billingId
+                        }
+                    );
+
+                    if (updateResult) {
+                        console.log(`BillingEngine: Marked one-time charge ${charge.chargeId} as billed`);
+                    } else {
+                        console.error(`BillingEngine: Failed to find one-time charge ${charge.chargeId}`);
                     }
-                );
+                } else {
+                    console.error('BillingEngine: One-time charge missing chargeId', charge);
+                }
             } else {
                 // Create new charge record for recurring/pro-rated charges
                 const newCharge = new Charge({

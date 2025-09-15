@@ -672,6 +672,37 @@ function formatJoinDate(date: string | Date): string {
     return new Date(date).toLocaleDateString();
 }
 
+function getMemberDisplayDate(member: any): string {
+    // If member has active plans, show the earliest start date
+    if (member.plans && member.plans.length > 0) {
+        const activePlans = member.plans.filter((plan: any) => plan.startDate);
+        if (activePlans.length > 0) {
+            const earliestStartDate = activePlans.reduce((earliest: any, plan: any) => {
+                const planStartDate = new Date(plan.startDate);
+                const earliestDate = new Date(earliest.startDate);
+                return planStartDate < earliestDate ? plan : earliest;
+            });
+            return formatJoinDate(earliestStartDate.startDate);
+        }
+    }
+
+    // For pending members or members without active plans, show join request date
+    return formatJoinDate(member.joinRequestDate);
+}
+
+function getMemberDisplayDateLabel(member: any): string {
+    // If member has active plans, show "Start Date"
+    if (member.plans && member.plans.length > 0) {
+        const activePlans = member.plans.filter((plan: any) => plan.startDate);
+        if (activePlans.length > 0) {
+            return t('memberships.startDate');
+        }
+    }
+
+    // For pending members or members without active plans, show "Join Request Date"
+    return t('memberships.joinRequestDate');
+}
+
 function formatChargeAmount(amountInCents: number): string {
     const amount = (amountInCents / 100).toFixed(2);
     return `$${amount}`;
@@ -752,9 +783,12 @@ onMounted(() => {
                                 {{ formatPlans(data.plans) }}
                             </template>
                         </Column>
-                        <Column field="joinRequestDate" :header="t('memberships.joinRequestDate')" sortable>
+                        <Column field="joinRequestDate" :header="t('memberships.date')" sortable>
                             <template #body="{ data }">
-                                {{ formatJoinDate(data.joinRequestDate) }}
+                                <div>
+                                    <div class="text-sm text-gray-600">{{ getMemberDisplayDateLabel(data) }}</div>
+                                    <div class="font-medium">{{ getMemberDisplayDate(data) }}</div>
+                                </div>
                             </template>
                         </Column>
                         <Column field="notes" :header="t('memberships.notes')">
@@ -810,8 +844,8 @@ onMounted(() => {
                                 <div>{{ formatMemberContact(selectedMember) }}</div>
                             </div>
                             <div>
-                                <label class="font-medium text-sm text-gray-600">{{ t('memberships.joinRequestDate') }}</label>
-                                <div>{{ formatJoinDate(selectedMember.joinRequestDate) }}</div>
+                                <label class="font-medium text-sm text-gray-600">{{ getMemberDisplayDateLabel(selectedMember) }}</label>
+                                <div>{{ getMemberDisplayDate(selectedMember) }}</div>
                             </div>
                             <div>
                                 <label class="font-medium text-sm text-gray-600">{{
