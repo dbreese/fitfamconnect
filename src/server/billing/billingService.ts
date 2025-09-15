@@ -9,6 +9,7 @@ import { Plan } from '../db/plan';
 import { Charge } from '../db/charge';
 import { Billing, type IBilling } from '../db/billing';
 import type { ServerResponse } from '../../shared/ServerResponse';
+import { BillingEngine } from './engine';
 
 // Helper class for creating server responses
 class ResponseHelper {
@@ -559,7 +560,11 @@ router.post(
                 return res.status(409).json(ResponseHelper.error(errorMessage, 409));
             }
 
-            const preview = await generateBillingPreview(req.user, start, end);
+            const gym = await getCurrentUserGym(req.user);
+            const engineResult = await BillingEngine.generateBillingCharges(gym._id.toString(), start, end);
+
+            // Convert engine result to legacy format for compatibility
+            const preview = convertEngineResultToPreview(engineResult);
 
             console.log('billingService.POST /billing/preview: Response sent successfully');
             res.status(200).json(ResponseHelper.success(preview, 'Billing preview generated successfully'));
@@ -604,7 +609,8 @@ router.post(
                 return res.status(409).json(ResponseHelper.error(errorMessage, 409));
             }
 
-            const result = await commitBillingRun(req.user, start, end, charges);
+            const gym = await getCurrentUserGym(req.user);
+            const result = await commitBillingRunWithEngine(req.user, gym._id.toString(), start, end, charges);
 
             console.log('billingService.POST /billing/commit: Response sent successfully');
             res.status(201).json(ResponseHelper.created(result, 'Billing run committed successfully'));
@@ -665,5 +671,93 @@ router.get(
         }
     }
 );
+
+/**
+ * Convert BillingEngine result to legacy preview format for UI compatibility
+ */
+function convertEngineResultToPreview(engineResult: any) {
+    // Group charges by member
+    const memberChargeGroups = new Map();
+
+    engineResult.charges.forEach((charge: any) => {
+        const memberId = charge.memberId;
+        if (!memberChargeGroups.has(memberId)) {
+            memberChargeGroups.set(memberId, {
+                memberId,
+                memberName: charge.memberName,
+                charges: [],
+                subtotal: 0
+            });
+        }
+
+        const group = memberChargeGroups.get(memberId);
+        group.charges.push({
+            type: charge.type,
+            chargeId: charge.chargeId,
+            memberId: charge.memberId,
+            planId: charge.planId,
+            amount: charge.amount,
+            description: charge.description,
+            date: charge.chargeDate
+        });
+        group.subtotal += charge.amount;
+    });
+
+    const groupedCharges = Array.from(memberChargeGroups.values()).sort((a, b) =>
+        a.memberName.localeCompare(b.memberName)
+    );
+
+    return {
+        startDate: engineResult.startDate,
+        endDate: engineResult.endDate,
+        charges: engineResult.charges.map((c: any) => ({
+            type: c.type,
+            chargeId: c.chargeId,
+            memberId: c.memberId,
+            planId: c.planId,
+            amount: c.amount,
+            description: c.description,
+            date: c.chargeDate
+        })),
+        groupedCharges,
+        totalAmount: engineResult.summary.totalAmount,
+        summary: {
+            recurringPlans: engineResult.summary.recurringPlans,
+            oneTimeCharges: engineResult.summary.oneTimeCharges,
+            totalCharges: engineResult.summary.totalCharges
+        }
+    };
+}
+
+/**
+ * Commit billing run using the new engine
+ */
+async function commitBillingRunWithEngine(
+    user: IUser | undefined,
+    gymId: string,
+    startDate: Date,
+    endDate: Date,
+    charges: any[]
+) {
+    // Create billing record
+    const billingRecord = new Billing({
+        memberId: user!._id,
+        billingDate: new Date(),
+        startDate,
+        endDate
+    });
+
+    const savedBilling = await billingRecord.save();
+    console.log(`billingService.commitBillingRunWithEngine: Created billing record ${savedBilling._id}`);
+
+    // Use engine to create charge records
+    const createdCharges = await BillingEngine.createChargeRecords(charges, savedBilling._id.toString());
+
+    return {
+        billingId: savedBilling._id,
+        chargesCreated: createdCharges,
+        existingChargesBilled: charges.filter(c => c.type === 'one-time-charge').length
+    };
+}
 
 export { router as billingRouter };
