@@ -4,6 +4,7 @@ import type { AuthenticatedRequest } from '../auth/auth';
 import type { IUser } from '../db/user';
 import { Gym } from '../db/gym';
 import { Member } from '../db/member';
+import { Membership } from '../db/membership';
 import type { ServerResponse } from '../../shared/ServerResponse';
 
 const router = express.Router();
@@ -49,9 +50,20 @@ router.get(
             // Find all gyms for these member records
             const gyms = await Gym.find({ _id: { $in: gymIds } });
 
-            // Combine gym data with member status
+            // Get membership data for each member
+            const memberIds = memberRecords.map(member => member._id?.toString()).filter(Boolean);
+            const memberships = await Membership.find({
+                memberId: { $in: memberIds },
+                endDate: { $exists: false } // Only active memberships
+            });
+
+            // Combine gym data with member status and membership info
             const gymMemberships = gyms.map(gym => {
                 const memberRecord = memberRecords.find(member => member.gymId === gym._id.toString());
+                const membershipRecord = memberships.find(membership =>
+                    membership.memberId === memberRecord?._id?.toString()
+                );
+
                 return {
                     gym: {
                         _id: gym._id,
@@ -65,6 +77,7 @@ router.get(
                         _id: memberRecord?._id,
                         memberType: memberRecord?.memberType,
                         status: memberRecord?.status,
+                        startDate: membershipRecord?.startDate,
                         joinRequestDate: memberRecord?.joinRequestDate,
                         approvedAt: memberRecord?.approvedAt,
                         notes: memberRecord?.notes
