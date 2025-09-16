@@ -127,7 +127,7 @@ export class BillingService {
     }
 
     /**
-     * Get billing history
+     * Get billing history (owner access)
      */
     static async getBillingHistory(): Promise<IBillingHistory[] | null> {
         console.log('BillingService.getBillingHistory: Retrieving billing history');
@@ -151,7 +151,31 @@ export class BillingService {
     }
 
     /**
-     * Get billing details for a specific billing run
+     * Get member billing history (member access)
+     */
+    static async getMemberBillingHistory(): Promise<IBillingHistory[] | null> {
+        console.log('BillingService.getMemberBillingHistory: Retrieving member billing history');
+
+        try {
+            const response = await submit('GET', `${this.baseUrl}/member-history`);
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('BillingService.getMemberBillingHistory: Response received', serverResponse);
+                return serverResponse.body.data as IBillingHistory[];
+            } else {
+                console.error('BillingService.getMemberBillingHistory: Request failed', response.status);
+                return null;
+            }
+        } catch (error) {
+            console.error('BillingService.getMemberBillingHistory: Error:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get billing details for a specific billing run (owner access)
      */
     static async getBillingDetails(billingId: string) {
         console.log('BillingService.getBillingDetails: Retrieving billing details for', billingId);
@@ -170,6 +194,30 @@ export class BillingService {
             }
         } catch (error) {
             console.error('BillingService.getBillingDetails: Error:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get member billing details for a specific billing run (member access - filtered to current user)
+     */
+    static async getMemberBillingDetails(billingId: string) {
+        console.log('BillingService.getMemberBillingDetails: Retrieving member billing details for', billingId);
+
+        try {
+            const response = await submit('GET', `${this.baseUrl}/member-details/${billingId}`);
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('BillingService.getMemberBillingDetails: Response received', serverResponse);
+                return serverResponse.body.data;
+            } else {
+                console.error('BillingService.getMemberBillingDetails: Request failed', response.status);
+                return null;
+            }
+        } catch (error) {
+            console.error('BillingService.getMemberBillingDetails: Error:', error);
             return null;
         }
     }

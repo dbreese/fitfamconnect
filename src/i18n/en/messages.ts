@@ -853,6 +853,7 @@ export const messages = {
         amount: 'Amount',
         gym: 'Gym',
         billingDate: 'Billing Date',
+        billingPeriod: 'Billing Period',
         billingId: 'Billing ID',
         totalAmount: 'Total Amount',
         chargeCount: 'Charges',

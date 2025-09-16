@@ -99,7 +99,7 @@ async function checkBillingPeriodOverlap(user: IUser | undefined, startDate: Dat
 
 
 /**
- * Get billing history for current user's gym with statistics
+ * Get billing history for current user's gym with statistics (owner access)
  */
 async function getBillingHistory(user: IUser | undefined) {
     console.log(`billingService.getBillingHistory: Getting billing history for user ${user?._id}`);
@@ -142,6 +142,78 @@ async function getBillingHistory(user: IUser | undefined) {
 }
 
 /**
+ * Get billing history for current user as a member (member access)
+ */
+async function getMemberBillingHistory(user: IUser | undefined) {
+    console.log(`billingService.getMemberBillingHistory: Getting billing history for member ${user?.email}`);
+
+    if (!user?.email) {
+        console.log(`billingService.getMemberBillingHistory: No user email provided`);
+        return [];
+    }
+
+    // Find member records for this user
+    const memberRecords = await Member.find({
+        email: user.email,
+        status: { $in: ['approved', 'pending'] }
+    });
+
+    console.log(`billingService.getMemberBillingHistory: Found ${memberRecords.length} member records`);
+
+    if (memberRecords.length === 0) {
+        console.log(`billingService.getMemberBillingHistory: No member records found`);
+        return [];
+    }
+
+    const memberIds = memberRecords.map(member => member._id?.toString()).filter(Boolean);
+
+    // Find billing records that contain charges for this member
+    const billingRecords = await Billing.find({
+        _id: {
+            $in: await Charge.distinct('billingId', {
+                memberId: { $in: memberIds },
+                billingId: { $exists: true, $ne: null }
+            })
+        }
+    }).sort({ billingDate: -1 }).limit(50);
+
+    console.log(`billingService.getMemberBillingHistory: Found ${billingRecords.length} billing records`);
+
+    // Get statistics for each billing record (only for this member's charges)
+    const billingRecordsWithStats = await Promise.all(
+        billingRecords.map(async (record) => {
+            // Get charges for this member in this billing run
+            const charges = await Charge.find({
+                billingId: record._id,
+                memberId: { $in: memberIds }
+            });
+
+            // Calculate statistics
+            const totalAmount = charges.reduce((sum, charge) => sum + charge.amount, 0);
+            const recurringCharges = charges.filter(charge => charge.planId);
+            const oneTimeCharges = charges.filter(charge => !charge.planId);
+
+            const recurringAmount = recurringCharges.reduce((sum, charge) => sum + charge.amount, 0);
+            const oneTimeAmount = oneTimeCharges.reduce((sum, charge) => sum + charge.amount, 0);
+
+            return {
+                ...record.toObject(),
+                statistics: {
+                    totalAmount,
+                    totalCharges: charges.length,
+                    recurringCharges: recurringCharges.length,
+                    oneTimeCharges: oneTimeCharges.length,
+                    recurringAmount,
+                    oneTimeAmount
+                }
+            };
+        })
+    );
+
+    return billingRecordsWithStats;
+}
+
+/**
  * Get billing details (charges) for a specific billing run
  */
 async function getBillingDetails(user: IUser | undefined, billingId: string) {
@@ -156,8 +228,8 @@ async function getBillingDetails(user: IUser | undefined, billingId: string) {
         return null;
     }
 
-    // Get all charges for this billing run
-    const charges = await Charge.find({ billingId: billingId });
+    // Get all charges for this billing run, sorted by charge date
+    const charges = await Charge.find({ billingId: billingId }).sort({ chargeDate: 1 }); // Sort by charge date ascending (oldest first)
     console.log(`billingService.getBillingDetails: Found ${charges.length} charges for billing ${billingId}`);
 
     // Get member details for each charge
@@ -189,6 +261,116 @@ async function getBillingDetails(user: IUser | undefined, billingId: string) {
     });
 
     // Group charges by member
+    const memberChargeGroups = new Map();
+    formattedCharges.forEach(charge => {
+        const memberId = charge.memberId.toString();
+        if (!memberChargeGroups.has(memberId)) {
+            memberChargeGroups.set(memberId, {
+                memberId,
+                memberName: charge.memberName,
+                charges: [],
+                subtotal: 0
+            });
+        }
+        const group = memberChargeGroups.get(memberId);
+        group.charges.push(charge);
+        group.subtotal += charge.amount;
+    });
+
+    const groupedCharges = Array.from(memberChargeGroups.values()).sort((a, b) =>
+        a.memberName.localeCompare(b.memberName)
+    );
+
+    const totalAmount = formattedCharges.reduce((sum, charge) => sum + charge.amount, 0);
+
+    return {
+        billingRecord,
+        charges: formattedCharges,
+        groupedCharges,
+        totalAmount,
+        summary: {
+            oneTimeCharges: formattedCharges.filter(c => c.type === 'one-time-charge').length,
+            recurringPlans: formattedCharges.filter(c => c.type === 'recurring-plan').length,
+            totalCharges: formattedCharges.length
+        }
+    };
+}
+
+/**
+ * Get billing details for a specific billing run (member access - filtered to current user)
+ */
+async function getMemberBillingDetails(user: IUser | undefined, billingId: string) {
+    console.log(`billingService.getMemberBillingDetails: Getting billing details for member ${user?.email}`);
+
+    if (!user?.email) {
+        console.log(`billingService.getMemberBillingDetails: No user email provided`);
+        return null;
+    }
+
+    // Find member records for this user
+    const memberRecords = await Member.find({
+        email: user.email,
+        status: { $in: ['approved', 'pending'] }
+    });
+
+    console.log(`billingService.getMemberBillingDetails: Found ${memberRecords.length} member records`);
+
+    if (memberRecords.length === 0) {
+        console.log(`billingService.getMemberBillingDetails: No member records found`);
+        return null;
+    }
+
+    const memberIds = memberRecords.map(member => member._id?.toString()).filter(Boolean);
+
+    // Verify the billing record exists and contains charges for this member
+    const billingRecord = await Billing.findOne({ _id: billingId });
+    if (!billingRecord) {
+        console.log(`billingService.getMemberBillingDetails: Billing record not found`);
+        return null;
+    }
+
+    // Get charges for this member in this billing run, sorted by charge date
+    const charges = await Charge.find({
+        billingId: billingId,
+        memberId: { $in: memberIds }
+    }).sort({ chargeDate: 1 }); // Sort by charge date ascending (oldest first)
+
+    console.log(`billingService.getMemberBillingDetails: Found ${charges.length} charges for member in billing ${billingId}`);
+
+    if (charges.length === 0) {
+        console.log(`billingService.getMemberBillingDetails: No charges found for this member in this billing run`);
+        return null;
+    }
+
+    // Get member details for each charge
+    const memberIdsInCharges = [...new Set(charges.map(c => c.memberId))];
+    const members = await Member.find({ _id: { $in: memberIdsInCharges } });
+    const memberMap = new Map(members.map(m => [m._id.toString(), m]));
+
+    // Get plan details for charges that have planId
+    const planIds = [...new Set(charges.filter(c => c.planId).map(c => c.planId))];
+    const plans = await Plan.find({ _id: { $in: planIds } });
+    const planMap = new Map(plans.map(p => [p._id.toString(), p]));
+
+    // Format charges with member and plan details
+    const formattedCharges = charges.map(charge => {
+        const member = memberMap.get(charge.memberId.toString());
+        const plan = charge.planId ? planMap.get(charge.planId.toString()) : null;
+
+        return {
+            type: plan ? 'recurring-plan' : 'one-time-charge',
+            chargeId: charge._id,
+            memberId: charge.memberId,
+            memberName: member ? `${member.firstName} ${member.lastName}` : 'Unknown',
+            planId: charge.planId,
+            planName: plan ? plan.name : null,
+            amount: charge.amount,
+            description: charge.note || (plan ? `Recurring plan: ${plan.name}` : 'One-time charge'),
+            date: charge.chargeDate
+        };
+    });
+
+    // Group charges by member (should only be one member - the current user)
     const memberChargeGroups = new Map();
     formattedCharges.forEach(charge => {
         const memberId = charge.memberId.toString();
@@ -321,7 +503,7 @@ router.post(
 
 /**
  * GET /billing/history
- * Get billing history
+ * Get billing history (owner access)
  */
 router.get(
     '/billing/history',
@@ -343,8 +525,31 @@ router.get(
 );
 
 /**
+ * GET /billing/member-history
+ * Get billing history for current user as a member
+ */
+router.get(
+    '/billing/member-history',
+    authenticateUser,
+    authorizeRoles('member', 'owner'),
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            console.log('billingService.GET /billing/member-history: Request received');
+
+            const history = await getMemberBillingHistory(req.user);
+
+            console.log('billingService.GET /billing/member-history: Response sent successfully');
+            res.status(200).json(ResponseHelper.success(history, 'Member billing history retrieved successfully'));
+        } catch (error) {
+            console.error('billingService.GET /billing/member-history: Error:', error);
+            res.status(500).json(ResponseHelper.error('Failed to retrieve member billing history', 500));
+        }
+    }
+);
+
+/**
  * GET /billing/details/:billingId
- * Get billing details for a specific billing run
+ * Get billing details for a specific billing run (owner access)
  */
 router.get(
     '/billing/details/:billingId',
@@ -366,6 +571,34 @@ router.get(
         } catch (error) {
             console.error('billingService.GET /billing/details: Error:', error);
             res.status(500).json(ResponseHelper.error('Failed to retrieve billing details', 500));
+        }
+    }
+);
+
+/**
+ * GET /billing/member-details/:billingId
+ * Get billing details for a specific billing run (member access - filtered to current user)
+ */
+router.get(
+    '/billing/member-details/:billingId',
+    authenticateUser,
+    authorizeRoles('member', 'owner'),
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            const { billingId } = req.params;
+            console.log('billingService.GET /billing/member-details: Request received', { billingId });
+
+            const details = await getMemberBillingDetails(req.user, billingId);
+
+            if (!details) {
+                return res.status(404).json(ResponseHelper.error('Billing record not found or no charges for this member', 404));
+            }
+
+            console.log('billingService.GET /billing/member-details: Response sent successfully');
+            res.status(200).json(ResponseHelper.success(details, 'Member billing details retrieved successfully'));
+        } catch (error) {
+            console.error('billingService.GET /billing/member-details: Error:', error);
+            res.status(500).json(ResponseHelper.error('Failed to retrieve member billing details', 500));
         }
     }
 );

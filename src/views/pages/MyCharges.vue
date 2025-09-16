@@ -51,12 +51,14 @@ async function loadUnbilledCharges() {
 async function loadBillingHistory() {
     loading.value = true;
     try {
-        const result = await BillingService.getBillingHistory();
+        const result = await BillingService.getMemberBillingHistory();
         if (result) {
             // Transform the billing history data to match our interface
             const transformedHistory = result.map((billing: any) => ({
                 billingId: billing._id,
                 billingDate: billing.billingDate,
+                startDate: billing.startDate,
+                endDate: billing.endDate,
                 totalAmount: billing.statistics.totalAmount, // Keep in cents for consistency
                 chargeCount: billing.statistics.totalCharges,
                 gymName: 'Your Gym', // This will be the user's gym
@@ -121,8 +123,8 @@ async function onBillingRowClick(event: any) {
 
     loading.value = true;
     try {
-        // Load the detailed billing information for this specific billing ID
-        const result = await BillingService.getBillingDetails(billing.billingId);
+        // Load the detailed billing information for this specific billing ID (member access)
+        const result = await BillingService.getMemberBillingDetails(billing.billingId);
         if (result) {
             // Transform the billing details to match BillingPreview format
             const transformedDetails = {
@@ -284,6 +286,12 @@ onMounted(() => {
                                         </template>
                                     </Column>
 
+                                    <Column field="startDate" :header="t('mycharges.billingPeriod')" sortable>
+                                        <template #body="{ data }">
+                                            {{ formatDate(data.startDate) }} - {{ formatDate(data.endDate) }}
+                                        </template>
+                                    </Column>
+
                                     <Column field="totalAmount" :header="t('mycharges.totalAmount')" sortable>
                                         <template #body="{ data }">
                                             <span class="font-semibold">{{ formatCurrency(data.totalAmount) }}</span>
@@ -322,6 +330,8 @@ onMounted(() => {
                 v-if="selectedBilling"
                 :preview="selectedBilling"
                 :title="t('mycharges.billingDetails')"
+                :show-commit-button="false"
+                :show-pdf-button="true"
             />
         </Dialog>
     </Fluid>

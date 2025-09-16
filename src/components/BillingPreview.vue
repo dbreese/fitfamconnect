@@ -234,8 +234,18 @@ defineExpose({
             </div>
 
             <!-- Action Buttons -->
-            <div v-if="showCommitButton" class="flex justify-end gap-2 mt-4">
+            <div v-if="showCommitButton || showPdfButton" class="flex justify-end gap-2 mt-4">
                 <Button
+                    v-if="showPdfButton"
+                    :label="t('billing.generatePdf')"
+                    icon="pi pi-file-pdf"
+                    severity="secondary"
+                    size="small"
+                    class="p-button-sm compact-button"
+                    @click="generatePDF"
+                />
+                <Button
+                    v-if="showCommitButton"
                     :label="t('billing.commitBilling')"
                     icon="pi pi-check"
                     severity="success"
