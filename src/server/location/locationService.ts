@@ -10,7 +10,7 @@ export const router = Router();
 router.use(express.json());
 
 // GET /locations - Get all locations for the current user's gym
-router.get('/locations', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/locations', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
     console.log('locationService.getLocations: API invoked');
     const user = req.user;
 
@@ -37,7 +37,7 @@ router.get('/locations', authenticateUser, authorizeRoles('owner'), async (req: 
 router.get(
     '/locations/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(`locationService.getLocation: API invoked with id=${id}`);
@@ -72,7 +72,7 @@ router.get(
 router.post(
     '/locations',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         console.log(`locationService.createLocation: API invoked with payload=${JSON.stringify(req.body)}`);
         const user = req.user;
@@ -111,7 +111,7 @@ router.post(
 router.put(
     '/locations/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(
@@ -151,7 +151,7 @@ router.put(
 router.delete(
     '/locations/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(`locationService.deleteLocation: API invoked with id=${id}`);

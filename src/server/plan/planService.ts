@@ -10,7 +10,7 @@ export const router = Router();
 router.use(express.json());
 
 // GET /plans - Get all plans for the current user's gym
-router.get('/plans', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/plans', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
     console.log('planService.getPlans: API invoked');
     const user = req.user;
 
@@ -34,7 +34,7 @@ router.get('/plans', authenticateUser, authorizeRoles('owner'), async (req: Auth
 });
 
 // GET /plans/:id - Get plan by ID (if it belongs to user's gym)
-router.get('/plans/:id', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/plans/:id', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     console.log(`planService.getPlan: API invoked with id=${id}`);
     const user = req.user;
@@ -64,7 +64,7 @@ router.get('/plans/:id', authenticateUser, authorizeRoles('owner'), async (req: 
 });
 
 // POST /plans - Create new plan for user's gym
-router.post('/plans', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/plans', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
     console.log(`planService.createPlan: API invoked with payload=${JSON.stringify(req.body)}`);
     const user = req.user;
     const planData = req.body;
@@ -94,7 +94,7 @@ router.post('/plans', authenticateUser, authorizeRoles('owner'), async (req: Aut
 });
 
 // PUT /plans/:id - Update plan (if it belongs to user's gym)
-router.put('/plans/:id', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
+router.put('/plans/:id', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     console.log(`planService.updatePlan: API invoked with id=${id} and payload=${JSON.stringify(req.body)}`);
     const user = req.user;
@@ -128,7 +128,7 @@ router.put('/plans/:id', authenticateUser, authorizeRoles('owner'), async (req: 
 router.delete(
     '/plans/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(`planService.deletePlan: API invoked with id=${id}`);

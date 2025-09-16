@@ -15,6 +15,10 @@ const isMember = computed(() => {
     return user.roles && user.roles.includes('member');
 });
 
+const isRoot = computed(() => {
+    return user.roles && user.roles.includes('root');
+});
+
 const model = computed(() => {
     const menu = [];
 
@@ -62,6 +66,18 @@ const model = computed(() => {
                 { label: 'Attendance', icon: 'pi pi-calendar', to: '/reports/missing-members' },
                 { label: 'Payroll', icon: 'pi pi-money-bill', to: '/reports/missing-members' },
                 { label: 'Billing', icon: 'pi pi-dollar', to: '/reports/billing' },
+
+                { separator: true }
+            ]
+        });
+    }
+
+    // ROOT SECTION
+    if (isRoot.value) {
+        menu.push({
+            label: 'Root',
+            items: [
+                { label: 'REST Explorer', icon: 'pi pi-code', to: '/root/rest-explorer' },
 
                 { separator: true }
             ]

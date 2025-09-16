@@ -22,7 +22,7 @@ class ResponseHelper {
 router.get(
     '/mygyms',
     authenticateUser,
-    authorizeRoles('member', 'owner'),
+    authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('myGymsService.GET /mygyms: Request received for user', req.user?.email);
@@ -98,7 +98,7 @@ router.get(
 router.post(
     '/mygyms/lookup-gym',
     authenticateUser,
-    authorizeRoles('member', 'owner'),
+    authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('myGymsService.POST /mygyms/lookup-gym: Request received', req.body);
@@ -147,7 +147,7 @@ router.post(
 router.post(
     '/mygyms/join-gym',
     authenticateUser,
-    authorizeRoles('member', 'owner'),
+    authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('myGymsService.POST /mygyms/join-gym: Request received', req.body);

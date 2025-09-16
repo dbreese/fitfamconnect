@@ -15,7 +15,7 @@ router.use(express.json());
 router.get(
     '/memberships',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         console.log('membershipService.getMemberships: API invoked');
         const user = req.user;
@@ -44,7 +44,7 @@ router.get(
 router.get(
     '/memberships/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(`membershipService.getMember: API invoked with id=${id}`);
@@ -81,7 +81,7 @@ router.get(
 router.post(
     '/memberships',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         console.log(`membershipService.createMember: API invoked with payload=${JSON.stringify(req.body)}`);
         const user = req.user;
@@ -120,7 +120,7 @@ router.post(
 router.put(
     '/memberships/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(
@@ -160,7 +160,7 @@ router.put(
 router.post(
     '/memberships/:memberId/plans',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { memberId } = req.params;
         const { planId, startDate, endDate, notes } = req.body;
@@ -204,7 +204,7 @@ router.post(
 router.put(
     '/memberships/:memberId/plans/:planId/end',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { memberId, planId } = req.params;
         console.log(`membershipService.endMembership: API invoked for member=${memberId}, plan=${planId}`);
@@ -238,7 +238,7 @@ router.put(
 router.delete(
     '/memberships/:memberId/plans/:planId',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { memberId, planId } = req.params;
         console.log(`membershipService.removePlan: API invoked for member=${memberId}, plan=${planId}`);

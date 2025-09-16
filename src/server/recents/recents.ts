@@ -6,7 +6,7 @@ import { authenticateUser, authorizeRoles } from '../auth/auth';
 export const recents = Router();
 recents.use(express.json());
 
-recents.get('/recents/list', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res) => {
+recents.get('/recents/list', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res) => {
     const userId = req.user?._id;
 
     const { tool, type } = req.query;
@@ -32,7 +32,7 @@ recents.get('/recents/list', authenticateUser, authorizeRoles('owner'), async (r
     res.json(results);
 });
 
-recents.get('/recents/item', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res) => {
+recents.get('/recents/item', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res) => {
     const userId = req.user?._id;
 
     const { id } = req.query;

@@ -64,7 +64,7 @@ const router = createRouter({
                     component: () => import('@/layout/AppLayout.vue'),
                     meta: {
                         requiresAuth: true,
-                        roles: ['member', 'owner']
+                        roles: ['member', 'owner', 'root']
                     },
                     children: [
                         // Common routes for all authenticated users
@@ -166,6 +166,14 @@ const router = createRouter({
                             component: () => import('@/views/pages/BillingManagement.vue'),
                             meta: { roles: ['owner'] },
                             props: { showTabs: false }
+                        },
+
+                        // Root-only routes
+                        {
+                            path: '/root/rest-explorer',
+                            name: 'rest-explorer',
+                            component: () => import('@/views/pages/RestExplorer.vue'),
+                            meta: { roles: ['root'] }
                         }
                     ]
                 }

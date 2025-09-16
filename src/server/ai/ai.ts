@@ -14,18 +14,18 @@ import { rubric } from './rubric';
 export const router = Router();
 router.use(express.json());
 
-router.post('/api/ai/leveler', authenticateUser, authorizeRoles('user'), async (req, res) =>
+router.post('/api/ai/leveler', authenticateUser, authorizeRoles('user', 'root'), async (req, res) =>
     leveler(chatGPT, req, res)
 );
-router.post('/api/ai/grammarcheck', authenticateUser, authorizeRoles('user'), async (req, res) =>
+router.post('/api/ai/grammarcheck', authenticateUser, authorizeRoles('user', 'root'), async (req, res) =>
     grammarChecker(chatGPT, req, res)
 );
-router.post('/api/ai/letterwriter', authenticateUser, authorizeRoles('user'), async (req, res) =>
+router.post('/api/ai/letterwriter', authenticateUser, authorizeRoles('user', 'root'), async (req, res) =>
     letterWriter(chatGPT, req, res)
 );
-router.post('/api/ai/newsletter', authenticateUser, authorizeRoles('user'), async (req, res) =>
+router.post('/api/ai/newsletter', authenticateUser, authorizeRoles('user', 'root'), async (req, res) =>
     newsletter(chatGPT, req, res)
 );
-router.post('/api/ai/quiz', authenticateUser, authorizeRoles('user'), async (req, res) => quiz(chatGPT, req, res));
+router.post('/api/ai/quiz', authenticateUser, authorizeRoles('user', 'root'), async (req, res) => quiz(chatGPT, req, res));
 
-router.post('/api/ai/rubric', authenticateUser, authorizeRoles('user'), async (req, res) => rubric(chatGPT, req, res));
+router.post('/api/ai/rubric', authenticateUser, authorizeRoles('user', 'root'), async (req, res) => rubric(chatGPT, req, res));

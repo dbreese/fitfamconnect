@@ -13,7 +13,7 @@ export const router = Router();
 router.use(express.json());
 
 // GET /schedules - Get all schedules for the current user's gym
-router.get('/schedules', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/schedules', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
     console.log('scheduleService.getSchedules: API invoked');
     const user = req.user;
     const { startDate, endDate } = req.query;
@@ -44,7 +44,7 @@ router.get('/schedules', authenticateUser, authorizeRoles('owner'), async (req: 
 });
 
 // GET /schedules/:gymId - Get augmented schedules for a specific gym (available to members and owners)
-router.get('/schedules/:gymId', authenticateUser, authorizeRoles('member', 'owner'), async (req: AuthenticatedRequest, res: Response) => {
+router.get('/schedules/:gymId', authenticateUser, authorizeRoles('member', 'owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
     console.log('scheduleService.getAugmentedSchedules: API invoked');
     const user = req.user;
     const { gymId } = req.params;
@@ -85,7 +85,7 @@ router.get('/schedules/:gymId', authenticateUser, authorizeRoles('member', 'owne
 router.get(
     '/schedules/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(`scheduleService.getSchedule: API invoked with id=${id}`);
@@ -120,7 +120,7 @@ router.get(
 router.post(
     '/schedules',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         console.log(`scheduleService.createSchedule: API invoked with payload=${JSON.stringify(req.body)}`);
         const user = req.user;
@@ -159,7 +159,7 @@ router.post(
 router.put(
     '/schedules/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(
@@ -199,7 +199,7 @@ router.put(
 router.delete(
     '/schedules/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         const { id } = req.params;
         console.log(`scheduleService.deleteSchedule: API invoked with id=${id}`);

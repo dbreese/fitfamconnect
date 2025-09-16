@@ -31,7 +31,7 @@ async function getCurrentUserGym(user: IUser | undefined) {
 router.get(
     '/products',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('productService.GET /products: Request received');
@@ -52,7 +52,7 @@ router.get(
 router.post(
     '/products',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('productService.POST /products: Request received', req.body);
@@ -79,7 +79,7 @@ router.post(
 router.put(
     '/products/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             const { id } = req.params;
@@ -111,7 +111,7 @@ router.put(
 router.delete(
     '/products/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             const { id } = req.params;

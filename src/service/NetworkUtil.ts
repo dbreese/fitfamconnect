@@ -10,14 +10,26 @@ export async function submit(
 
     console.log(`Submitting ${method}:${__API_SERVER__}${path} : ${JSON.stringify(body)}`);
 
-    return fetch(`${__API_SERVER__}${path}`, {
+    // For GET and HEAD requests, don't include body or Content-Type
+    const isGetOrHead = method.toUpperCase() === 'GET' || method.toUpperCase() === 'HEAD';
+
+    const fetchOptions: RequestInit = {
         method: method,
         headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
-        },
-        body: body === undefined ? undefined : JSON.stringify(body)
-    })
+        }
+    };
+
+    // Only add Content-Type and body for non-GET/HEAD requests
+    if (!isGetOrHead && body !== undefined) {
+        fetchOptions.headers = {
+            ...fetchOptions.headers,
+            'Content-Type': 'application/json'
+        };
+        fetchOptions.body = JSON.stringify(body);
+    }
+
+    return fetch(`${__API_SERVER__}${path}`, fetchOptions)
         .then(async (response) => {
             return response;
         })

@@ -11,7 +11,7 @@ router.use(express.json());
 router.post(
     '/user/preferences',
     authenticateUser,
-    authorizeRoles('user', 'owner'),
+    authorizeRoles('user', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         // save prefs
         console.log(`userprefs=${JSON.stringify(req.body)}`);

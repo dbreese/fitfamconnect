@@ -16,7 +16,7 @@ router.use(express.json());
 router.get(
     '/charges/member/:memberId',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         console.log(`chargeService.getChargesByMember: API invoked with memberId=${req.params.memberId}`);
         const user = req.user;
@@ -43,7 +43,7 @@ router.get(
 );
 
 // POST /charges - Create a new charge
-router.post('/charges', authenticateUser, authorizeRoles('owner'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/charges', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
     console.log(`chargeService.createCharge: API invoked with payload=${JSON.stringify(req.body)}`);
     const user = req.user;
     const chargeData = req.body;
@@ -71,7 +71,7 @@ router.post('/charges', authenticateUser, authorizeRoles('owner'), async (req: A
 router.get(
     '/charges/unbilled',
     authenticateUser,
-    authorizeRoles('member', 'owner'),
+    authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         console.log('chargeService.getUnbilledCharges: API invoked for user', req.user?.email);
         const user = req.user;
@@ -100,7 +100,7 @@ router.get(
 router.get(
     '/charges/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         console.log(`chargeService.getChargeById: API invoked with chargeId=${req.params.id}`);
         const user = req.user;
@@ -135,7 +135,7 @@ router.get(
 router.put(
     '/charges/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         console.log(
             `chargeService.updateCharge: API invoked with chargeId=${req.params.id}, payload=${JSON.stringify(req.body)}`
@@ -173,7 +173,7 @@ router.put(
 router.delete(
     '/charges/:id',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         console.log(`chargeService.deleteCharge: API invoked with chargeId=${req.params.id}`);
         const user = req.user;

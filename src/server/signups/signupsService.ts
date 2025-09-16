@@ -28,7 +28,7 @@ class ResponseHelper {
 router.get(
     '/signups/classes',
     authenticateUser,
-    authorizeRoles('member', 'owner'),
+    authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('signupsService.GET /signups/classes: Request received', req.query);
@@ -189,7 +189,7 @@ router.get(
 router.post(
     '/signups/toggle',
     authenticateUser,
-    authorizeRoles('member', 'owner'),
+    authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('signupsService.POST /signups/toggle: Request received', req.body);
@@ -277,7 +277,7 @@ router.post(
 router.get(
     '/signups/upcoming',
     authenticateUser,
-    authorizeRoles('member', 'owner'),
+    authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('signupsService.GET /signups/upcoming: Request received');

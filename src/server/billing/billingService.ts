@@ -415,7 +415,7 @@ async function getMemberBillingDetails(user: IUser | undefined, billingId: strin
 router.post(
     '/billing/preview',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('billingService.POST /billing/preview: Request received', req.body);
@@ -462,7 +462,7 @@ router.post(
 router.post(
     '/billing/commit',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('billingService.POST /billing/commit: Request received', req.body);
@@ -508,7 +508,7 @@ router.post(
 router.get(
     '/billing/history',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('billingService.GET /billing/history: Request received');
@@ -531,7 +531,7 @@ router.get(
 router.get(
     '/billing/member-history',
     authenticateUser,
-    authorizeRoles('member', 'owner'),
+    authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('billingService.GET /billing/member-history: Request received');
@@ -554,7 +554,7 @@ router.get(
 router.get(
     '/billing/details/:billingId',
     authenticateUser,
-    authorizeRoles('owner'),
+    authorizeRoles('owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             const { billingId } = req.params;
@@ -582,7 +582,7 @@ router.get(
 router.get(
     '/billing/member-details/:billingId',
     authenticateUser,
-    authorizeRoles('member', 'owner'),
+    authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             const { billingId } = req.params;
