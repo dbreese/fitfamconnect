@@ -2,14 +2,26 @@
 
 ## Features
 
+### Required for launch
+- [ ] Members
+    - [ ] can view monthly charges and bills
+
+- [ ] Coach assignments
+- [ ] Timesheets for coaches (is this just a kiosk feature for clock in/out)
+
+### Nice to have
+- [ ] Billing
+    - [ ] Allow editing 1-time charges from billing preview screen.
+
+- [ ] Products
+    - [ ] ability to add quantity when doing a charge. need to use this in billing calculations.
+
+
+### Future
 - [ ] Member charges
-    - [x] recurring amount
-    - [x] manage one-time charges
-    - [ ] view charges
     - [ ] Roll-ups (ie, families where 1 child drank beverages but parents pay)
     - [ ] UI UPDATE - currently only able to assign a single plan to a user. What about non-recurring charges? Probably
           need to address this. Thought: Just use products/inventory?
-    - [ ] Member charges on their own page and bills
 
 - [ ] Batch billings
     - prorating to 1st?
@@ -19,15 +31,9 @@
     - [ ] AI opptys?
     - [ ] Templates
 
-
 - [ ] Billing improvements
-    - [ ] allow editing 1-time charges from billing screen
-    - [ ] ability to see past billings
-    - [ ] create receipt/invoice for a set of selected members.
     - [ ] Allow credits to be added to an account (ie, maybe a member changed a plan and should get money back).
     
-- [ ] Products
-    - [ ] ability to add quantity when doing a charge. need to use this in billing calculations.
 - [ ] Coaches
     - [x] how to assign a coach to a class.
     - how to see classes which are not coached

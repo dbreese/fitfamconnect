@@ -45,6 +45,7 @@ const model = computed(() => {
             items: [
                 { label: translate('mygyms.menuTitle'), icon: 'pi pi-building-columns', to: '/mygyms' },
                 { label: translate('signups.menuTitle'), icon: 'pi pi-calendar-plus', to: '/signups' },
+                { label: translate('mycharges.menuTitle'), icon: 'pi pi-credit-card', to: '/mycharges' },
                 { label: translate('feedback.menuTitle'), icon: 'pi pi-send', to: '/feedback' },
 
                 { separator: true }

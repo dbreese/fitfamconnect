@@ -20,7 +20,7 @@ export const messages = {
         aitools: 'AI Tools',
         management: 'Management',
         reports: 'Reports',
-        user: 'User',
+        user: 'Member',
         system: 'System'
     },
     membershipStatus: {
@@ -840,5 +840,41 @@ export const messages = {
             loadUpcomingFailed: 'Failed to load upcoming signups',
             toggleFailed: 'Failed to update signup'
         }
+    },
+    mycharges: {
+        title: 'My Charges',
+        menuTitle: 'My Charges',
+        subtitle: 'View your charges and billing history',
+        unbilledCharges: 'Unbilled Charges',
+        billingHistory: 'Billing History',
+        date: 'Date',
+        description: 'Description',
+        type: 'Type',
+        amount: 'Amount',
+        gym: 'Gym',
+        billingDate: 'Billing Date',
+        billingId: 'Billing ID',
+        totalAmount: 'Total Amount',
+        chargeCount: 'Charges',
+        charges: 'charges',
+        unbilledFound: 'unbilled charges',
+        billsFound: 'bills found',
+        noData: 'No Charges Found',
+        noDataMessage: 'You have no charges or billing history yet.',
+        noUnbilledCharges: 'No unbilled charges',
+        noBillingHistory: 'No billing history',
+        loadingUnbilled: 'Loading unbilled charges...',
+        loadingHistory: 'Loading billing history...',
+        types: {
+            recurring: 'Recurring',
+            'one-time': 'One-time',
+            'pro-rated': 'Pro-rated'
+        },
+        error: {
+            loadUnbilledFailed: 'Failed to load unbilled charges',
+            loadHistoryFailed: 'Failed to load billing history',
+            loadBillingDetailsFailed: 'Failed to load billing details'
+        },
+        billingDetails: 'Billing Details'
     }
 };

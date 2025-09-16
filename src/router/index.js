@@ -93,6 +93,11 @@ const router = createRouter({
                             name: 'signups',
                             component: () => import('@/views/pages/Signups.vue')
                         },
+                        {
+                            path: '/mycharges',
+                            name: 'mycharges',
+                            component: () => import('@/views/pages/MyCharges.vue')
+                        },
 
                         // Owner-only routes
                         {

@@ -5,6 +5,7 @@ import type { AuthenticatedRequest } from '../auth/auth';
 import { Charge } from '../db/charge';
 import { Member } from '../db/member';
 import { Gym } from '../db/gym';
+import { Plan } from '../db/plan';
 import type { ICharge } from '../db/charge';
 import type { ServerResponse } from '../../shared/ServerResponse';
 
@@ -65,6 +66,35 @@ router.post('/charges', authenticateUser, authorizeRoles('owner'), async (req: A
         res.status(500).json({ message: 'Error creating charge' });
     }
 });
+
+// GET /charges/unbilled - Get unbilled charges for the current user (member access)
+router.get(
+    '/charges/unbilled',
+    authenticateUser,
+    authorizeRoles('member', 'owner'),
+    async (req: AuthenticatedRequest, res: Response) => {
+        console.log('chargeService.getUnbilledCharges: API invoked for user', req.user?.email);
+        const user = req.user;
+
+        try {
+            const unbilledCharges = await findUnbilledChargesForUser(user);
+            console.log(`chargeService.getUnbilledCharges: Retrieved ${unbilledCharges.length} unbilled charges`);
+
+            const response: ServerResponse = {
+                responseCode: 200,
+                body: {
+                    message: 'Unbilled charges retrieved successfully',
+                    data: unbilledCharges
+                }
+            };
+            res.status(200).json(response);
+            console.log('chargeService.getUnbilledCharges: Response sent successfully');
+        } catch (error) {
+            console.error('chargeService.getUnbilledCharges: Error retrieving unbilled charges:', error);
+            res.status(500).json({ message: 'Error retrieving unbilled charges' });
+        }
+    }
+);
 
 // GET /charges/:id - Get a specific charge by ID
 router.get(
@@ -381,4 +411,85 @@ async function deleteChargeByIdAndOwner(user: IUser | undefined, chargeId: strin
     console.log(`chargeService.deleteChargeByIdAndOwner: Deleted charge ${chargeId} for member ${charge.memberId}`);
 
     return true;
+}
+
+/**
+ * Find unbilled charges for the current user (member access)
+ * @param user - Authenticated user
+ * @returns Array of formatted unbilled charge documents
+ */
+async function findUnbilledChargesForUser(user: IUser | undefined): Promise<any[]> {
+    if (!user) {
+        console.log('chargeService.findUnbilledChargesForUser: No user provided');
+        return [];
+    }
+
+    console.log(`chargeService.findUnbilledChargesForUser: Looking for unbilled charges for user ${user.email}`);
+    console.log(`chargeService.findUnbilledChargesForUser: User object:`, { id: user._id, email: user.email, roles: user.roles });
+
+    // Find member records for this user (both approved and pending)
+    const memberRecords = await Member.find({
+        email: user.email,
+        status: { $in: ['approved', 'pending'] } // Show charges for both approved and pending memberships
+    });
+
+    console.log(`chargeService.findUnbilledChargesForUser: Found ${memberRecords.length} member records for user ${user.email}`);
+    console.log(`chargeService.findUnbilledChargesForUser: Member records:`, memberRecords.map(m => ({ id: m._id, email: m.email, status: m.status, gymId: m.gymId })));
+
+    if (memberRecords.length === 0) {
+        console.log(`chargeService.findUnbilledChargesForUser: No member records found for user ${user.email}`);
+        return [];
+    }
+
+    const memberIds = memberRecords.map(member => member._id?.toString()).filter(Boolean);
+    const gymIds = [...new Set(memberRecords.map(member => member.gymId))];
+
+    console.log(`chargeService.findUnbilledChargesForUser: Looking for charges with memberIds: ${memberIds.join(', ')}`);
+
+    // First, let's check if there are ANY charges for these members
+    const allCharges = await Charge.find({
+        memberId: { $in: memberIds }
+    }).sort({ chargeDate: -1 });
+
+    console.log(`chargeService.findUnbilledChargesForUser: Found ${allCharges.length} total charges for these members`);
+    if (allCharges.length > 0) {
+        console.log(`chargeService.findUnbilledChargesForUser: Sample charges:`, allCharges.slice(0, 3).map(c => ({ id: c._id, memberId: c.memberId, amount: c.amount, isBilled: c.isBilled, note: c.note })));
+    }
+
+    // Get unbilled charges for these members
+    const unbilledCharges = await Charge.find({
+        memberId: { $in: memberIds },
+        isBilled: false
+    }).sort({ chargeDate: -1 });
+
+    console.log(`chargeService.findUnbilledChargesForUser: Found ${unbilledCharges.length} unbilled charges`);
+
+    if (unbilledCharges.length === 0) {
+        return [];
+    }
+
+    // Get gym and plan information
+    const gyms = await Gym.find({ _id: { $in: gymIds } });
+    const planIds = unbilledCharges.map(charge => charge.planId).filter(Boolean);
+    const plans = await Plan.find({ _id: { $in: planIds } });
+
+    // Format the response
+    const formattedCharges = unbilledCharges.map(charge => {
+        const member = memberRecords.find(m => m._id?.toString() === charge.memberId);
+        const gym = gyms.find(g => g._id?.toString() === member?.gymId);
+        const plan = plans.find(p => p._id?.toString() === charge.planId);
+
+        return {
+            _id: charge._id,
+            date: charge.chargeDate,
+            description: charge.note || 'Charge',
+            amount: charge.amount, // Keep in cents for consistency
+            type: charge.planId ? 'recurring' : 'one-time',
+            planName: plan?.name,
+            gymName: gym?.name || 'Unknown Gym',
+            gymId: gym?._id
+        };
+    });
+
+    return formattedCharges;
 }

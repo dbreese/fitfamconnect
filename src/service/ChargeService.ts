@@ -146,5 +146,31 @@ export const ChargeService = {
                 console.error('ChargeService.deleteCharge: Error deleting charge:', error);
                 return Promise.reject('Error deleting charge.');
             });
+    },
+
+    async getUnbilledCharges(): Promise<any[] | undefined> {
+        console.log('ChargeService.getUnbilledCharges: Starting to fetch unbilled charges');
+        return await submit('GET', '/charges/unbilled')
+            .then(async (result) => {
+                console.log('ChargeService.getUnbilledCharges: Received response', {
+                    status: result.status,
+                    ok: result.ok
+                });
+                if (result.ok) {
+                    const json = await result.json();
+                    const response = json as ServerResponse;
+                    const charges = response.body.data as any[];
+                    console.log('ChargeService.getUnbilledCharges: Successfully fetched unbilled charges', {
+                        count: charges?.length
+                    });
+                    return charges;
+                }
+                console.log('ChargeService.getUnbilledCharges: Response not OK');
+                return undefined;
+            })
+            .catch((error) => {
+                console.error('ChargeService.getUnbilledCharges: Error fetching unbilled charges:', error);
+                return Promise.reject('Error fetching unbilled charges.');
+            });
     }
 };
