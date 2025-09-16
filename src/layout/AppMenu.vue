@@ -46,7 +46,6 @@ const model = computed(() => {
                 { label: translate('mygyms.menuTitle'), icon: 'pi pi-building-columns', to: '/mygyms' },
                 { label: translate('signups.menuTitle'), icon: 'pi pi-calendar-plus', to: '/signups' },
                 { label: translate('mycharges.menuTitle'), icon: 'pi pi-credit-card', to: '/mycharges' },
-                { label: translate('feedback.menuTitle'), icon: 'pi pi-send', to: '/feedback' },
 
                 { separator: true }
             ]
@@ -73,6 +72,7 @@ const model = computed(() => {
         label: translate('menu.system'),
         items: [
             { label: translate('profile.title'), icon: 'pi pi-user', to: '/user/profile' },
+            { label: translate('feedback.menuTitle'), icon: 'pi pi-send', to: '/feedback' },
             { label: translate('help.title'), icon: 'pi pi-question-circle', to: '/app' },
             {
                 label: translate('buttons.logout'),

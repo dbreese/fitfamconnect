@@ -803,7 +803,7 @@ export const messages = {
     },
     signups: {
         title: 'Class Signups',
-        menuTitle: 'Signups',
+        menuTitle: 'My Signups',
         subtitle: 'Sign up for classes at your gym',
         browseClasses: 'Browse Classes',
         upcoming: 'Upcoming',
