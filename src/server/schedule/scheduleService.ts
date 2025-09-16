@@ -43,6 +43,44 @@ router.get('/schedules', authenticateUser, authorizeRoles('owner'), async (req: 
     }
 });
 
+// GET /schedules/:gymId - Get augmented schedules for a specific gym (available to members and owners)
+router.get('/schedules/:gymId', authenticateUser, authorizeRoles('member', 'owner'), async (req: AuthenticatedRequest, res: Response) => {
+    console.log('scheduleService.getAugmentedSchedules: API invoked');
+    const user = req.user;
+    const { gymId } = req.params;
+
+    try {
+        // Verify user has access to this gym
+        const member = await Member.findOne({
+            email: user?.email,
+            gymId: gymId,
+            isActive: true
+        });
+
+        if (!member) {
+            console.log('scheduleService.getAugmentedSchedules: User not authorized for gym', { gymId, email: user?.email });
+            return res.status(403).json({ message: 'Access denied to this gym' });
+        }
+
+        const schedules = await findAugmentedSchedulesByGym(gymId);
+
+        console.log(`scheduleService.getAugmentedSchedules: Retrieved ${schedules.length} augmented schedules for gym ${gymId}`);
+
+        const response: ServerResponse = {
+            responseCode: 200,
+            body: {
+                message: 'Augmented schedules retrieved successfully',
+                data: schedules
+            }
+        };
+        res.status(200).json(response);
+        console.log('scheduleService.getAugmentedSchedules: Response sent successfully');
+    } catch (error) {
+        console.error('scheduleService.getAugmentedSchedules: Error retrieving augmented schedules:', error);
+        res.status(500).json({ message: 'Error retrieving augmented schedules' });
+    }
+});
+
 // GET /schedules/:id - Get schedule by ID (if it belongs to user's gym)
 router.get(
     '/schedules/:id',
@@ -342,6 +380,95 @@ async function findSchedulesByOwner(user: IUser | undefined): Promise<any[]> {
         `scheduleService.findSchedulesByOwner: Found ${enrichedSchedules.length} schedules for gym ${gym.name}`
     );
     return enrichedSchedules;
+}
+
+/**
+ * Find all active schedules for a specific gym with augmented data (location, coach, class details)
+ * Available to both members and owners
+ */
+async function findAugmentedSchedulesByGym(gymId: string): Promise<any[]> {
+    console.log(`scheduleService.findAugmentedSchedulesByGym: Looking for schedules in gym ${gymId}`);
+
+    // Find all classes for this gym
+    const classes = await Class.find({ gymId: gymId, isActive: true });
+    const classIds = classes.map((c) => c._id);
+
+    if (classIds.length === 0) {
+        console.log(`scheduleService.findAugmentedSchedulesByGym: No active classes found for gym ${gymId}`);
+        return [];
+    }
+
+    // Find all schedules for these classes
+    const schedules = await Schedule.find({ classId: { $in: classIds } }).sort({
+        isRecurring: 1,
+        startDateTime: 1,
+        startDate: 1
+    });
+
+    // Enrich schedules with location, coach, and class details
+    const augmentedSchedules = await Promise.all(
+        schedules.map(async (schedule) => {
+            // Get class details
+            const classObj = classes.find((c) => c._id.toString() === schedule.classId.toString());
+
+            // Get location details
+            const location = await Location.findById(schedule.locationId);
+
+            // Get coach details
+            const coach = schedule.coachId ? await Member.findById(schedule.coachId) : null;
+
+            return {
+                _id: schedule._id,
+                classId: schedule.classId,
+                locationId: schedule.locationId,
+                coachId: schedule.coachId,
+                startDateTime: schedule.startDateTime,
+                endDateTime: schedule.endDateTime,
+                startDate: schedule.startDate,
+                endDate: schedule.endDate,
+                timeOfDay: schedule.timeOfDay,
+                maxAttendees: schedule.maxAttendees,
+                notes: schedule.notes,
+                recurringPattern: schedule.recurringPattern,
+                isRecurring: schedule.isRecurring,
+                createdAt: schedule.createdAt,
+                updatedAt: schedule.updatedAt,
+                // Augmented data
+                class: classObj
+                    ? {
+                          _id: classObj._id,
+                          name: classObj.name,
+                          description: classObj.description,
+                          duration: classObj.duration,
+                          category: classObj.category,
+                          maxMembers: classObj.maxMembers,
+                          equipment: classObj.equipment
+                      }
+                    : null,
+                location: location
+                    ? {
+                          _id: location._id,
+                          name: location.name,
+                          description: location.description,
+                          maxMemberCount: location.maxMemberCount,
+                      }
+                    : null,
+                coach: coach
+                    ? {
+                          _id: coach._id,
+                          firstName: coach.firstName,
+                          lastName: coach.lastName,
+                          email: coach.email,
+                      }
+                    : null
+            };
+        })
+    );
+
+    console.log(
+        `scheduleService.findAugmentedSchedulesByGym: Found ${augmentedSchedules.length} augmented schedules for gym ${gymId}`
+    );
+    return augmentedSchedules;
 }
 
 /**

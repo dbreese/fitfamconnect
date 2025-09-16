@@ -5,6 +5,9 @@
 ### Required for launch
 - [ ] Members
     - [X] can view monthly charges and bills
+    - [ ] can view schedule
+    - [ ] can make/cancel reservations
+    - [ ] can send feedback
 
 - [ ] Coach assignments
     - [ ] filter classes with no coaches
@@ -25,6 +28,8 @@
 
 ### Nice to have
 - [ ] Contracts (perhaps just store PDFs for now like a file library?)
+
+- [ ] Multi-locations
 
 - [ ] Billing
     - [ ] Allow editing 1-time charges from billing preview screen.
