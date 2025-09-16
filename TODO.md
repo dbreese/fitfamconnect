@@ -4,20 +4,42 @@
 
 ### Required for launch
 - [ ] Members
-    - [ ] can view monthly charges and bills
+    - [X] can view monthly charges and bills
 
 - [ ] Coach assignments
+    - [ ] filter classes with no coaches
+
 - [ ] Timesheets for coaches (is this just a kiosk feature for clock in/out)
+    - [ ] Can we auto-calculate this.
+
+- [ ] Send notifications
+    - [ ] broadcast
+    - [ ] single user
+    - [ ] email
+    - [ ] push notification
+
+- [ ] Member app
+- [ ] Kiosk app
+
+- [ ] Online payments, recurring payments, etc
 
 ### Nice to have
+- [ ] Contracts (perhaps just store PDFs for now like a file library?)
+
 - [ ] Billing
     - [ ] Allow editing 1-time charges from billing preview screen.
 
 - [ ] Products
     - [ ] ability to add quantity when doing a charge. need to use this in billing calculations.
 
+- [ ] Ability to publish schedule to external via snippet
+
 
 ### Future
+- [ ] Messaging
+    - [ ] AI opptys?
+    - [ ] Templates
+
 - [ ] Member charges
     - [ ] Roll-ups (ie, families where 1 child drank beverages but parents pay)
     - [ ] UI UPDATE - currently only able to assign a single plan to a user. What about non-recurring charges? Probably
@@ -27,35 +49,17 @@
     - prorating to 1st?
     - or bill on each date
 
-- [ ] Messaging
-    - [ ] AI opptys?
-    - [ ] Templates
-
 - [ ] Billing improvements
     - [ ] Allow credits to be added to an account (ie, maybe a member changed a plan and should get money back).
     
-- [ ] Coaches
-    - [x] how to assign a coach to a class.
-    - how to see classes which are not coached
-- [ ] Ability to publish schedule to external via snippet
-- [ ] Member and Coach Kiosk check-in
-- [ ] Time tracking
-- [x] Users vs members database. Currently, gym owner is typed to User.id, not member.id
-- [x] Should be able to manually add/update users
-- [ ] Contracts (perhaps just store PDFs for now like a file library?)
-- [ ] Online payments, recurring payments, etc
-- [ ] Send notifications
-    - [ ] broadcast
-    - [ ] single user
-    - [ ] email
-    - [ ] push notification
 - [ ] Inventory
+
 - [ ] Unit tests to lock things in
 
 ## Member site
-- [ ] My Gyms, with ability to add by gym code
-- [ ] Schedules for gyms
-- [ ] Sign up/cancel for scheduled items
+- [X] My Gyms, with ability to add by gym code
+- [X] Schedules for gyms
+- [X] Sign up/cancel for scheduled items
 
 ## Reports
 
