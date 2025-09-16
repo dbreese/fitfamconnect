@@ -37,11 +37,6 @@ const tools = [
                         </ul> -->
 
                         <div>
-                            <div class="font-semibold text-xl mb-2">{{ t('disclaimer.title') }}</div>
-                            <div>{{ t('disclaimer.desc') }}</div>
-                        </div>
-
-                        <div>
                             <div class="font-semibold text-xl mb-2 cc-font">{{ t('motto') }}</div>
                             <div>{{ t('dashboard.haveFun') }}</div>
                         </div>

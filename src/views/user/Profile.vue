@@ -2,19 +2,14 @@
 import { ref, watch, watchEffect } from 'vue';
 // @ts-ignore
 import { useLayout } from '@/layout/composables/layout';
-import { dark, shadesOfPurple, experimental__simple } from '@clerk/themes';
+import { dark, experimental__simple } from '@clerk/themes';
 import { useUser } from '@clerk/vue';
-import { type UserResource, type SessionWithActivitiesResource } from '@clerk/types';
+import { type SessionWithActivitiesResource } from '@clerk/types';
 import Card from 'primevue/card';
 import Avatar from 'primevue/avatar';
 import { useI18n } from 'vue-i18n';
 import NameValuePair from '@/components/NameValuePair.vue';
 import { user } from '@/service/SessionUtils';
-import { GradeLevels, gradeLevelForCode } from '@/shared/GradeLevels';
-import { submit } from '@/service/NetworkUtil';
-import { TemperatureModes, temperatureForCode } from '@/shared/TemperatureModes';
-import { letterModeForCode, LetterModes } from '@/shared/LetterModes';
-import { onBeforeRouteLeave } from 'vue-router';
 
 const isLoading = ref(false);
 
@@ -28,57 +23,15 @@ const clerkTheme = ref(experimental__simple);
 // TODO: Allow user to kill sessions?
 const sessions = ref<SessionWithActivitiesResource[]>();
 
-// Preferences
-var shouldSavePrefs = false;
-const gradeLevels = ref(GradeLevels);
-const gradeLevel = ref(gradeLevelForCode(user.preferences.level));
-const temperatureOptions = ref(TemperatureModes);
-const temperature = ref(temperatureForCode(user.preferences.temperature));
-const modeOptions = ref(LetterModes);
-const mode = ref(letterModeForCode(user.preferences.mode));
-const fromName = ref(user.preferences.from || '');
-const showHelp = ref(user.preferences.help === true ? true : false);
-
-const userPrefsSections = user.preferences.newsletterSections;
-function getDefaultSectionInfo(i: number): Record<string, any> {
-    if (userPrefsSections == undefined || userPrefsSections[i] === undefined) {
-        return { title: t(`newsLetter.defaultTitles[${i}]`), enabled: true };
-    }
-    return userPrefsSections[i];
-}
-
-const sections = ref([
-    { id: 0, text: '', title: '', enabled: true },
-    { id: 1, text: '', title: '', enabled: true },
-    { id: 2, text: '', title: '', enabled: true },
-    { id: 3, text: '', title: '', enabled: true }
-]);
-
-function setSectionDefaults(enabled: boolean) {
-    for (let i = 0; i < 4; i++) {
-        const defaultSectionInfo = getDefaultSectionInfo(i);
-        sections.value[i] = {
-            id: i,
-            text: '',
-            title: defaultSectionInfo.title,
-            enabled: defaultSectionInfo.enabled
-        };
-    }
-}
-setSectionDefaults(true);
-
 watch(
-    [layoutConfig.darkTheme, gradeLevel, temperature, mode, fromName, showHelp, sections],
-    ([newThemeVal, oldThemeVal]) => {
+    [layoutConfig.darkTheme],
+    ([newThemeVal]) => {
         if (newThemeVal) {
             clerkTheme.value = dark;
         } else {
-            console.log('User pref changed');
-            shouldSavePrefs = true;
             clerkTheme.value = experimental__simple;
         }
-    },
-    { deep: true }
+    }
 );
 
 watchEffect(async () => {
@@ -95,49 +48,6 @@ watchEffect(async () => {
     }
 });
 
-onBeforeRouteLeave(async (to, from, next) => {
-    if (shouldSavePrefs) {
-        console.log('SAVING PREFS');
-
-        await handleUpdatePreferences();
-    } else {
-        console.log('NOT SAVING PREFS, NOTHING CHANGED!');
-    }
-    next();
-});
-
-// TODO: This is being called anytime page exits --
-// should centralize logic in userService.hasAllPreferences() and use it here
-async function handleUpdatePreferences() {
-    isLoading.value = true;
-
-    const body = {
-        temperature: temperature.value.code,
-        level: gradeLevel.value.code,
-        mode: mode.value.code,
-        from: fromName.value,
-        newsletterSections: sections.value,
-        help: showHelp.value
-    };
-
-    await submit('POST', '/user/preferences', body)
-        .then((result) => {
-            isLoading.value = false;
-            if (result && result?.status < 400) {
-                console.log('User prefs updated!');
-
-                // also update in-memory prefs
-                console.log('updating in memory user with ' + JSON.stringify(body));
-                Object.assign(user.preferences, body);
-            } else {
-                console.error(`Could not update preferences. code=${result?.status}`);
-            }
-        })
-        .catch((err) => {
-            isLoading.value = false;
-            console.error('Error occurred.', err);
-        });
-}
 </script>
 
 <template>
@@ -175,95 +85,6 @@ async function handleUpdatePreferences() {
                 <template #footer></template>
             </Card>
 
-            <Card class="card-style mt-8">
-                <template #title>{{ t('profile.preferences') }}</template>
-                <template #content>
-                    <Help i18n-intro-key="profile.desc" :controls="false"></Help>
-
-                    <form @submit.prevent="handleUpdatePreferences" class="pt-4">
-                        <div class="flex flex-wrap gap-2">
-                            <Checkbox binary id="help1" name="help" value="true" v-model="showHelp" />
-                            <label for="help1">{{ t('profile.showHelp') }}</label>
-                        </div>
-
-                        <div class="flex flex-wrap gap-2 pt-8">
-                            <FloatLabel class="w-full md:w-56" variant="on">
-                                <Select
-                                    id="state"
-                                    v-model="gradeLevel"
-                                    :options="gradeLevels"
-                                    optionLabel="name"
-                                    class="w-full"
-                                    size="large"
-                                ></Select>
-                                <label for="state">{{ t('options.gradeTitle') }}</label>
-                            </FloatLabel>
-                        </div>
-
-                        <div class="flex flex-wrap gap-2 pt-4">
-                            {{ t('profile.mode') }}
-
-                            <SelectButton
-                                id="mode"
-                                v-model="mode"
-                                :options="modeOptions"
-                                optionLabel="name"
-                                class="w-full"
-                                size="large"
-                            />
-                        </div>
-
-                        <div class="flex flex-wrap gap-2 pt-4">
-                            {{ t('profile.temperature') }}
-
-                            <SelectButton
-                                id="temperature"
-                                v-model="temperature"
-                                :options="temperatureOptions"
-                                optionLabel="name"
-                                class="w-full"
-                                size="large"
-                            />
-                        </div>
-
-                        <div class="flex flex-col gap-2 pt-8">
-                            <FloatLabel variant="on" class="w-full">
-                                <label for="fromName">{{ t('profile.from') }}</label>
-                                <InputText id="fromName" v-model="fromName" size="large" />
-                            </FloatLabel>
-                        </div>
-
-                        <div class="flex flex-col gap-2 pt-8">
-                            {{ t('profile.newsletterSections') }}
-
-                            <div v-for="(section, index) in sections" :key="section.id">
-                                <div class="pt-2">
-                                    <div class="flex items-center space-x-4 w-full">
-                                        <label>
-                                            <input type="checkbox" v-model="section.enabled" />
-                                            {{ t('newsLetter.includeSection') }}
-                                        </label>
-                                        <FloatLabel variant="on">
-                                            <label for="sectionTitle">{{ t('newsLetter.sectionsTitle') }}</label>
-                                            <InputText
-                                                id="sectionTitle"
-                                                v-model="section.title"
-                                                size="large"
-                                                :disabled="!section.enabled"
-                                            />
-                                        </FloatLabel>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style="display: flex; justify-content: flex-end">
-                            <Button :fluid="false" type="submit" class="mt-8">{{ t('profile.submit') }}</Button>
-                        </div>
-                    </form>
-                </template>
-                <template #footer></template>
-            </Card>
         </div>
 
         <br />
