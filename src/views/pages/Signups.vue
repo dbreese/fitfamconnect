@@ -80,7 +80,12 @@ async function loadClasses() {
         const dateStr = `${year}-${month}-${day}`;
         const result = await ClassService.getClassesForDate(selectedGymId.value, dateStr);
         if (result) {
-            availableClasses.value = result;
+            // Sort classes by start time
+            availableClasses.value = result.sort((a: any, b: any) => {
+                const timeA = new Date(a.startDateTime).getTime();
+                const timeB = new Date(b.startDateTime).getTime();
+                return timeA - timeB;
+            });
             console.log(`Loaded ${result.length} classes for ${dateStr}`);
         } else {
             availableClasses.value = [];
@@ -183,7 +188,12 @@ async function loadUpcomingSignups() {
     try {
         const result = await ClassService.getUpcomingSignups();
         if (result) {
-            upcomingSignups.value = result;
+            // Sort upcoming signups by start time
+            upcomingSignups.value = result.sort((a: any, b: any) => {
+                const timeA = new Date(a.schedule.startDateTime).getTime();
+                const timeB = new Date(b.schedule.startDateTime).getTime();
+                return timeA - timeB;
+            });
             console.log(`Loaded ${result.length} upcoming signups`);
         } else {
             upcomingSignups.value = [];
@@ -433,7 +443,14 @@ onMounted(() => {
                                     </span>
                                 </div>
 
-                                <DataTable :value="upcomingSignups" paginator :rows="10" responsiveLayout="scroll">
+                                <DataTable
+                                    :value="upcomingSignups"
+                                    paginator
+                                    :rows="10"
+                                    responsiveLayout="scroll"
+                                    sortField="schedule.startDateTime"
+                                    :sortOrder="1"
+                                >
                                     <Column field="class.name" :header="t('signups.className')" sortable>
                                         <template #body="{ data }">
                                             <div>

@@ -633,6 +633,7 @@ export const messages = {
         startTime: 'Start Time',
         endTime: 'End Time',
         endTimeHelp: 'Automatically calculated from class duration. You can override if needed.',
+        endTimeAutoCalculated: 'Automatically calculated based on class duration',
         startDate: 'Start Date',
         timeOfDay: 'Time of Day',
         maxAttendees: 'Max Attendees',

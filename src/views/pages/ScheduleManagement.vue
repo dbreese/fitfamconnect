@@ -49,13 +49,11 @@ const formData = ref({
     classId: '',
     locationId: '',
     coachId: '',
-    // For one-time schedules
-    startDateTime: new Date(),
-    endDateTime: null as Date | null,
-    // For recurring schedules
-    startDate: null as Date | null,
+    // Date and time fields (used for both recurring and non-recurring)
+    startDate: new Date(),
+    startTime: new Date(),
     endDate: null as Date | null,
-    timeOfDay: null as Date | null,
+    endTime: null as Date | null,
     maxAttendees: null as string | null,
     notes: '',
     isRecurring: false,
@@ -281,17 +279,43 @@ async function openEditDialog(schedule: any) {
         }
     }
 
+    // Extract date and time from startDateTime or separate fields
+    let startDate, startTime;
+    if (originalSchedule.startDateTime) {
+        const startDateTime = new Date(originalSchedule.startDateTime);
+        startDate = startDateTime;
+        startTime = startDateTime;
+    } else if (originalSchedule.startDate && originalSchedule.timeOfDay) {
+        startDate = new Date(originalSchedule.startDate);
+        startTime = new Date(originalSchedule.timeOfDay);
+    } else {
+        startDate = new Date();
+        startTime = new Date();
+    }
+
+    // Extract end date and time
+    let endDate, endTime;
+    if (originalSchedule.endDateTime) {
+        const endDateTime = new Date(originalSchedule.endDateTime);
+        endDate = endDateTime;
+        endTime = endDateTime;
+    } else if (originalSchedule.endDate) {
+        endDate = new Date(originalSchedule.endDate);
+        endTime = originalSchedule.timeOfDay ? new Date(originalSchedule.timeOfDay) : null;
+    } else {
+        endDate = null;
+        endTime = null;
+    }
+
     formData.value = {
         classId: originalSchedule.classId,
         locationId: originalSchedule.locationId,
         coachId: originalSchedule.coachId || '',
-        // For one-time schedules
-        startDateTime: originalSchedule.startDateTime ? new Date(originalSchedule.startDateTime) : new Date(),
-        endDateTime: originalSchedule.endDateTime ? new Date(originalSchedule.endDateTime) : null,
-        // For recurring schedules
-        startDate: originalSchedule.startDate ? new Date(originalSchedule.startDate) : null,
-        endDate: originalSchedule.endDate ? new Date(originalSchedule.endDate) : null,
-        timeOfDay: originalSchedule.timeOfDay ? new Date(originalSchedule.timeOfDay) : null,
+        // Date and time fields (used for both recurring and non-recurring)
+        startDate: startDate,
+        startTime: startTime,
+        endDate: endDate,
+        endTime: endTime,
         maxAttendees: originalSchedule.maxAttendees ? originalSchedule.maxAttendees.toString() : null,
         notes: originalSchedule.notes || '',
         isRecurring: originalSchedule.isRecurring || false,
@@ -307,25 +331,27 @@ async function openEditDialog(schedule: any) {
 }
 
 function resetForm() {
+    // Set default start date to today
+    const defaultStartDate = new Date();
+
     // Set default start time to 6:00 AM (within 4 AM - 10 PM range)
     const defaultStartTime = new Date();
     defaultStartTime.setHours(6, 0, 0, 0);
 
-    // Set default time of day for recurring schedules
-    const defaultTimeOfDay = new Date();
-    defaultTimeOfDay.setHours(6, 0, 0, 0);
+    // Auto-select location if only one exists
+    const defaultLocationId = locations.value && locations.value.length === 1 && locations.value[0]._id
+        ? locations.value[0]._id
+        : '';
 
     formData.value = {
         classId: '',
-        locationId: '',
+        locationId: defaultLocationId,
         coachId: '',
-        // For one-time schedules
-        startDateTime: defaultStartTime,
-        endDateTime: null,
-        // For recurring schedules
-        startDate: null,
+        // Date and time fields (used for both recurring and non-recurring)
+        startDate: defaultStartDate,
+        startTime: defaultStartTime,
         endDate: null,
-        timeOfDay: defaultTimeOfDay,
+        endTime: null,
         maxAttendees: null,
         notes: '',
         isRecurring: false,
@@ -348,21 +374,18 @@ function validateForm(): { isValid: boolean; errors: string[] } {
         errors.push(t('schedules.validation.locationRequired'));
     }
 
+    if (!formData.value.startDate) {
+        errors.push(t('schedules.validation.startDateRequired'));
+    }
+
+    if (!formData.value.startTime) {
+        errors.push(t('schedules.validation.startTimeRequired'));
+    }
+
     if (formData.value.isRecurring) {
         // For recurring schedules
-        if (!formData.value.startDate) {
-            errors.push(t('schedules.validation.startDateRequired'));
-        }
-        if (!formData.value.timeOfDay) {
-            errors.push(t('schedules.validation.timeOfDayRequired'));
-        }
         if (formData.value.recurringPattern.daysOfWeek.length === 0) {
             errors.push(t('schedules.validation.daysRequired'));
-        }
-    } else {
-        // For one-time schedules
-        if (!formData.value.startDateTime) {
-            errors.push(t('schedules.validation.startTimeRequired'));
         }
     }
 
@@ -388,15 +411,35 @@ async function handleSubmit() {
     try {
         let result;
 
+        // Combine date and time fields
+        const startDateTime = new Date(formData.value.startDate);
+        startDateTime.setHours(
+            formData.value.startTime.getHours(),
+            formData.value.startTime.getMinutes(),
+            0,
+            0
+        );
+
+        let endDateTime = undefined;
+        if (formData.value.endDate && formData.value.endTime) {
+            endDateTime = new Date(formData.value.endDate);
+            endDateTime.setHours(
+                formData.value.endTime.getHours(),
+                formData.value.endTime.getMinutes(),
+                0,
+                0
+            );
+        }
+
         const submitData = {
             ...formData.value,
-            // For one-time schedules
-            startDateTime: formData.value.isRecurring ? undefined : formData.value.startDateTime,
-            endDateTime: formData.value.isRecurring ? undefined : formData.value.endDateTime || undefined,
-            // For recurring schedules
-            startDate: formData.value.isRecurring ? formData.value.startDate || undefined : undefined,
+            // Always include startDateTime and endDateTime
+            startDateTime: startDateTime,
+            endDateTime: endDateTime,
+            // For recurring schedules, also include the separate date/time fields
+            startDate: formData.value.isRecurring ? formData.value.startDate : undefined,
             endDate: formData.value.isRecurring ? formData.value.endDate || undefined : undefined,
-            timeOfDay: formData.value.isRecurring ? formData.value.timeOfDay || undefined : undefined,
+            timeOfDay: formData.value.isRecurring ? formData.value.startTime : undefined,
             maxAttendees: formData.value.maxAttendees ? parseInt(formData.value.maxAttendees) : undefined,
             notes: formData.value.notes.trim() || undefined,
             coachId: formData.value.coachId && formData.value.coachId.trim() ? formData.value.coachId : undefined,
@@ -476,6 +519,31 @@ function confirmDelete(schedule: any) {
     });
 }
 
+function confirmDeleteFromDialog() {
+    if (!selectedSchedule.value) return;
+
+    const scheduleName = (selectedSchedule.value as any).class?.name || 'Unknown Class';
+
+    confirm.require({
+        message: t('schedules.deleteMessage', { name: scheduleName }),
+        header: t('schedules.deleteConfirmation'),
+        icon: 'pi pi-exclamation-triangle',
+        rejectLabel: t('schedules.cancel'),
+        rejectProps: {
+            label: t('schedules.cancel'),
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: t('schedules.delete'),
+            severity: 'danger'
+        },
+        accept: () => {
+            deleteScheduleFromDialog();
+        }
+    });
+}
+
 async function deleteSchedule(schedule: any) {
     loading.value = true;
     try {
@@ -487,6 +555,42 @@ async function deleteSchedule(schedule: any) {
                 detail: t('schedules.success.deleted'),
                 life: 3000
             });
+            await loadSchedules();
+        } else {
+            toast.add({
+                severity: 'error',
+                summary: t('feedback.errorTitle'),
+                detail: t('schedules.error.deleteFailed'),
+                life: 3000
+            });
+        }
+    } catch (error) {
+        console.error('Error deleting schedule:', error);
+        toast.add({
+            severity: 'error',
+            summary: t('feedback.errorTitle'),
+            detail: t('schedules.error.deleteFailed'),
+            life: 3000
+        });
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function deleteScheduleFromDialog() {
+    if (!selectedSchedule.value) return;
+
+    loading.value = true;
+    try {
+        const result = await ScheduleService.deleteSchedule((selectedSchedule.value as any)._id);
+        if (result && result.responseCode === 200) {
+            toast.add({
+                severity: 'success',
+                summary: t('feedback.successTitle'),
+                detail: t('schedules.success.deleted'),
+                life: 3000
+            });
+            showDialog.value = false; // Close the dialog
             await loadSchedules();
         } else {
             toast.add({
@@ -790,31 +894,31 @@ function navigateWeek(direction: 'prev' | 'next') {
     loadSchedules();
 }
 
-// Watch for class selection changes to auto-calculate end time (one-time schedules only)
+// Watch for class selection changes to auto-calculate end time
 watch(
     () => formData.value.classId,
     (newClassId) => {
-        if (newClassId && !formData.value.isRecurring && formData.value.startDateTime) {
+        if (newClassId && formData.value.startTime) {
             const selectedClass = classes.value.find((cls) => cls._id === newClassId);
             if (selectedClass) {
-                const startTime = new Date(formData.value.startDateTime);
+                const startTime = new Date(formData.value.startTime);
                 const endTime = new Date(startTime.getTime() + selectedClass.duration * 60000);
-                formData.value.endDateTime = endTime;
+                formData.value.endTime = endTime;
             }
         }
     }
 );
 
-// Watch for start time changes to auto-calculate end time (one-time schedules only)
+// Watch for start time changes to auto-calculate end time
 watch(
-    () => formData.value.startDateTime,
+    () => formData.value.startTime,
     (newStartTime) => {
-        if (newStartTime && !formData.value.isRecurring && formData.value.classId) {
+        if (newStartTime && formData.value.classId) {
             const selectedClass = classes.value.find((cls) => cls._id === formData.value.classId);
             if (selectedClass) {
                 const startTime = new Date(newStartTime);
                 const endTime = new Date(startTime.getTime() + selectedClass.duration * 60000);
-                formData.value.endDateTime = endTime;
+                formData.value.endTime = endTime;
             }
         }
     }
@@ -833,6 +937,7 @@ watch(
         }
     }
 );
+
 
 function onTabChange(event: any) {
     activeTab.value = event.index;
@@ -1126,73 +1231,66 @@ onMounted(() => {
                             <small class="text-gray-500">{{ t('schedules.coachHelp') }}</small>
                         </div>
 
-                        <!-- One-time schedule fields -->
-                        <template v-if="!formData.isRecurring">
-                            <div class="field">
-                                <label for="startTime" class="font-medium">{{ t('schedules.startTime') }} *</label>
-                                <Calendar
-                                    id="startTime"
-                                    v-model="formData.startDateTime"
-                                    showTime
-                                    hourFormat="12"
-                                    :stepMinute="15"
-                                    class="w-full"
-                                    required
-                                />
-                            </div>
+                        <div class="field">
+                            <label for="maxAttendees" class="font-medium">{{ t('schedules.maxAttendees') }}</label>
+                            <InputText id="maxAttendees" v-model="formData.maxAttendees" type="number" class="w-full" />
+                            <small class="text-gray-500">{{ t('schedules.maxAttendeesHelp') }}</small>
+                        </div>
 
-                            <div class="field">
-                                <label for="endTime" class="font-medium">{{ t('schedules.endTime') }}</label>
-                                <Calendar
-                                    id="endTime"
-                                    v-model="formData.endDateTime"
-                                    showTime
-                                    hourFormat="12"
-                                    :stepMinute="15"
-                                    class="w-full"
-                                />
-                                <small class="text-gray-500">{{ t('schedules.endTimeHelp') }}</small>
-                            </div>
-                        </template>
+                        <!-- Start Date and Time (for both recurring and non-recurring) -->
+                        <div class="field">
+                            <label for="startDate" class="font-medium">{{ t('schedules.startDate') }} *</label>
+                            <Calendar
+                                id="startDate"
+                                v-model="formData.startDate"
+                                class="w-full"
+                                required
+                            />
+                        </div>
 
-                        <!-- Recurring schedule fields -->
-                        <template v-else>
-                            <div class="field">
-                                <label for="startDate" class="font-medium">{{ t('schedules.startDate') }} *</label>
-                                <Calendar id="startDate" v-model="formData.startDate" class="w-full" required />
-                            </div>
+                        <div class="field">
+                            <label for="startTime" class="font-medium">{{ t('schedules.startTime') }} *</label>
+                            <Calendar
+                                id="startTime"
+                                v-model="formData.startTime"
+                                timeOnly
+                                hourFormat="12"
+                                :stepMinute="15"
+                                class="w-full"
+                                required
+                            />
+                        </div>
 
-                            <div class="field">
-                                <label for="endDate" class="font-medium">{{ t('schedules.endDate') }}</label>
-                                <Calendar id="endDate" v-model="formData.endDate" class="w-full" />
-                                <small class="text-gray-500">{{ t('schedules.endDateHelp') }}</small>
-                            </div>
+                        <!-- End Date and Time (optional) -->
+                        <div class="field">
+                            <label for="endDate" class="font-medium">{{ t('schedules.endDate') }}</label>
+                            <Calendar
+                                id="endDate"
+                                v-model="formData.endDate"
+                                class="w-full"
+                            />
+                            <small class="text-gray-500">{{ t('schedules.endDateHelp') }}</small>
+                        </div>
 
-                            <div class="field">
-                                <label for="timeOfDay" class="font-medium">{{ t('schedules.timeOfDay') }} *</label>
-                                <Calendar
-                                    id="timeOfDay"
-                                    v-model="formData.timeOfDay"
-                                    timeOnly
-                                    hourFormat="12"
-                                    :stepMinute="15"
-                                    class="w-full"
-                                    required
-                                />
-                            </div>
-                        </template>
+                        <div class="field">
+                            <label for="endTime" class="font-medium">{{ t('schedules.endTime') }}</label>
+                            <Calendar
+                                id="endTime"
+                                v-model="formData.endTime"
+                                timeOnly
+                                hourFormat="12"
+                                :stepMinute="15"
+                                class="w-full"
+                                :disabled="true"
+                            />
+                            <small class="text-gray-500">{{ t('schedules.endTimeAutoCalculated') }}</small>
+                        </div>
 
                         <div class="field">
                             <div class="flex items-center gap-2">
                                 <Checkbox v-model="formData.isRecurring" binary />
                                 <label class="font-medium">{{ t('schedules.recurring') }}</label>
                             </div>
-                        </div>
-
-                        <div class="field">
-                            <label for="maxAttendees" class="font-medium">{{ t('schedules.maxAttendees') }}</label>
-                            <InputText id="maxAttendees" v-model="formData.maxAttendees" type="number" class="w-full" />
-                            <small class="text-gray-500">{{ t('schedules.maxAttendeesHelp') }}</small>
                         </div>
                     </div>
 
@@ -1253,9 +1351,21 @@ onMounted(() => {
                 </form>
 
                 <template #footer>
-                    <div class="flex justify-end gap-2">
-                        <Button :label="t('schedules.cancel')" severity="secondary" @click="showDialog = false" />
-                        <Button :label="t('schedules.save')" type="submit" @click="handleSubmit" />
+                    <div class="flex justify-between">
+                        <div>
+                            <Button
+                                v-if="editMode"
+                                :label="t('schedules.delete')"
+                                icon="pi pi-trash"
+                                severity="danger"
+                                outlined
+                                @click="confirmDeleteFromDialog"
+                            />
+                        </div>
+                        <div class="flex gap-2">
+                            <Button :label="t('schedules.cancel')" severity="secondary" @click="showDialog = false" />
+                            <Button :label="t('schedules.save')" type="submit" @click="handleSubmit" />
+                        </div>
                     </div>
                 </template>
             </Dialog>
