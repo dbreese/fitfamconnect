@@ -93,9 +93,32 @@
                                         {{ BillingService.formatDate(data.endDate) }}
                                     </template>
                                 </Column>
-                                <Column field="createdAt" :header="t('billing.createdAt')" sortable>
+                                <Column field="statistics.totalAmount" :header="t('billing.totalAmount')" sortable :headerStyle="{ textAlign: 'right' }">
                                     <template #body="{ data }">
-                                        {{ BillingService.formatDate(data.createdAt) }}
+                                        <div class="text-right font-medium text-green-600">
+                                            {{ BillingService.formatAmount(data.statistics?.totalAmount || 0) }}
+                                        </div>
+                                    </template>
+                                </Column>
+                                <Column field="statistics.totalCharges" :header="t('billing.totalCharges')" sortable>
+                                    <template #body="{ data }">
+                                        <div class="text-center">
+                                            {{ data.statistics?.totalCharges || 0 }}
+                                        </div>
+                                    </template>
+                                </Column>
+                                <Column field="statistics.recurringCharges" :header="t('billing.recurringCharges')" sortable>
+                                    <template #body="{ data }">
+                                        <div class="text-center text-blue-600">
+                                            {{ data.statistics?.recurringCharges || 0 }}
+                                        </div>
+                                    </template>
+                                </Column>
+                                <Column field="statistics.oneTimeCharges" :header="t('billing.oneTimeCharges')" sortable>
+                                    <template #body="{ data }">
+                                        <div class="text-center text-orange-600">
+                                            {{ data.statistics?.oneTimeCharges || 0 }}
+                                        </div>
                                     </template>
                                 </Column>
                             </DataTable>
@@ -132,9 +155,35 @@
                                 {{ BillingService.formatDate(data.endDate) }}
                             </template>
                         </Column>
-                        <Column field="createdAt" :header="t('billing.createdAt')" sortable>
+                        <Column field="statistics.totalAmount" sortable>
+                            <template #header>
+                                <div class="text-right">{{ t('billing.totalAmount') }}</div>
+                            </template>
                             <template #body="{ data }">
-                                {{ BillingService.formatDate(data.createdAt) }}
+                                <div class="text-right font-medium text-green-600">
+                                    {{ BillingService.formatAmount(data.statistics?.totalAmount || 0) }}
+                                </div>
+                            </template>
+                        </Column>
+                        <Column field="statistics.totalCharges" :header="t('billing.totalCharges')" sortable>
+                            <template #body="{ data }">
+                                <div class="text-center">
+                                    {{ data.statistics?.totalCharges || 0 }}
+                                </div>
+                            </template>
+                        </Column>
+                        <Column field="statistics.recurringCharges" :header="t('billing.recurringCharges')" sortable>
+                            <template #body="{ data }">
+                                <div class="text-center text-blue-600">
+                                    {{ data.statistics?.recurringCharges || 0 }}
+                                </div>
+                            </template>
+                        </Column>
+                        <Column field="statistics.oneTimeCharges" :header="t('billing.oneTimeCharges')" sortable>
+                            <template #body="{ data }">
+                                <div class="text-center text-orange-600">
+                                    {{ data.statistics?.oneTimeCharges || 0 }}
+                                </div>
                             </template>
                         </Column>
                     </DataTable>

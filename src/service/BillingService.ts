@@ -48,6 +48,14 @@ export interface IBillingHistory {
     endDate: Date;
     createdAt: Date;
     updatedAt: Date;
+    statistics: {
+        totalAmount: number;
+        totalCharges: number;
+        recurringCharges: number;
+        oneTimeCharges: number;
+        recurringAmount: number;
+        oneTimeAmount: number;
+    };
 }
 
 export class BillingService {
@@ -206,7 +214,7 @@ export class BillingService {
             case 'one-time-charge':
                 return 'warning';
             case 'recurring-plan':
-            case 'pro-rated-charge':
+             case 'pro-rated-charge':
                 return 'success';
             default:
                 return 'secondary';

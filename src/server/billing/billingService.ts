@@ -99,7 +99,7 @@ async function checkBillingPeriodOverlap(user: IUser | undefined, startDate: Dat
 
 
 /**
- * Get billing history for current user's gym
+ * Get billing history for current user's gym with statistics
  */
 async function getBillingHistory(user: IUser | undefined) {
     console.log(`billingService.getBillingHistory: Getting billing history for user ${user?._id}`);
@@ -110,7 +110,35 @@ async function getBillingHistory(user: IUser | undefined) {
 
     console.log(`billingService.getBillingHistory: Found ${billingRecords.length} billing records`);
 
-    return billingRecords;
+    // Get statistics for each billing record
+    const billingRecordsWithStats = await Promise.all(
+        billingRecords.map(async (record) => {
+            // Get all charges for this billing run
+            const charges = await Charge.find({ billingId: record._id });
+
+            // Calculate statistics
+            const totalAmount = charges.reduce((sum, charge) => sum + charge.amount, 0);
+            const recurringCharges = charges.filter(charge => charge.planId);
+            const oneTimeCharges = charges.filter(charge => !charge.planId);
+
+            const recurringAmount = recurringCharges.reduce((sum, charge) => sum + charge.amount, 0);
+            const oneTimeAmount = oneTimeCharges.reduce((sum, charge) => sum + charge.amount, 0);
+
+            return {
+                ...record.toObject(),
+                statistics: {
+                    totalAmount,
+                    totalCharges: charges.length,
+                    recurringCharges: recurringCharges.length,
+                    oneTimeCharges: oneTimeCharges.length,
+                    recurringAmount,
+                    oneTimeAmount
+                }
+            };
+        })
+    );
+
+    return billingRecordsWithStats;
 }
 
 /**
