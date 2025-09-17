@@ -93,9 +93,10 @@ router.get(
             const userSignups = await Signup.find({
                 memberId: member._id,
                 classDate: { $gte: dayStart, $lte: dayEnd },
-                status: 'active'
+                status: { $in: ['active', 'done'] }
             });
             const signupScheduleIds = new Set(userSignups.map(s => s.scheduleId.toString()));
+            const signupDataMap = new Map(userSignups.map(s => [s.scheduleId.toString(), s]));
 
             // Enrich schedules with class, location, and signup info
             const enrichedSchedules = await Promise.all(schedules.map(async (schedule) => {
@@ -163,7 +164,8 @@ router.get(
                         firstName: coach.firstName,
                         lastName: coach.lastName
                     } : null,
-                    isSignedUp: signupScheduleIds.has(schedule._id.toString())
+                    isSignedUp: signupScheduleIds.has(schedule._id.toString()),
+                    signupStatus: signupDataMap.get(schedule._id.toString())?.status || null
                 };
             }));
 
@@ -185,7 +187,7 @@ router.get(
     }
 );
 
-// POST /signups/toggle { scheduleId, classDate }
+// POST /signups/toggle { scheduleId, classDate, status? }
 router.post(
     '/signups/toggle',
     authenticateUser,
@@ -193,10 +195,19 @@ router.post(
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('signupsService.POST /signups/toggle: Request received', req.body);
-            const { scheduleId, classDate } = req.body as { scheduleId?: string; classDate?: string };
+            const { scheduleId, classDate, status } = req.body as {
+                scheduleId?: string;
+                classDate?: string;
+                status?: 'active' | 'cancelled' | 'done';
+            };
 
             if (!scheduleId || !classDate) {
                 return res.status(400).json(ResponseHelper.error('Schedule ID and class date are required', 400));
+            }
+
+            // Validate status if provided
+            if (status && !['active', 'cancelled', 'done'].includes(status)) {
+                return res.status(400).json(ResponseHelper.error('Invalid status. Must be active, cancelled, or done', 400));
             }
 
             if (!req.user?.email) {
@@ -230,7 +241,7 @@ router.post(
             const [year, month, day] = classDate.split('-').map(Number);
             const parsedClassDate = new Date(year, month - 1, day);
 
-            // Check if user has any signup record for this specific date (active or cancelled)
+            // Check if user has any signup record for this specific date
             const existingSignup = await Signup.findOne({
                 memberId: member._id,
                 scheduleId: scheduleId,
@@ -238,33 +249,57 @@ router.post(
             });
 
             if (existingSignup) {
-                if (existingSignup.status === 'active') {
-                    // User is signed up - toggle to cancelled
-                    existingSignup.status = 'cancelled';
+                // Prevent changes to 'done' status
+                if (existingSignup.status === 'done') {
+                    return res.status(400).json(ResponseHelper.error('Cannot modify signup that has been checked in (done status)', 400));
+                }
+
+                if (status) {
+                    // Use the provided status
+                    existingSignup.status = status;
+                    if (status === 'active') {
+                        existingSignup.signupDate = new Date(); // Update signup date when reactivating
+                    }
                     await existingSignup.save();
-                    console.log(`signupsService.POST /signups/toggle: Cancelled signup ${existingSignup._id}`);
-                    res.status(200).json(ResponseHelper.success({ isSignedUp: false }, 'Successfully cancelled signup'));
+                    console.log(`signupsService.POST /signups/toggle: Updated signup ${existingSignup._id} to status ${status}`);
+                    res.status(200).json(ResponseHelper.success({
+                        isSignedUp: status === 'active' || status === 'done',
+                        status: status
+                    }, `Successfully updated signup to ${status}`));
                 } else {
-                    // User has cancelled signup - reactivate it
-                    existingSignup.status = 'active';
-                    existingSignup.signupDate = new Date(); // Update signup date
-                    await existingSignup.save();
-                    console.log(`signupsService.POST /signups/toggle: Reactivated signup ${existingSignup._id}`);
-                    res.status(200).json(ResponseHelper.success({ isSignedUp: true }, 'Successfully signed up for class'));
+                    // Toggle between active and cancelled (original behavior)
+                    if (existingSignup.status === 'active') {
+                        // User is signed up - toggle to cancelled
+                        existingSignup.status = 'cancelled';
+                        await existingSignup.save();
+                        console.log(`signupsService.POST /signups/toggle: Cancelled signup ${existingSignup._id}`);
+                        res.status(200).json(ResponseHelper.success({ isSignedUp: false }, 'Successfully cancelled signup'));
+                    } else {
+                        // User has cancelled signup - reactivate it
+                        existingSignup.status = 'active';
+                        existingSignup.signupDate = new Date(); // Update signup date
+                        await existingSignup.save();
+                        console.log(`signupsService.POST /signups/toggle: Reactivated signup ${existingSignup._id}`);
+                        res.status(200).json(ResponseHelper.success({ isSignedUp: true }, 'Successfully signed up for class'));
+                    }
                 }
             } else {
                 // No signup record exists - create new signup
+                const newStatus = status || 'active'; // Default to 'active' if no status provided
                 const newSignup = new Signup({
                     memberId: member._id,
                     scheduleId: scheduleId,
                     classDate: parsedClassDate,
                     signupDate: new Date(),
-                    status: 'active'
+                    status: newStatus
                 });
 
                 const savedSignup = await newSignup.save();
-                console.log(`signupsService.POST /signups/toggle: Created signup ${savedSignup._id}`);
-                res.status(201).json(ResponseHelper.created({ isSignedUp: true }, 'Successfully signed up for class'));
+                console.log(`signupsService.POST /signups/toggle: Created signup ${savedSignup._id} with status ${newStatus}`);
+                res.status(201).json(ResponseHelper.created({
+                    isSignedUp: newStatus === 'active' || newStatus === 'done',
+                    status: newStatus
+                }, `Successfully signed up for class with status ${newStatus}`));
             }
         } catch (error) {
             console.error('signupsService.POST /signups/toggle error:', error);
@@ -306,7 +341,7 @@ router.get(
             const upcomingSignups = await Signup.find({
                 memberId: { $in: memberIds },
                 classDate: { $gte: today },
-                status: 'active'
+                status: { $in: ['active', 'done'] }
             }).sort({ classDate: 1, signupDate: 1 });
 
             console.log(`signupsService.GET /signups/upcoming: Found ${upcomingSignups.length} upcoming signups`);
@@ -344,7 +379,8 @@ router.get(
                     signup: {
                         _id: signup._id,
                         signupDate: signup.signupDate,
-                        classDate: signup.classDate
+                        classDate: signup.classDate,
+                        status: signup.status
                     },
                     schedule: {
                         _id: schedule._id,

@@ -6,7 +6,7 @@ export interface ISignup {
     scheduleId: string; // Reference to Schedule._id
     classDate: Date; // The specific date this signup is for
     signupDate: Date; // When the member signed up
-    status: 'active' | 'cancelled'; // Whether the signup is active or cancelled
+    status: 'active' | 'cancelled' | 'done'; // Whether the signup is active, cancelled, or checked in
     createdAt: Date;
     updatedAt: Date;
 }
@@ -20,7 +20,7 @@ const signupSchema = new mongoose.Schema<ISignup>(
         status: {
             type: String,
             required: true,
-            enum: ['active', 'cancelled'],
+            enum: ['active', 'cancelled', 'done'],
             default: 'active'
         }
     },
