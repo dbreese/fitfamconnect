@@ -618,6 +618,8 @@ export const messages = {
         editSchedule: 'Edit Schedule',
         hideEmptySlots: 'Hide Empty Slots',
         showAllSlots: 'Show All Slots',
+        hideNoCoaches: 'Hide No Coaches',
+        showNoCoaches: 'Show No Coaches',
         deleteConfirmation: 'Delete Confirmation',
         deleteMessage: 'Are you sure you want to delete the schedule for "{name}"?',
         class: 'Class',

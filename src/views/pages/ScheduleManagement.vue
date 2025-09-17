@@ -42,6 +42,7 @@ const selectedSchedule = ref<any | null>(null);
 const currentView = ref('week');
 const currentDate = ref(new Date());
 const hideEmptySlots = ref(false);
+const hideNoCoaches = ref(false);
 const activeTab = ref(0);
 const scheduleFilter = ref('all');
 
@@ -750,6 +751,11 @@ function getSchedulesForTimeSlot(dayDate: Date, timeSlot: { hour: number; minute
             return false;
         }
 
+        // Filter out schedules without coaches if hideNoCoaches is enabled
+        if (hideNoCoaches.value && (!schedule.coachId || schedule.coachId === '')) {
+            return false;
+        }
+
         const scheduleStart = new Date(schedule.startDateTime);
 
         // Check if schedule is on the same day
@@ -995,6 +1001,16 @@ onMounted(() => {
                                             hideEmptySlots ? t('schedules.showAllSlots') : t('schedules.hideEmptySlots')
                                         "
                                         @click="hideEmptySlots = !hideEmptySlots"
+                                        severity="secondary"
+                                        size="small"
+                                        class="compact-button"
+                                    />
+                                    <Button
+                                        :icon="hideNoCoaches ? 'pi pi-eye' : 'pi pi-eye-slash'"
+                                        :label="
+                                            hideNoCoaches ? t('schedules.showNoCoaches') : t('schedules.hideNoCoaches')
+                                        "
+                                        @click="hideNoCoaches = !hideNoCoaches"
                                         severity="secondary"
                                         size="small"
                                         class="compact-button"

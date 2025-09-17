@@ -3,11 +3,12 @@
 ## Features
 
 ### Required for launch
-- [ ] Members
-    - [X] can view monthly charges and bills
-    - [ ] can view schedule
-    - [ ] can make/cancel reservations
+- [ ] Members / Member App
+    - [x] can view monthly charges and bills
+    - [x] can view schedule
+    - [x] can make/cancel reservations
     - [ ] can send feedback
+    - [ ] can checkin via their device
 
 - [ ] Coach assignments
     - [ ] filter classes with no coaches
@@ -15,18 +16,23 @@
 - [ ] Timesheets for coaches (is this just a kiosk feature for clock in/out)
     - [ ] Can we auto-calculate this.
 
+- [ ] Kiosk app
+    - [ ] On the profile screen, if member is an owner or a coach, let them put the app into kiosk mode.
+    - [ ] One tab -- shows classes for the day along with existing signups.
+        - [ ] Tapping on a signup checks the member in.
+        - [ ] "Checkin" button to checkin via phone number.
+
+- [ ] Payments
+    - [ ] Online payments
+    - [ ] Recurring payments, etc
+
+### Nice to have
 - [ ] Send notifications
     - [ ] broadcast
     - [ ] single user
     - [ ] email
     - [ ] push notification
 
-- [ ] Member app
-- [ ] Kiosk app
-
-- [ ] Online payments, recurring payments, etc
-
-### Nice to have
 - [ ] Contracts (perhaps just store PDFs for now like a file library?)
 
 - [ ] Multi-locations
@@ -39,8 +45,10 @@
 
 - [ ] Ability to publish schedule to external via snippet
 
-
 ### Future
+- [ ] Owners
+    - [ ] can view feedback?
+
 - [ ] Messaging
     - [ ] AI opptys?
     - [ ] Templates
