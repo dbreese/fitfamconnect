@@ -33,6 +33,7 @@ Mongoose schemas will be stored in src/server/db.
 - When they enter this gym code, the owner of the gym will be able to approve their membership, so we need to track this
   approval along with the date/time of the approval.
 - Member entity contains basic profile information but does NOT contain start dates - those are in Membership records.
+- Members can enter an optional 4-6 digit pin code that can be used to protect certain features.
 
 # Membership
 

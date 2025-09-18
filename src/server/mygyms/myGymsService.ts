@@ -81,6 +81,14 @@ router.get(
                         joinRequestDate: memberRecord?.joinRequestDate,
                         approvedAt: memberRecord?.approvedAt,
                         notes: memberRecord?.notes
+                    },
+                    member: {
+                        email: memberRecord?.email,
+                        firstName: memberRecord?.firstName,
+                        lastName: memberRecord?.lastName,
+                        phone: memberRecord?.phone,
+                        pinCode: memberRecord?.pinCode,
+                        address: memberRecord?.address
                     }
                 };
             });

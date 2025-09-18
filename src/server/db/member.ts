@@ -21,6 +21,7 @@ export interface IMember {
     approvedAt?: Date;
     joinRequestDate: Date;
     notes?: string; // General notes about the member
+    pinCode?: string; // Optional 4-6 digit pin code for protecting certain features
     createdAt: Date;
     updatedAt: Date;
 }
@@ -55,7 +56,19 @@ const memberSchema = new mongoose.Schema<IMember>(
         approvedBy: { type: String }, // Member._id of owner who approved
         approvedAt: { type: Date },
         joinRequestDate: { type: Date, required: true, default: Date.now },
-        notes: { type: String }
+        notes: { type: String },
+        pinCode: {
+            type: String,
+            validate: {
+                validator: function(v: string) {
+                    // Allow empty/null values (optional field)
+                    if (!v) return true;
+                    // Validate 4-6 digit pin code
+                    return /^\d{4,6}$/.test(v);
+                },
+                message: 'Pin code must be 4-6 digits'
+            }
+        }
     },
     { timestamps: true }
 );
@@ -67,6 +80,7 @@ memberSchema.index({ isActive: 1 });
 memberSchema.index({ gymId: 1 });
 memberSchema.index({ status: 1 });
 memberSchema.index({ approvedBy: 1 });
+memberSchema.index({ pinCode: 1 });
 memberSchema.index({ gymId: 1, status: 1 }); // Compound index for gym queries
 
 // Pre-save middleware to set approval timestamp

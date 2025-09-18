@@ -95,8 +95,7 @@ router.get(
                 status: { $in: ['active', 'done'] }
             }).populate('memberId', 'firstName lastName email phone');
 
-            // Create maps for efficient lookup
-            const signupScheduleIds = new Set(allSignups.map(s => s.scheduleId.toString()));
+            // Create map for efficient lookup
             const signupsBySchedule = new Map<string, any[]>();
 
             // Group signups by schedule ID
@@ -209,7 +208,7 @@ router.get(
     }
 );
 
-// POST /signups/toggle { scheduleId, classDate, status? }
+// POST /signups/toggle { scheduleId, classDate, memberId?,status? }
 router.post(
     '/signups/toggle',
     authenticateUser,
@@ -217,10 +216,12 @@ router.post(
     async (req: AuthenticatedRequest, res: Response) => {
         try {
             console.log('signupsService.POST /signups/toggle: Request received', req.body);
-            const { scheduleId, classDate, status } = req.body as {
+            console.log('signupsService.POST /signups/toggle: Requesting user email:', req.user?.email);
+            const { scheduleId, classDate, status, memberId } = req.body as {
                 scheduleId?: string;
                 classDate?: string;
                 status?: 'active' | 'cancelled' | 'done';
+                memberId?: string;
             };
 
             if (!scheduleId || !classDate) {
@@ -248,24 +249,55 @@ router.post(
                 return res.status(404).json(ResponseHelper.error('Class not found', 404));
             }
 
-            // Verify user is a member of this gym
-            const member = await Member.findOne({
+            // Find the requesting member (the one making the request)
+            const requestMember = await Member.findOne({
                 email: req.user.email,
                 gymId: classObj.gymId,
                 status: 'approved'
             });
 
-            if (!member) {
+            if (!requestMember) {
                 return res.status(403).json(ResponseHelper.error('You are not an approved member of this gym', 403));
             }
+
+            // Determine the target member (the one whose signup status we're changing)
+            let statusMember;
+            if (memberId) {
+                // If memberId is provided, find that specific member
+                statusMember = await Member.findOne({
+                    _id: memberId,
+                    gymId: classObj.gymId,
+                    status: 'approved'
+                });
+
+                if (!statusMember) {
+                    return res.status(404).json(ResponseHelper.error('Target member not found or not approved for this gym', 404));
+                }
+
+                // If requesting member is different from target member, check authorization
+                if (requestMember._id.toString() !== statusMember._id.toString()) {
+                    // Check if requestMember is owner or coach
+                    const isOwner = req.user.roles?.includes('owner') || req.user.roles?.includes('root');
+                    const isCoach = requestMember.memberType === 'coach';
+
+                    if (!isOwner && !isCoach) {
+                        return res.status(403).json(ResponseHelper.error('Only owners and coaches can modify other members\' signups', 403));
+                    }
+                }
+            } else {
+                // If no memberId provided, target member is the same as requesting member
+                statusMember = requestMember;
+            }
+
+            console.log('signupsService.POST /signups/toggle: Request member:', requestMember._id, 'Target member:', statusMember._id);
 
             // Parse the class date
             const [year, month, day] = classDate.split('-').map(Number);
             const parsedClassDate = new Date(year, month - 1, day);
 
-            // Check if user has any signup record for this specific date
+            // Check if target member has any signup record for this specific date
             const existingSignup = await Signup.findOne({
-                memberId: member._id,
+                memberId: statusMember._id,
                 scheduleId: scheduleId,
                 classDate: parsedClassDate
             });
@@ -309,7 +341,7 @@ router.post(
                 // No signup record exists - create new signup
                 const newStatus = status || 'active'; // Default to 'active' if no status provided
                 const newSignup = new Signup({
-                    memberId: member._id,
+                    memberId: statusMember._id,
                     scheduleId: scheduleId,
                     classDate: parsedClassDate,
                     signupDate: new Date(),
