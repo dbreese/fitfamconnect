@@ -179,11 +179,17 @@ export const ClassService = {
     /**
      * Toggle signup for a class (sign up or cancel)
      */
-    async toggleSignup(scheduleId: string, classDate: string) {
-        console.log('ClassService.toggleSignup: Toggling signup for schedule', { scheduleId, classDate });
+    async toggleSignup(scheduleId: string, classDate: string, memberId?: string, phone?: string, email?: string, status?: string) {
+        console.log('ClassService.toggleSignup: Toggling signup for schedule', { scheduleId, classDate, memberId, phone, email, status });
 
         try {
-            const response = await submit('POST', '/signups/toggle', { scheduleId, classDate });
+            const requestBody: any = { scheduleId, classDate };
+            if (memberId) requestBody.memberId = memberId;
+            if (phone) requestBody.phone = phone;
+            if (email) requestBody.email = email;
+            if (status) requestBody.status = status;
+
+            const response = await submit('POST', '/signups/signup', requestBody);
 
             if (response.ok) {
                 const result = await response.json();

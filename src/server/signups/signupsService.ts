@@ -208,20 +208,22 @@ router.get(
     }
 );
 
-// POST /signups/toggle { scheduleId, classDate, memberId?,status? }
+// POST /signups/signup { scheduleId, classDate, memberId?, phone?, email?, status? }
 router.post(
-    '/signups/toggle',
+    '/signups/signup',
     authenticateUser,
     authorizeRoles('member', 'owner', 'root'),
     async (req: AuthenticatedRequest, res: Response) => {
         try {
-            console.log('signupsService.POST /signups/toggle: Request received', req.body);
-            console.log('signupsService.POST /signups/toggle: Requesting user email:', req.user?.email);
-            const { scheduleId, classDate, status, memberId } = req.body as {
+            console.log('signupsService.POST /signups/signup: Request received', req.body);
+            console.log('signupsService.POST /signups/signup: Requesting user email:', req.user?.email);
+            const { scheduleId, classDate, status, memberId, phone, email } = req.body as {
                 scheduleId?: string;
                 classDate?: string;
                 status?: 'active' | 'cancelled' | 'done';
                 memberId?: string;
+                phone?: string;
+                email?: string;
             };
 
             if (!scheduleId || !classDate) {
@@ -262,13 +264,22 @@ router.post(
 
             // Determine the target member (the one whose signup status we're changing)
             let statusMember;
-            if (memberId) {
-                // If memberId is provided, find that specific member
-                statusMember = await Member.findOne({
-                    _id: memberId,
+            if (memberId || phone || email) {
+                // Build query to find target member
+                const memberQuery: any = {
                     gymId: classObj.gymId,
                     status: 'approved'
-                });
+                };
+
+                if (memberId) {
+                    memberQuery._id = memberId;
+                } else if (email) {
+                    memberQuery.email = email;
+                } else if (phone) {
+                    memberQuery.phone = phone;
+                }
+
+                statusMember = await Member.findOne(memberQuery);
 
                 if (!statusMember) {
                     return res.status(404).json(ResponseHelper.error('Target member not found or not approved for this gym', 404));
@@ -285,11 +296,11 @@ router.post(
                     }
                 }
             } else {
-                // If no memberId provided, target member is the same as requesting member
+                // If no identifying parameters provided, target member is the same as requesting member
                 statusMember = requestMember;
             }
 
-            console.log('signupsService.POST /signups/toggle: Request member:', requestMember._id, 'Target member:', statusMember._id);
+            console.log('signupsService.POST /signups/signup: Request member:', requestMember._id, 'Target member:', statusMember._id);
 
             // Parse the class date
             const [year, month, day] = classDate.split('-').map(Number);
@@ -315,7 +326,7 @@ router.post(
                         existingSignup.signupDate = new Date(); // Update signup date when reactivating
                     }
                     await existingSignup.save();
-                    console.log(`signupsService.POST /signups/toggle: Updated signup ${existingSignup._id} to status ${status}`);
+                    console.log(`signupsService.POST /signups/signup: Updated signup ${existingSignup._id} to status ${status}`);
                     res.status(200).json(ResponseHelper.success({
                         isSignedUp: status === 'active' || status === 'done',
                         status: status
@@ -326,14 +337,14 @@ router.post(
                         // User is signed up - toggle to cancelled
                         existingSignup.status = 'cancelled';
                         await existingSignup.save();
-                        console.log(`signupsService.POST /signups/toggle: Cancelled signup ${existingSignup._id}`);
+                        console.log(`signupsService.POST /signups/signup: Cancelled signup ${existingSignup._id}`);
                         res.status(200).json(ResponseHelper.success({ isSignedUp: false }, 'Successfully cancelled signup'));
                     } else {
                         // User has cancelled signup - reactivate it
                         existingSignup.status = 'active';
                         existingSignup.signupDate = new Date(); // Update signup date
                         await existingSignup.save();
-                        console.log(`signupsService.POST /signups/toggle: Reactivated signup ${existingSignup._id}`);
+                        console.log(`signupsService.POST /signups/signup: Reactivated signup ${existingSignup._id}`);
                         res.status(200).json(ResponseHelper.success({ isSignedUp: true }, 'Successfully signed up for class'));
                     }
                 }
@@ -349,15 +360,15 @@ router.post(
                 });
 
                 const savedSignup = await newSignup.save();
-                console.log(`signupsService.POST /signups/toggle: Created signup ${savedSignup._id} with status ${newStatus}`);
+                console.log(`signupsService.POST /signups/signup: Created signup ${savedSignup._id} with status ${newStatus}`);
                 res.status(201).json(ResponseHelper.created({
                     isSignedUp: newStatus === 'active' || newStatus === 'done',
                     status: newStatus
                 }, `Successfully signed up for class with status ${newStatus}`));
             }
         } catch (error) {
-            console.error('signupsService.POST /signups/toggle error:', error);
-            res.status(500).json(ResponseHelper.error('Failed to toggle signup', 500));
+            console.error('signupsService.POST /signups/signup error:', error);
+            res.status(500).json(ResponseHelper.error('Failed to update signup', 500));
         }
     }
 );

@@ -83,11 +83,23 @@ memberSchema.index({ approvedBy: 1 });
 memberSchema.index({ pinCode: 1 });
 memberSchema.index({ gymId: 1, status: 1 }); // Compound index for gym queries
 
-// Pre-save middleware to set approval timestamp
+// Pre-save middleware to clean numeric fields and set approval timestamp
 memberSchema.pre('save', function (next) {
+    // Remove all non-numeric characters from phone field
+    if (this.phone) {
+        this.phone = this.phone.replace(/\D/g, '');
+    }
+
+    // Remove all non-numeric characters from pinCode field
+    if (this.pinCode) {
+        this.pinCode = this.pinCode.replace(/\D/g, '');
+    }
+
+    // Set approval timestamp if status is approved
     if (this.status === 'approved' && !this.approvedAt) {
         this.approvedAt = new Date();
     }
+
     next();
 });
 
