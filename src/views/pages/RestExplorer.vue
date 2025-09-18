@@ -109,7 +109,18 @@
                 <!-- Recent Requests -->
                 <div class="col-12 mt-4" v-if="recentRequests.length > 0">
                     <Card>
-                        <template #title>Recent Requests</template>
+                        <template #title>
+                            <div class="flex align-items-center justify-content-between">
+                                <span>Recent Requests</span>
+                                <Button
+                                    icon="pi pi-trash"
+                                    severity="secondary"
+                                    size="small"
+                                    @click="clearRecentRequests"
+                                    v-tooltip="'Clear history'"
+                                />
+                            </div>
+                        </template>
                         <template #content>
                             <DataTable
                             :value="recentRequests"
@@ -145,15 +156,31 @@
                                     {{ formatTimestamp(data.timestamp) }}
                                 </template>
                             </Column>
-                            <Column header="Actions" :style="{ width: '100px' }">
+                            <Column header="Actions" :style="{ width: '160px' }">
                                 <template #body="{ data }">
-                                    <Button
-                                        icon="pi pi-refresh"
-                                        size="small"
-                                        severity="secondary"
-                                        @click="repeatRequest(data)"
-                                        v-tooltip="'Repeat this request'"
-                                    />
+                                    <div class="flex gap-1">
+                                        <Button
+                                            icon="pi pi-arrow-up"
+                                            size="small"
+                                            severity="info"
+                                            @click="populateRequest(data)"
+                                            v-tooltip="'Populate form with this request'"
+                                        />
+                                        <Button
+                                            icon="pi pi-refresh"
+                                            size="small"
+                                            severity="secondary"
+                                            @click="repeatRequest(data)"
+                                            v-tooltip="'Repeat this request'"
+                                        />
+                                        <Button
+                                            icon="pi pi-trash"
+                                            size="small"
+                                            severity="danger"
+                                            @click="deleteRecentRequest(data)"
+                                            v-tooltip="'Delete this request'"
+                                        />
+                                    </div>
                                 </template>
                             </Column>
                         </DataTable>
@@ -167,7 +194,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -178,10 +205,14 @@ import Column from 'primevue/column';
 import Tag from 'primevue/tag';
 import { submit } from '@/service/NetworkUtil';
 
+// Constants
+const STORAGE_KEY = 'restExplorer_recentRequests';
+
 // Reactive data
 const isLoading = ref(false);
 const response = ref(null);
 const recentRequests = ref([]);
+const isRepeatingRequest = ref(false);
 
 const requestConfig = ref({
     method: 'GET',
@@ -200,6 +231,11 @@ const httpMethods = [
 // Computed properties
 const needsBody = computed(() => {
     return ['POST', 'PUT', 'PATCH'].includes(requestConfig.value.method);
+});
+
+// Lifecycle
+onMounted(() => {
+    loadRecentRequests();
 });
 
 // Methods
@@ -251,15 +287,17 @@ const submitRequest = async () => {
             responseTime
         };
 
-        // Add to recent requests
-        addToRecentRequests({
-            method: requestConfig.value.method,
-            endpoint: requestConfig.value.endpoint,
-            status: result.status,
-            responseTime,
-            timestamp: new Date(),
-            body: requestConfig.value.body
-        });
+        // Add to recent requests only if not repeating a request
+        if (!isRepeatingRequest.value) {
+            addToRecentRequests({
+                method: requestConfig.value.method,
+                endpoint: requestConfig.value.endpoint,
+                status: result.status,
+                responseTime,
+                timestamp: new Date(),
+                body: requestConfig.value.body
+            });
+        }
 
     } catch (error) {
         const responseTime = Date.now() - startTime;
@@ -272,6 +310,7 @@ const submitRequest = async () => {
         };
     } finally {
         isLoading.value = false;
+        isRepeatingRequest.value = false;
     }
 };
 
@@ -285,6 +324,7 @@ const clearRequest = () => {
 };
 
 const repeatRequest = (request) => {
+    isRepeatingRequest.value = true;
     requestConfig.value = {
         method: request.method,
         endpoint: request.endpoint,
@@ -299,6 +339,63 @@ const addToRecentRequests = (request) => {
     if (recentRequests.value.length > 20) {
         recentRequests.value = recentRequests.value.slice(0, 20);
     }
+    // Save to localStorage
+    saveRecentRequests();
+};
+
+const loadRecentRequests = () => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            // Convert timestamp strings back to Date objects
+            recentRequests.value = parsed.map(request => ({
+                ...request,
+                timestamp: new Date(request.timestamp)
+            }));
+        }
+    } catch (error) {
+        console.error('Failed to load recent requests from localStorage:', error);
+        recentRequests.value = [];
+    }
+};
+
+const saveRecentRequests = () => {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(recentRequests.value));
+    } catch (error) {
+        console.error('Failed to save recent requests to localStorage:', error);
+    }
+};
+
+const clearRecentRequests = () => {
+    recentRequests.value = [];
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+        console.error('Failed to clear recent requests from localStorage:', error);
+    }
+};
+
+const deleteRecentRequest = (requestToDelete) => {
+    const index = recentRequests.value.findIndex(request =>
+        request.method === requestToDelete.method &&
+        request.endpoint === requestToDelete.endpoint &&
+        request.timestamp.getTime() === requestToDelete.timestamp.getTime()
+    );
+
+    if (index !== -1) {
+        recentRequests.value.splice(index, 1);
+        saveRecentRequests();
+    }
+};
+
+const populateRequest = (request) => {
+    requestConfig.value = {
+        method: request.method,
+        endpoint: request.endpoint,
+        body: request.body || ''
+    };
 };
 
 const getStatusSeverity = (status) => {
