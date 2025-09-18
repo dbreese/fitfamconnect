@@ -15,6 +15,7 @@ import Column from 'primevue/column';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useI18n } from 'vue-i18n';
+import { user } from '@/service/SessionUtils';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -80,8 +81,23 @@ async function loadClasses() {
         const dateStr = `${year}-${month}-${day}`;
         const result = await ClassService.getClassesForDate(selectedGymId.value, dateStr);
         if (result) {
+            // Process classes and determine if current user is signed up
+            const processedClasses = result.map((classSchedule: any) => {
+                // Check if current user is in the signups array and get their signup status
+                const userEmail = user.email;
+                const userSignup = classSchedule.signups && classSchedule.signups.find((signup: any) =>
+                    signup.member && signup.member.email === userEmail
+                );
+
+                return {
+                    ...classSchedule,
+                    isSignedUp: userSignup ? (userSignup.status === 'active' || userSignup.status === 'done') : false,
+                    signupStatus: userSignup ? userSignup.status : null
+                };
+            });
+
             // Sort classes by start time
-            availableClasses.value = result.sort((a: any, b: any) => {
+            availableClasses.value = processedClasses.sort((a: any, b: any) => {
                 const timeA = new Date(a.startDateTime).getTime();
                 const timeB = new Date(b.startDateTime).getTime();
                 return timeA - timeB;
@@ -113,10 +129,11 @@ async function toggleSignup(classSchedule: any) {
 
         const result = await ClassService.toggleSignup(classSchedule._id, dateStr);
 
-        // Update the local state
+        // Update the local state - use the isSignedUp field from the response
         classSchedule.isSignedUp = result.isSignedUp;
+        classSchedule.signupStatus = result.status;
 
-        const message = result.isSignedUp
+        const message = classSchedule.isSignedUp
             ? t('signups.success.signedUp', { className: classSchedule.class?.name })
             : t('signups.success.cancelled', { className: classSchedule.class?.name });
 
@@ -155,16 +172,22 @@ function formatDuration(startTime: Date | string, duration: number): string {
     return `${formatTime(start)} - ${formatTime(end)}`;
 }
 
-function getSignupButtonSeverity(isSignedUp: boolean): string {
-    return isSignedUp ? 'danger' : 'success';
+function getSignupButtonSeverity(classSchedule: any): string {
+    if (!classSchedule.isSignedUp) return 'success';
+    if (classSchedule.signupStatus === 'done') return 'info';
+    return 'danger';
 }
 
-function getSignupButtonIcon(isSignedUp: boolean): string {
-    return isSignedUp ? 'pi pi-times' : 'pi pi-plus';
+function getSignupButtonIcon(classSchedule: any): string {
+    if (!classSchedule.isSignedUp) return 'pi pi-plus';
+    if (classSchedule.signupStatus === 'done') return 'pi pi-check';
+    return 'pi pi-times';
 }
 
-function getSignupButtonLabel(isSignedUp: boolean): string {
-    return isSignedUp ? t('signups.cancel') : t('signups.signUp');
+function getSignupButtonLabel(classSchedule: any): string {
+    if (!classSchedule.isSignedUp) return t('signups.signUp');
+    if (classSchedule.signupStatus === 'done') return t('signups.statusLabels.done');
+    return t('signups.cancel');
 }
 
 function previousDay() {
@@ -266,6 +289,24 @@ async function cancelUpcomingSignup(signup: any) {
             detail: errorMessage,
             life: 3000
         });
+    }
+}
+
+function getStatusLabel(status: string): string {
+    switch (status) {
+        case 'active': return t('signups.statusLabels.active');
+        case 'cancelled': return t('signups.statusLabels.cancelled');
+        case 'done': return t('signups.statusLabels.done');
+        default: return status;
+    }
+}
+
+function getStatusSeverity(status: string): string {
+    switch (status) {
+        case 'active': return 'success';
+        case 'cancelled': return 'danger';
+        case 'done': return 'info';
+        default: return 'secondary';
     }
 }
 
@@ -410,9 +451,10 @@ onMounted(() => {
                                             </div>
                                             <div class="ml-4">
                                                 <Button
-                                                    :icon="getSignupButtonIcon(classSchedule.isSignedUp)"
-                                                    :label="getSignupButtonLabel(classSchedule.isSignedUp)"
-                                                    :severity="getSignupButtonSeverity(classSchedule.isSignedUp)"
+                                                    :icon="getSignupButtonIcon(classSchedule)"
+                                                    :label="getSignupButtonLabel(classSchedule)"
+                                                    :severity="getSignupButtonSeverity(classSchedule)"
+                                                    :disabled="classSchedule.signupStatus === 'done'"
                                                     @click="toggleSignup(classSchedule)"
                                                 />
                                             </div>
@@ -487,6 +529,15 @@ onMounted(() => {
                                     <Column field="coach" :header="t('signups.coach')">
                                         <template #body="{ data }">
                                             {{ data.coach ? `${data.coach.firstName} ${data.coach.lastName}` : t('signups.noCoach') }}
+                                        </template>
+                                    </Column>
+
+                                    <Column field="signup.status" :header="t('signups.status')">
+                                        <template #body="{ data }">
+                                            <Tag
+                                                :value="getStatusLabel(data.signup.status)"
+                                                :severity="getStatusSeverity(data.signup.status)"
+                                            />
                                         </template>
                                     </Column>
 

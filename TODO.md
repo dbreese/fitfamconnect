@@ -7,17 +7,17 @@
     - [x] can view monthly charges and bills
     - [x] can view schedule
     - [x] can make/cancel reservations
-    - [ ] can send feedback
-    - [ ] can checkin via their device
+    - [x] can checkin via their device
 
 - [ ] Coach assignments
-    - [ ] filter classes with no coaches
+    - [x] filter classes with no coaches
 
 - [ ] Timesheets for coaches (is this just a kiosk feature for clock in/out)
-    - [ ] Can we auto-calculate this.
+    - [ ] Can we auto-calculate this based on scheduled coaches?
 
 - [ ] Kiosk app
     - [ ] On the profile screen, if member is an owner or a coach, let them put the app into kiosk mode.
+    - [ ] How to get out of kiosk mode
     - [ ] One tab -- shows classes for the day along with existing signups.
         - [ ] Tapping on a signup checks the member in.
         - [ ] "Checkin" button to checkin via phone number.
@@ -37,6 +37,8 @@
 
 - [ ] Multi-locations
 
+- [ ] Multi-gym membership behavior on app and web
+
 - [ ] Billing
     - [ ] Allow editing 1-time charges from billing preview screen.
 
@@ -45,7 +47,13 @@
 
 - [ ] Ability to publish schedule to external via snippet
 
+- [ ] members
+    - [ ] can send feedback
+
+
 ### Future
+- [ ] Scheduling and staff management?
+
 - [ ] Owners
     - [ ] can view feedback?
 

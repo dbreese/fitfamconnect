@@ -2,7 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 
 export interface ISignup {
     _id?: string;
-    memberId: string; // Reference to Member._id
+    memberId: string | mongoose.Types.ObjectId; // Reference to Member._id
     scheduleId: string; // Reference to Schedule._id
     classDate: Date; // The specific date this signup is for
     signupDate: Date; // When the member signed up
@@ -13,7 +13,7 @@ export interface ISignup {
 
 const signupSchema = new mongoose.Schema<ISignup>(
     {
-        memberId: { type: String, required: true },
+        memberId: { type: Schema.Types.ObjectId, ref: 'Member', required: true },
         scheduleId: { type: String, required: true },
         classDate: { type: Date, required: true }, // The specific date this signup is for
         signupDate: { type: Date, required: true, default: Date.now },

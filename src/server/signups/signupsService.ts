@@ -89,14 +89,37 @@ router.get(
 
             console.log(`signupsService.GET /signups/classes: Found ${schedules.length} schedules`);
 
-            // Get user's current signups for this specific date
-            const userSignups = await Signup.find({
-                memberId: member._id,
+            // Get all signups for this specific date (not just current user)
+            const allSignups = await Signup.find({
                 classDate: { $gte: dayStart, $lte: dayEnd },
                 status: { $in: ['active', 'done'] }
+            }).populate('memberId', 'firstName lastName email phone');
+
+            // Create maps for efficient lookup
+            const signupScheduleIds = new Set(allSignups.map(s => s.scheduleId.toString()));
+            const signupsBySchedule = new Map<string, any[]>();
+
+            // Group signups by schedule ID
+            allSignups.forEach(signup => {
+                const scheduleId = signup.scheduleId.toString();
+                if (!signupsBySchedule.has(scheduleId)) {
+                    signupsBySchedule.set(scheduleId, []);
+                }
+                const memberData = signup.memberId as any; // Type assertion for populated data
+                signupsBySchedule.get(scheduleId)!.push({
+                    _id: signup._id,
+                    signupDate: signup.signupDate,
+                    classDate: signup.classDate,
+                    status: signup.status,
+                    member: {
+                        _id: memberData._id,
+                        firstName: memberData.firstName,
+                        lastName: memberData.lastName,
+                        email: memberData.email,
+                        phone: memberData.phone
+                    }
+                });
             });
-            const signupScheduleIds = new Set(userSignups.map(s => s.scheduleId.toString()));
-            const signupDataMap = new Map(userSignups.map(s => [s.scheduleId.toString(), s]));
 
             // Enrich schedules with class, location, and signup info
             const enrichedSchedules = await Promise.all(schedules.map(async (schedule) => {
@@ -164,8 +187,7 @@ router.get(
                         firstName: coach.firstName,
                         lastName: coach.lastName
                     } : null,
-                    isSignedUp: signupScheduleIds.has(schedule._id.toString()),
-                    signupStatus: signupDataMap.get(schedule._id.toString())?.status || null
+                    signups: signupsBySchedule.get(schedule._id.toString()) || []
                 };
             }));
 
@@ -342,7 +364,7 @@ router.get(
                 memberId: { $in: memberIds },
                 classDate: { $gte: today },
                 status: { $in: ['active', 'done'] }
-            }).sort({ classDate: 1, signupDate: 1 });
+            }).populate('memberId', 'firstName lastName email phone').sort({ classDate: 1, signupDate: 1 });
 
             console.log(`signupsService.GET /signups/upcoming: Found ${upcomingSignups.length} upcoming signups`);
 
@@ -375,12 +397,20 @@ router.get(
                     actualEndTime = schedule.endDateTime;
                 }
 
+                const memberData = signup.memberId as any; // Type assertion for populated data
                 return {
                     signup: {
                         _id: signup._id,
                         signupDate: signup.signupDate,
                         classDate: signup.classDate,
-                        status: signup.status
+                        status: signup.status,
+                        member: {
+                            _id: memberData._id,
+                            firstName: memberData.firstName,
+                            lastName: memberData.lastName,
+                            email: memberData.email,
+                            phone: memberData.phone
+                        }
                     },
                     schedule: {
                         _id: schedule._id,

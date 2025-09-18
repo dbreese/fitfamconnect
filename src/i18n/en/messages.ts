@@ -831,7 +831,13 @@ export const messages = {
         coach: 'Coach',
         noCoach: 'No coach assigned',
         actions: 'Actions',
+        status: 'Status',
         upcomingFound: 'upcoming signups',
+        statusLabels: {
+            active: 'Active',
+            cancelled: 'Cancelled',
+            done: 'Checked In'
+        },
         success: {
             signedUp: 'Successfully signed up for {className}',
             cancelled: 'Successfully cancelled signup for {className}'
