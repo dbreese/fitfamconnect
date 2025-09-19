@@ -41,13 +41,6 @@ const formData = ref({
         openTime: string;
         closeTime: string;
         isClosed: boolean;
-    }>,
-    subLocations: [] as Array<{
-        name: string;
-        description: string;
-        maxCapacity: number | null;
-        equipment: string[];
-        isActive: boolean;
     }>
 });
 
@@ -98,16 +91,7 @@ function openEditDialog(location: ILocation) {
         name: location.name,
         description: location.description || '',
         maxMemberCount: location.maxMemberCount || null,
-        operatingHours: location.operatingHours ? [...location.operatingHours] : getDefaultOperatingHours(),
-        subLocations: location.subLocations
-            ? location.subLocations.map((sub) => ({
-                  name: sub.name,
-                  description: sub.description || '',
-                  maxCapacity: sub.maxCapacity || null,
-                  equipment: sub.equipment ? [...sub.equipment] : [],
-                  isActive: sub.isActive
-              }))
-            : []
+        operatingHours: location.operatingHours ? [...location.operatingHours] : getDefaultOperatingHours()
     };
     showDialog.value = true;
 }
@@ -117,8 +101,7 @@ function resetForm() {
         name: '',
         description: '',
         maxMemberCount: null,
-        operatingHours: getDefaultOperatingHours(),
-        subLocations: []
+        operatingHours: getDefaultOperatingHours()
     };
 }
 
@@ -131,19 +114,6 @@ function getDefaultOperatingHours() {
     }));
 }
 
-function addSubLocation() {
-    formData.value.subLocations.push({
-        name: '',
-        description: '',
-        maxCapacity: null,
-        equipment: [],
-        isActive: true
-    });
-}
-
-function removeSubLocation(index: number) {
-    formData.value.subLocations.splice(index, 1);
-}
 
 function validateForm(): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
@@ -170,24 +140,6 @@ function validateForm(): { isValid: boolean; errors: string[] } {
         }
     }
 
-    // Validate sublocations
-    const subLocationNames = new Set<string>();
-    for (const sub of formData.value.subLocations) {
-        if (!sub.name.trim()) {
-            errors.push(t('locations.validation.subLocationNameRequired'));
-            break;
-        }
-        if (subLocationNames.has(sub.name.toLowerCase())) {
-            errors.push(t('locations.validation.duplicateSubLocationName'));
-            break;
-        }
-        subLocationNames.add(sub.name.toLowerCase());
-
-        if (sub.maxCapacity !== null && sub.maxCapacity <= 0) {
-            errors.push(t('locations.validation.subLocationCapacityInvalid'));
-            break;
-        }
-    }
 
     return {
         isValid: errors.length === 0,
@@ -217,12 +169,7 @@ async function handleSubmit() {
             ...formData.value,
             description: formData.value.description.trim() || undefined,
             maxMemberCount: formData.value.maxMemberCount || undefined,
-            subLocations: formData.value.subLocations.map((sub) => ({
-                ...sub,
-                description: sub.description.trim() || undefined,
-                maxCapacity: sub.maxCapacity || undefined,
-                equipment: sub.equipment.length > 0 ? sub.equipment : undefined
-            }))
+            subLocations: [] // Required by ILocation interface
         };
 
         if (editMode.value && selectedLocation.value) {
@@ -332,14 +279,6 @@ function formatOperatingHours(operatingHours: any[]): string {
     return `${openDays.length}/7 ${t('locations.daysOpen')}`;
 }
 
-function formatSubLocationsCount(subLocations: ISubLocation[] | undefined): string {
-    if (!subLocations || subLocations.length === 0) {
-        return t('locations.none');
-    }
-
-    const activeCount = subLocations.filter((sub) => sub.isActive).length;
-    return `${activeCount} ${t('locations.active')}`;
-}
 
 onMounted(() => {
     loadLocations();
@@ -371,11 +310,6 @@ onMounted(() => {
                         <Column field="operatingHours" :header="t('locations.hours')">
                             <template #body="{ data }">
                                 {{ formatOperatingHours(data.operatingHours) }}
-                            </template>
-                        </Column>
-                        <Column field="subLocations" :header="t('locations.subLocations')">
-                            <template #body="{ data }">
-                                {{ formatSubLocationsCount(data.subLocations) }}
                             </template>
                         </Column>
                         <Column :header="t('locations.actions')">
@@ -469,81 +403,6 @@ onMounted(() => {
                                     <label class="font-medium text-sm">{{ t('locations.closeTime') }}</label>
                                     <InputText v-model="hours.closeTime" type="time" class="w-full" />
                                 </div>
-                            </div>
-                        </div>
-                    </TabPanel>
-
-                    <!-- Sub-Locations Tab -->
-                    <TabPanel :header="t('locations.subLocations')" value="sublocations">
-                        <div class="space-y-4">
-                            <div class="flex justify-content-end">
-                                <Button
-                                    icon="pi pi-plus"
-                                    :label="t('locations.addSubLocation')"
-                                    size="small"
-                                    @click="addSubLocation"
-                                />
-                            </div>
-
-                            <div
-                                v-for="(subLocation, index) in formData.subLocations"
-                                :key="index"
-                                class="border rounded-lg p-4 space-y-4"
-                            >
-                                <div class="flex justify-between items-center">
-                                    <h4 class="text-lg font-semibold">
-                                        {{ t('locations.subLocation') }} {{ index + 1 }}
-                                    </h4>
-                                    <Button
-                                        icon="pi pi-trash"
-                                        size="small"
-                                        severity="danger"
-                                        @click="removeSubLocation(index)"
-                                    />
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="field">
-                                        <label class="font-medium">{{ t('locations.subLocationName') }} *</label>
-                                        <InputText v-model="subLocation.name" required class="w-full" />
-                                    </div>
-
-                                    <div class="field">
-                                        <label class="font-medium">{{ t('locations.maxCapacity') }}</label>
-                                        <InputNumber
-                                            v-model="subLocation.maxCapacity"
-                                            :min="1"
-                                            :max="500"
-                                            class="w-full"
-                                        />
-                                    </div>
-
-                                    <div class="field col-span-full">
-                                        <label class="font-medium">{{ t('locations.subLocationDescription') }}</label>
-                                        <Textarea v-model="subLocation.description" rows="2" class="w-full" />
-                                    </div>
-
-                                    <div class="field col-span-full">
-                                        <label class="font-medium">{{ t('locations.equipment') }}</label>
-                                        <Chips
-                                            v-model="subLocation.equipment"
-                                            class="w-full"
-                                            placeholder="Type equipment name and press Enter"
-                                        />
-                                        <small class="text-gray-500">{{ t('locations.equipmentHelp') }}</small>
-                                    </div>
-
-                                    <div class="field flex items-center gap-2">
-                                        <Checkbox v-model="subLocation.isActive" binary />
-                                        <label class="font-medium">{{ t('locations.isActive') }}</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div v-if="formData.subLocations.length === 0" class="text-center py-8 text-gray-500">
-                                <i class="pi pi-map-marker text-2xl mb-2"></i>
-                                <p>{{ t('locations.noSubLocations') }}</p>
-                                <p class="text-sm">{{ t('locations.addSubLocationHint') }}</p>
                             </div>
                         </div>
                     </TabPanel>

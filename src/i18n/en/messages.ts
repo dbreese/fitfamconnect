@@ -408,6 +408,12 @@ export const messages = {
             endAfterStart: 'End date must be after start date',
             periodRequired: 'Billing period is required for recurring plans',
             validationError: 'Validation Error'
+        },
+        periods: {
+            weekly: 'Weekly',
+            monthly: 'Monthly',
+            quarterly: 'Quarterly',
+            yearly: 'Yearly'
         }
     },
     locations: {

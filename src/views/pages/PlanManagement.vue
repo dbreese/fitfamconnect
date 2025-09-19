@@ -278,7 +278,19 @@ function getCurrencySymbol(currency: string): string {
 }
 
 function formatPlanType(plan: IPlan): string {
-    return plan.recurringPeriod;
+    const period = plan.recurringPeriod?.toLowerCase();
+    switch (period) {
+        case 'weekly':
+            return t('plans.periods.weekly');
+        case 'monthly':
+            return t('plans.periods.monthly');
+        case 'quarterly':
+            return t('plans.periods.quarterly');
+        case 'yearly':
+            return t('plans.periods.yearly');
+        default:
+            return plan.recurringPeriod || '';
+    }
 }
 
 function formatDateRange(plan: IPlan): string {
