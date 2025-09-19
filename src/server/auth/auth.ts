@@ -61,7 +61,7 @@ export const authorizeRoles = (...roles: string[]) => {
             localUser = new User({
                 remoteId: clerkUser.id,
                 username: clerkUser.username ?? 'unknown',
-                fullname: clerkUser.fullName ?? 'unknown',
+                fullname: clerkUser.fullName ?? undefined,
                 email: clerkEmail ?? 'unknown',
                 preferences: defaultPreferences
             });

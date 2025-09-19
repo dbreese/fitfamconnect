@@ -28,6 +28,9 @@
     - [ ] Recurring payments, etc
     - [ ] Member payment setup
 
+### Bugs
+    - [ ] P1 - User's first and last name from clerk is null, so we set it to "unknown" in database. We need to be able to update it.
+
 ### Nice to have
 - [ ] Send notifications
     - [ ] broadcast

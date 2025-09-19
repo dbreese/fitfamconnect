@@ -78,6 +78,7 @@ const model = computed(() => {
             label: 'Root',
             items: [
                 { label: 'REST Explorer', icon: 'pi pi-code', to: '/root/rest-explorer' },
+                { label: 'Users', icon: 'pi pi-users', to: '/root/users' },
                 { label: 'Gyms', icon: 'pi pi-building', to: '/root/gyms' },
                 { label: 'Database', icon: 'pi pi-database', to: '/root/test-data-controller' },
 
