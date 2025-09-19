@@ -291,6 +291,26 @@ function formatAddress(address: any): string {
     return parts.length > 0 ? parts.join(', ') : t('profile.memberInfo.notSet');
 }
 
+// Helper function to format phone number
+function formatPhoneNumber(phone: string): string {
+    if (!phone) return t('profile.memberInfo.notSet');
+
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+
+    // Format based on length
+    if (digits.length === 10) {
+        // US format: (555) 123-4567
+        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    } else if (digits.length === 11 && digits.startsWith('1')) {
+        // US format with country code: +1 (555) 123-4567
+        return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+    } else {
+        // Return original if not standard US format
+        return phone;
+    }
+}
+
 onMounted(() => {
     loadMemberProfile();
 });
@@ -349,7 +369,7 @@ onMounted(() => {
                         <div v-if="!isEditingProfile">
                             <NameValuePair
                                 name="Phone"
-                                :value="memberProfile.phone || t('profile.memberInfo.notSet')"
+                                :value="formatPhoneNumber(memberProfile.phone)"
                                 icon="pi-phone"
                                 iconSize="medium"
                             />

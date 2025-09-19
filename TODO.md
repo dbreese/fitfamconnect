@@ -50,6 +50,9 @@
 - [ ] members
     - [ ] can send feedback
 
+- [ ] Classes & Signups
+    - [ ] Handle case where max member count has been reached.
+
 
 ### Future
 - [ ] Scheduling and staff management?
