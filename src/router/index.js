@@ -176,9 +176,9 @@ const router = createRouter({
                             meta: { roles: ['root'] }
                         },
                         {
-                            path: '/root/clear-billing',
-                            name: 'clear-billing',
-                            component: () => import('@/views/pages/ClearBilling.vue'),
+                            path: '/root/test-data-controller',
+                            name: 'test-data-controller',
+                            component: () => import('@/views/pages/TestDataController.vue'),
                             meta: { roles: ['root'] }
                         }
                     ]

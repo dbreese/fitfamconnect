@@ -78,7 +78,7 @@ const model = computed(() => {
             label: 'Root',
             items: [
                 { label: 'REST Explorer', icon: 'pi pi-code', to: '/root/rest-explorer' },
-                { label: 'Clear Billing', icon: 'pi pi-trash', to: '/root/clear-billing' },
+                { label: 'Database', icon: 'pi pi-database', to: '/root/test-data-controller' },
 
                 { separator: true }
             ]

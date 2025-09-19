@@ -498,4 +498,40 @@ router.get(
     }
 );
 
+/**
+ * DELETE /signups/clear-all
+ * Clear all signup data (root access only)
+ */
+router.delete(
+    '/signups/clear-all',
+    authenticateUser,
+    authorizeRoles('root'),
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            console.log('signupsService.DELETE /signups/clear-all: Request received from user', req.user?._id);
+
+            // Double-check that user has root role
+            if (!req.user?.roles?.includes('root')) {
+                console.warn('signupsService.DELETE /signups/clear-all: Unauthorized access attempt by user', req.user?._id);
+                return res.status(403).json(ResponseHelper.error('Root access required for this operation', 403));
+            }
+
+            // Clear all signup records
+            const signupDeleteResult = await Signup.deleteMany({});
+            console.log(`signupsService.DELETE /signups/clear-all: Deleted ${signupDeleteResult.deletedCount} signup records`);
+
+            const result = {
+                signupsDeleted: signupDeleteResult.deletedCount,
+                totalDeleted: signupDeleteResult.deletedCount
+            };
+
+            console.log('signupsService.DELETE /signups/clear-all: All signup data cleared successfully', result);
+            res.status(200).json(ResponseHelper.success(result, 'All signup data has been cleared successfully'));
+        } catch (error) {
+            console.error('signupsService.DELETE /signups/clear-all: Error:', error);
+            res.status(500).json(ResponseHelper.error('Failed to clear signup data', 500));
+        }
+    }
+);
+
 export { router as signupsRouter };

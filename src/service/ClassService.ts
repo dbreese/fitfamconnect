@@ -232,5 +232,31 @@ export const ClassService = {
             console.error('ClassService.getUpcomingSignups: Error:', error);
             throw error;
         }
+    },
+
+    /**
+     * Clear all signup data (root access only)
+     */
+    async clearAllSignups(): Promise<ServerResponse> {
+        console.log('ClassService.clearAllSignups: Clearing all signup data');
+
+        try {
+            const response = await submit('DELETE', '/signups/clear-all');
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('ClassService.clearAllSignups: Response received', serverResponse);
+                return serverResponse;
+            } else {
+                const errorResult = await response.json();
+                const errorResponse = errorResult as ServerResponse;
+                console.error('ClassService.clearAllSignups: Request failed', response.status, errorResponse);
+                throw new Error(errorResponse.body.message || 'Failed to clear signup data');
+            }
+        } catch (error) {
+            console.error('ClassService.clearAllSignups: Error clearing signup data', error);
+            throw error;
+        }
     }
 };

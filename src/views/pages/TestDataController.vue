@@ -34,6 +34,42 @@
                 </div>
             </div>
         </div>
+
+        <!-- Clear Signups Card -->
+        <div class="col-12">
+            <div class="card">
+                <div class="flex justify-content-between align-items-center mb-4">
+                    <h5 class="m-0">{{ translate('root.clearSignups.title') }}</h5>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-600 line-height-3">
+                        {{ translate('root.clearSignups.description') }}
+                    </p>
+                </div>
+
+                <div class="p-3 surface-100 border-round mb-4">
+                    <div class="flex align-items-center mb-2">
+                        <i class="pi pi-exclamation-triangle text-orange-500 mr-2"></i>
+                        <span class="font-semibold text-orange-500">Warning</span>
+                    </div>
+                    <p class="text-600 m-0">
+                        {{ translate('root.clearSignups.confirmWarning') }}
+                    </p>
+                </div>
+
+                <div class="flex justify-content-start">
+                    <Button
+                        :label="translate('root.clearSignups.buttonText')"
+                        icon="pi pi-trash"
+                        severity="danger"
+                        :loading="isClearingSignups"
+                        :disabled="isClearingSignups"
+                        @click="showSignupsConfirmDialog = true"
+                    />
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Confirmation Dialog -->
@@ -88,6 +124,59 @@
             </div>
         </template>
     </Dialog>
+
+    <!-- Signups Confirmation Dialog -->
+    <Dialog
+        v-model:visible="showSignupsConfirmDialog"
+        :header="translate('root.clearSignups.confirmTitle')"
+        :modal="true"
+        :closable="!isClearingSignups"
+        :draggable="false"
+        :resizable="false"
+        class="p-fluid"
+        style="width: 500px"
+    >
+        <div class="confirmation-content">
+            <div class="flex align-items-center mb-3">
+                <i class="pi pi-exclamation-triangle text-red-500 text-4xl mr-3"></i>
+                <div>
+                    <h6 class="text-red-500 m-0 mb-2 font-semibold">Destructive Action</h6>
+                    <p class="text-600 m-0 line-height-3">
+                        {{ translate('root.clearSignups.confirmMessage') }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="p-3 surface-50 border-1 border-red-200 border-round">
+                <div class="flex align-items-center">
+                    <i class="pi pi-times-circle text-red-500 mr-2"></i>
+                    <span class="text-red-600 font-semibold">
+                        {{ translate('root.clearSignups.confirmWarning') }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <template #footer>
+            <div class="flex justify-content-between w-full">
+                <Button
+                    :label="translate('root.clearSignups.cancelButton')"
+                    icon="pi pi-times"
+                    severity="secondary"
+                    :disabled="isClearingSignups"
+                    @click="showSignupsConfirmDialog = false"
+                />
+                <Button
+                    :label="translate('root.clearSignups.confirmButton')"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    :loading="isClearingSignups"
+                    :disabled="isClearingSignups"
+                    @click="clearSignupsData"
+                />
+            </div>
+        </template>
+    </Dialog>
 </template>
 
 <script setup>
@@ -95,12 +184,17 @@ import { ref } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { translate } from '@/i18n/i18n';
 import { BillingService } from '@/service/BillingService';
+import { ClassService } from '@/service/ClassService';
 
 const toast = useToast();
 
-// Reactive state
+// Reactive state for billing
 const showConfirmDialog = ref(false);
 const isClearing = ref(false);
+
+// Reactive state for signups
+const showSignupsConfirmDialog = ref(false);
+const isClearingSignups = ref(false);
 
 /**
  * Clear all billing data
@@ -146,6 +240,53 @@ const clearBillingData = async () => {
         });
     } finally {
         isClearing.value = false;
+    }
+};
+
+/**
+ * Clear all signup data
+ */
+const clearSignupsData = async () => {
+    isClearingSignups.value = true;
+
+    try {
+        console.log('TestDataController: Starting clear signup data operation');
+
+        const response = await ClassService.clearAllSignups();
+
+        if (response.responseCode === 200) {
+            const data = response.body.data;
+
+            console.log('TestDataController: Signup data cleared successfully', data);
+
+            // Show success message with details
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: `${translate('root.clearSignups.success')} (${data.totalDeleted} records deleted)`,
+                life: 5000
+            });
+
+            showSignupsConfirmDialog.value = false;
+        } else {
+            console.error('TestDataController: Unexpected response code', response.responseCode);
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: translate('root.clearSignups.error'),
+                life: 5000
+            });
+        }
+    } catch (error) {
+        console.error('TestDataController: Error clearing signup data', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: translate('root.clearSignups.error'),
+            life: 5000
+        });
+    } finally {
+        isClearingSignups.value = false;
     }
 };
 </script>

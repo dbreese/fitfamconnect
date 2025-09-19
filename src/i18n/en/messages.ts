@@ -943,6 +943,19 @@ export const messages = {
             success: 'All billing data has been successfully cleared.',
             error: 'Failed to clear billing data. Please try again.',
             clearing: 'Clearing billing data...'
+        },
+        clearSignups: {
+            title: 'Clear Signup Data',
+            description: 'This section allows root users to clear all signup data from the system.',
+            buttonText: 'Clear All Signups',
+            confirmTitle: 'Confirm Destructive Action',
+            confirmMessage: 'Are you sure you want to delete ALL signup data? This action is IRREVERSIBLE and will permanently remove all class signups and attendance records.',
+            confirmWarning: 'This will delete ALL data in the signups table!',
+            confirmButton: 'Yes, Delete All Signups',
+            cancelButton: 'Cancel',
+            success: 'All signup data has been successfully cleared.',
+            error: 'Failed to clear signup data. Please try again.',
+            clearing: 'Clearing signup data...'
         }
     }
 };
