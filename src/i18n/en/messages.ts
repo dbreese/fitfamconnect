@@ -937,6 +937,57 @@ export const messages = {
         billingDetails: 'Billing Details'
     },
     root: {
+        gyms: {
+            title: 'Gym Management',
+            subtitle: 'Manage all gyms in the system (Root Access)',
+            newGym: 'New Gym',
+            editGym: 'Edit Gym',
+            gymName: 'Gym Name',
+            gymCode: 'Gym Code',
+            owner: 'Owner',
+            selectOwner: 'Select Owner',
+            ownerRequired: 'Owner is required',
+            billingAddress: 'Billing Address',
+            street: 'Street Address',
+            city: 'City',
+            state: 'State',
+            zipCode: 'ZIP Code',
+            country: 'Country',
+            contactInfo: 'Contact Information',
+            email: 'Email',
+            phone: 'Phone',
+            status: 'Status',
+            active: 'Active',
+            inactive: 'Inactive',
+            actions: 'Actions',
+            save: 'Save',
+            cancel: 'Cancel',
+            delete: 'Delete',
+            deleteConfirmation: 'Delete Confirmation',
+            deleteMessage: 'Are you sure you want to delete gym "{name}"? This will deactivate the gym.',
+            success: {
+                created: 'Gym created successfully',
+                updated: 'Gym updated successfully',
+                deleted: 'Gym deleted successfully'
+            },
+            error: {
+                loadFailed: 'Failed to load gyms',
+                createFailed: 'Failed to create gym',
+                updateFailed: 'Failed to update gym',
+                deleteFailed: 'Failed to delete gym',
+                loadOwnersFailed: 'Failed to load owners'
+            },
+            validation: {
+                nameRequired: 'Gym name is required',
+                ownerRequired: 'Owner is required',
+                emailRequired: 'Contact email is required',
+                streetRequired: 'Street address is required',
+                cityRequired: 'City is required',
+                stateRequired: 'State is required',
+                zipRequired: 'ZIP code is required',
+                validationError: 'Validation Error'
+            }
+        },
         clearBilling: {
             title: 'Clear Billing Data',
             description: 'This page allows root users to clear all billing and charge data from the system.',

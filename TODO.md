@@ -23,8 +23,10 @@
         - [ ] "Checkin" button to checkin via phone number.
 
 - [ ] Payments
+    - [ ] Stripe Restricted Key
     - [ ] Online payments
     - [ ] Recurring payments, etc
+    - [ ] Member payment setup
 
 ### Nice to have
 - [ ] Send notifications
@@ -59,6 +61,10 @@
 
 - [ ] Owners
     - [ ] can view feedback?
+
+- [ ] Mobile app
+    - [ ] Manage profile information
+    - [ ] Manage pin code
 
 - [ ] Messaging
     - [ ] AI opptys?

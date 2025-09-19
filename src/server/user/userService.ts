@@ -33,6 +33,12 @@ export async function updateUserPrefs(user: IUser | undefined, params: Record<st
         return Promise.resolve(false);
     }
 
+    // SECURITY: Validate that the user is updating their own preferences
+    // if (user._id !== params.userId) {
+    //     console.log('User is not updating their own preferences');
+    //     return Promise.resolve(false);
+    // }
+
     // update user info
     const newPrefs = filterPreferences(params);
     const hasAllParamsAlready = hasAllPreferences(user.preferences, params);

@@ -15,6 +15,12 @@ https://www.canva.com/create/logos/ https://www.design.com/maker/logos/page1 god
 
 https://primeng.org/icons
 
+# Test Accounts
+testffm1 - dustin.breese+ffm1@gmail.com - fitfamXffm1
+testffm2 - dustin.breese+ffm2@gmail.com
+testffo1  - dustin.breese+ffo1@gmail.com
+testffo2  - dustin.breese+ffo2@gmail.com
+
 # Starting Everything up
 
 - .env.local and .env are correctly setup, .env.local has CLERK_SECRET_KEY

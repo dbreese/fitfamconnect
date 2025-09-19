@@ -56,6 +56,8 @@ export const authorizeRoles = (...roles: string[]) => {
             const clerkUser = await clerkClient.users.getUser(userId);
             const clerkEmail = clerkUser.primaryEmailAddress?.emailAddress;
 
+            console.log('Creating user: ' + JSON.stringify(clerkUser));
+
             localUser = new User({
                 remoteId: clerkUser.id,
                 username: clerkUser.username ?? 'unknown',

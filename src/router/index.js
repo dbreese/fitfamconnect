@@ -176,6 +176,12 @@ const router = createRouter({
                             meta: { roles: ['root'] }
                         },
                         {
+                            path: '/root/gyms',
+                            name: 'root-gyms',
+                            component: () => import('@/views/pages/GymsManagement.vue'),
+                            meta: { roles: ['root'] }
+                        },
+                        {
                             path: '/root/test-data-controller',
                             name: 'test-data-controller',
                             component: () => import('@/views/pages/TestDataController.vue'),
