@@ -331,15 +331,18 @@ onMounted(() => {
 
                     <!-- Member Profile Information -->
                     <div v-if="memberProfile" class="member-profile-section">
-                        <div class="flex align-items-center justify-content-between mb-3">
+                        <div class="member-info-header">
                             <h4>{{ t('profile.memberInfo.title') }}</h4>
-                            <Button
-                                v-if="!isEditingProfile"
-                                :label="t('profile.memberInfo.edit')"
-                                icon="pi pi-pencil"
-                                size="small"
-                                @click="startEditingProfile"
-                            />
+                            <div class="member-info-actions">
+                                <Button
+                                    v-if="!isEditingProfile"
+                                    :label="t('profile.memberInfo.edit')"
+                                    icon="pi pi-pencil"
+                                    size="small"
+                                    @click="startEditingProfile"
+                                    class="edit-profile-button"
+                                />
+                            </div>
                         </div>
 
                         <!-- Display Mode -->
@@ -398,19 +401,23 @@ onMounted(() => {
                                 </div>
                             </div>
 
-                            <div class="flex gap-2 mt-3">
+                            <div class="profile-edit-buttons">
                                 <Button
                                     :label="t('profile.memberInfo.cancel')"
                                     icon="pi pi-times"
                                     severity="secondary"
+                                    size="small"
                                     @click="cancelEditingProfile"
                                     :disabled="isUpdatingProfile"
+                                    class="profile-action-button"
                                 />
                                 <Button
                                     :label="t('profile.memberInfo.save')"
                                     icon="pi pi-check"
+                                    size="small"
                                     @click="saveProfile"
                                     :loading="isUpdatingProfile"
+                                    class="profile-action-button"
                                 />
                             </div>
                         </div>
@@ -419,26 +426,32 @@ onMounted(() => {
                     <!-- Pin Code Management -->
                     <div class="pin-code-section">
                         <h4>{{ t('profile.pinCode.title') }}</h4>
-                        <div class="flex align-items-center gap-2">
-                            <span class="pin-code-status">
-                                {{ hasPinCode ? t('profile.pinCode.hasPinCode') : t('profile.pinCode.noPinCode') }}
-                            </span>
-                            <Button
-                                :label="hasPinCode ? t('profile.pinCode.changePinCode') : t('profile.pinCode.setPinCode')"
-                                icon="pi pi-key"
-                                size="small"
-                                @click="openPinCodeDialog"
-                                :loading="isUpdatingProfile"
-                            />
-                            <Button
-                                v-if="hasPinCode"
-                                :label="t('profile.pinCode.removePinCode')"
-                                icon="pi pi-trash"
-                                size="small"
-                                severity="danger"
-                                @click="removePinCode"
-                                :loading="isUpdatingProfile"
-                            />
+                        <div class="pin-code-controls">
+                            <div class="pin-code-status-container">
+                                <span class="pin-code-status">
+                                    {{ hasPinCode ? t('profile.pinCode.hasPinCode') : t('profile.pinCode.noPinCode') }}
+                                </span>
+                            </div>
+                            <div class="pin-code-buttons">
+                                <Button
+                                    :label="hasPinCode ? t('profile.pinCode.changePinCode') : t('profile.pinCode.setPinCode')"
+                                    icon="pi pi-key"
+                                    size="small"
+                                    @click="openPinCodeDialog"
+                                    :loading="isUpdatingProfile"
+                                    class="pin-code-button"
+                                />
+                                <Button
+                                    v-if="hasPinCode"
+                                    :label="t('profile.pinCode.removePinCode')"
+                                    icon="pi pi-trash"
+                                    size="small"
+                                    severity="danger"
+                                    @click="removePinCode"
+                                    :loading="isUpdatingProfile"
+                                    class="pin-code-button"
+                                />
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -489,19 +502,25 @@ onMounted(() => {
             </div>
 
             <template #footer>
-                <Button
-                    :label="t('profile.pinCode.cancel')"
-                    icon="pi pi-times"
-                    severity="secondary"
-                    @click="closePinCodeDialog"
-                    :disabled="isUpdatingProfile"
-                />
-                <Button
-                    :label="t('profile.pinCode.save')"
-                    icon="pi pi-check"
-                    @click="updatePinCode"
-                    :loading="isUpdatingProfile"
-                />
+                <div class="dialog-footer-buttons">
+                    <Button
+                        :label="t('profile.pinCode.cancel')"
+                        icon="pi pi-times"
+                        severity="secondary"
+                        size="small"
+                        @click="closePinCodeDialog"
+                        :disabled="isUpdatingProfile"
+                        class="dialog-button"
+                    />
+                    <Button
+                        :label="t('profile.pinCode.save')"
+                        icon="pi pi-check"
+                        size="small"
+                        @click="updatePinCode"
+                        :loading="isUpdatingProfile"
+                        class="dialog-button"
+                    />
+                </div>
             </template>
         </Dialog>
 
@@ -559,9 +578,75 @@ onMounted(() => {
     color: var(--text-color);
 }
 
+.pin-code-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.pin-code-status-container {
+    flex: 1;
+    min-width: 0;
+}
+
 .pin-code-status {
     font-weight: 500;
     color: var(--text-color-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pin-code-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.pin-code-button {
+    white-space: nowrap;
+    min-width: auto !important;
+    width: auto !important;
+}
+
+.member-info-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.member-info-header h4 {
+    margin: 0;
+    flex: 1;
+}
+
+.member-info-actions {
+    flex-shrink: 0;
+}
+
+.edit-profile-button {
+    white-space: nowrap;
+    min-width: auto !important;
+    width: auto !important;
+    flex-shrink: 0;
+}
+
+.profile-edit-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.profile-action-button {
+    white-space: nowrap;
+    min-width: auto !important;
+    width: auto !important;
+    flex-shrink: 0;
 }
 
 .pin-code-dialog .field {
@@ -578,5 +663,20 @@ onMounted(() => {
     padding: 0.5rem;
     background-color: var(--surface-100);
     border-radius: 4px;
+}
+
+.dialog-footer-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.dialog-button {
+    white-space: nowrap;
+    min-width: auto !important;
+    width: auto !important;
+    flex-shrink: 0;
 }
 </style>

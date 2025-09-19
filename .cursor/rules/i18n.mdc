@@ -1,7 +1,7 @@
 ---
 description: Internationalization
 globs:
-alwaysApply: true
+alwaysApply: false
 ---
 - Any end-user-visible strings should be stored in /i18n/en/messages.ts and accessed via vue-i18n.
 - Always try to reuse existing strings where they make sense to avoid string bloat.

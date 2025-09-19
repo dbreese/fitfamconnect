@@ -174,6 +174,12 @@ const router = createRouter({
                             name: 'rest-explorer',
                             component: () => import('@/views/pages/RestExplorer.vue'),
                             meta: { roles: ['root'] }
+                        },
+                        {
+                            path: '/root/clear-billing',
+                            name: 'clear-billing',
+                            component: () => import('@/views/pages/ClearBilling.vue'),
+                            meta: { roles: ['root'] }
                         }
                     ]
                 }

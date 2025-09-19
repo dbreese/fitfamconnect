@@ -929,5 +929,20 @@ export const messages = {
             loadBillingDetailsFailed: 'Failed to load billing details'
         },
         billingDetails: 'Billing Details'
+    },
+    root: {
+        clearBilling: {
+            title: 'Clear Billing Data',
+            description: 'This page allows root users to clear all billing and charge data from the system.',
+            buttonText: 'Clear All Billing Data',
+            confirmTitle: 'Confirm Destructive Action',
+            confirmMessage: 'Are you sure you want to delete ALL billing and charge data? This action is IRREVERSIBLE and will permanently remove all billing history, charges, and related records.',
+            confirmWarning: 'This will delete ALL data in the billing and charges tables!',
+            confirmButton: 'Yes, Delete All Data',
+            cancelButton: 'Cancel',
+            success: 'All billing data has been successfully cleared.',
+            error: 'Failed to clear billing data. Please try again.',
+            clearing: 'Clearing billing data...'
+        }
     }
 };

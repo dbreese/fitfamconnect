@@ -268,4 +268,30 @@ export class BillingService {
                 return 'secondary';
         }
     }
+
+    /**
+     * Clear all billing and charge data (root access only)
+     */
+    static async clearAllBillingData(): Promise<ServerResponse> {
+        console.log('BillingService.clearAllBillingData: Clearing all billing data');
+
+        try {
+            const response = await submit('DELETE', '/billing/clear-all');
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('BillingService.clearAllBillingData: Response received', serverResponse);
+                return serverResponse;
+            } else {
+                const errorResult = await response.json();
+                const errorResponse = errorResult as ServerResponse;
+                console.error('BillingService.clearAllBillingData: Request failed', response.status, errorResponse);
+                throw new Error(errorResponse.body.message || 'Failed to clear billing data');
+            }
+        } catch (error) {
+            console.error('BillingService.clearAllBillingData: Error clearing billing data', error);
+            throw error;
+        }
+    }
 }

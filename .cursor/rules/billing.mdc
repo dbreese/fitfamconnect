@@ -1,0 +1,7 @@
+---
+description: Apply these rules when making any changes to the billing engine.
+globs:
+alwaysApply: true
+---
+- always update unit tests in /src/server/billing/__tests__
+- see @BILLING.md for billing rules.

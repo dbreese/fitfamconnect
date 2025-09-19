@@ -119,7 +119,7 @@ export class BillingEngine {
         const memberIds = members.map(m => m._id!.toString());
 
         // Get memberships that should be billed for this period (advance billing)
-        // Only bill memberships that were active at the START of the billing period
+        // Most plans: only bill memberships that were active at the START of the billing period
         const activeMemberships = await Membership.find({
             memberId: { $in: memberIds },
             startDate: { $lte: startDate }, // Started before or on billing period start (advance billing)
@@ -130,11 +130,37 @@ export class BillingEngine {
             ]
         });
 
-        console.log(`BillingEngine: Found ${activeMemberships.length} active memberships`);
+        // For yearly plans, we need additional memberships that started in the PREVIOUS period
+        // This handles cases like member joining Sept 15 and being billed on Oct 1 (next period)
+        const yearlyMemberships = await Membership.find({
+            memberId: { $in: memberIds },
+            startDate: { $gt: new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1), $lt: startDate }, // Started in previous month
+            $or: [
+                { endDate: { $exists: false } }, // No end date (ongoing)
+                { endDate: null }, // Explicitly null
+                { endDate: { $gte: startDate } } // Still active during billing period
+            ]
+        });
+
+        // Check which yearly memberships have yearly plans
+        const yearlyMembershipsWithPlans = [];
+        for (const membership of yearlyMemberships) {
+            const plan = await Plan.findById(membership.planId);
+            if (plan && (plan.recurringPeriod?.toLowerCase() === 'yearly' || plan.recurringPeriod?.toLowerCase() === 'annual')) {
+                yearlyMembershipsWithPlans.push(membership);
+            }
+        }
+
+        // Combine regular memberships with yearly memberships, removing duplicates
+        const membershipIds = new Set(activeMemberships.map(m => m._id!.toString()));
+        const uniqueYearlyMemberships = yearlyMembershipsWithPlans.filter(m => !membershipIds.has(m._id!.toString()));
+        const allMemberships = [...activeMemberships, ...uniqueYearlyMemberships];
+
+        console.log(`BillingEngine: Found ${activeMemberships.length} active memberships and ${yearlyMembershipsWithPlans.length} yearly memberships`);
 
         const recurringCharges: BillingChargeWithMeta[] = [];
 
-        for (const membership of activeMemberships) {
+        for (const membership of allMemberships) {
             const plan = await Plan.findById(membership.planId);
             if (!plan || !plan.isActive) {
                 console.log(`BillingEngine: Skipping membership ${membership._id} - plan not found or inactive`);
@@ -237,6 +263,12 @@ export class BillingEngine {
                 continue;
             }
 
+            // Skip yearly plans - they should be handled by regular recurring billing
+            if (plan.recurringPeriod?.toLowerCase() === 'yearly' || plan.recurringPeriod?.toLowerCase() === 'annual') {
+                console.log(`BillingEngine: Skipping yearly plan from pro-rated billing - should be handled by recurring billing`);
+                continue;
+            }
+
             const member = members.find(m => m._id!.toString() === membership.memberId.toString());
             if (!member) {
                 console.log(`BillingEngine: Skipping pro-rated candidate - member not found`);
@@ -331,10 +363,17 @@ export class BillingEngine {
 
             case 'yearly':
             case 'annual':
-                // If billed within the last 350 days, don't bill again
-                const threeFiftyDaysAgo = new Date(startDate);
-                threeFiftyDaysAgo.setDate(threeFiftyDaysAgo.getDate() - 350);
-                return lastBilled >= threeFiftyDaysAgo;
+                // For yearly plans, use the exact yearly billing logic instead of day approximation
+                // Check if the next bill date (last billed + 1 year) has not yet arrived
+                const nextBillDate = new Date(lastBilled);
+                nextBillDate.setFullYear(nextBillDate.getFullYear() + 1);
+
+                // Handle leap year edge case: if next bill date is within 2 days after the billing period,
+                // consider it as due for billing (e.g., Feb 29 -> March 1 should still bill in Feb period)
+                const twoDaysAfterEnd = new Date(endDate);
+                twoDaysAfterEnd.setDate(twoDaysAfterEnd.getDate() + 2);
+
+                return nextBillDate > twoDaysAfterEnd;
 
             default:
                 // Unknown frequency, assume monthly
@@ -363,7 +402,69 @@ export class BillingEngine {
             return false;
         }
 
+        // Special logic for yearly billing as per BILLING.md
+        if (plan.recurringPeriod?.toLowerCase() === 'yearly' || plan.recurringPeriod?.toLowerCase() === 'annual') {
+            return await this.shouldBillYearlyPlan(membership, plan, startDate, endDate);
+        }
+
         return true;
+    }
+
+    /**
+     * Yearly billing special rules as per BILLING.md:
+     * - Prevent double billing
+     * - Find previous charge and calculate next bill date by adding 1 year
+     * - If bill date falls within billing period, charge the member
+     * - If no previous charge exists and plan start date is in current billing period, create charge
+     *
+     * For yearly plans, we need to be more flexible about when to bill:
+     * - If membership started before billing period and hasn't been billed, bill now
+     * - If membership starts during billing period, bill now
+     */
+    private static async shouldBillYearlyPlan(
+        membership: IMembership,
+        plan: IPlan,
+        startDate: Date,
+        endDate: Date
+    ): Promise<boolean> {
+        console.log(`BillingEngine: Checking yearly billing for membership ${membership._id}, plan ${plan.name}`);
+
+        // Find the most recent charge for this membership/plan combination
+        const previousCharge = await Charge.findOne({
+            memberId: membership.memberId,
+            planId: membership.planId,
+            isBilled: true
+        }).sort({ chargeDate: -1 }); // Most recent first
+
+        if (previousCharge) {
+            // Case 1: Previous charge exists - calculate next bill date by adding 1 year
+            const nextBillDate = new Date(previousCharge.chargeDate);
+            nextBillDate.setFullYear(nextBillDate.getFullYear() + 1);
+
+            console.log(`BillingEngine: Previous yearly charge found on ${previousCharge.chargeDate.toISOString()}, next bill date: ${nextBillDate.toISOString()}`);
+
+            // Check if next bill date falls within the current billing period
+            // Handle leap year edge case: if next bill date is within 2 days after the billing period,
+            // consider it as due for billing (e.g., Feb 29 -> March 1 should still bill in Feb period)
+            const twoDaysAfterEnd = new Date(endDate);
+            twoDaysAfterEnd.setDate(twoDaysAfterEnd.getDate() + 2);
+
+            const shouldBill = nextBillDate >= startDate && nextBillDate <= twoDaysAfterEnd;
+
+            return shouldBill;
+        } else {
+            // Case 2: No previous charge exists
+            const membershipStart = new Date(membership.startDate);
+
+            // For yearly plans, if membership is active during the billing period and hasn't been billed, bill it
+            // This handles cases like member joining Sept 15 and being billed on Oct 1
+            const membershipActive = membershipStart <= endDate &&
+                (!membership.endDate || new Date(membership.endDate) >= startDate);
+
+            console.log(`BillingEngine: No previous yearly charge found, membership started ${membershipStart.toISOString()}, membership active during period: ${membershipActive}`);
+
+            return membershipActive;
+        }
     }
 
     /**

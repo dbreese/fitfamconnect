@@ -24,6 +24,17 @@ Billing charges can fall into these categories. See details in following section
 - We need to ensure that members are not billed more than they should be. So, when we think we need to charge a member for a recurring charge, we need to use the memberships lastBillingDate field to see if the member has already been charged for the period related to the plan.
 - When the member is charged for a recurring plan, we need to update the membership's lastBillingDate for that plan and billing id.
 
+- We will need special logic for each type of recurring plan. The following sections describe the rules for each. The engine should have clear-cut functions for the logic for each, only sharing code where it makes sense.
+
+### Weekly billing special rules
+
+### Monthly billing special rules
+
+### Yearly billing special rules
+- We need to make sure we dont double bill for a user.
+- Find the previous charge and calculate the next bill date by adding 1 year to it. If bill date falls within the billing period, then charge the member and create a charge record.
+- If no previous charge exists, and the plan start date is in the current billing period, then create a charge record.
+
 ### Pro-rated Billing Rules
 - When looking at active membership plans, if a membership start date is before the billing period's start date AND the membership has never been billed before (ie, the lastBilledDate is empty), we need to calculate pro-rated charges.
 - Pro-rated charges are calculated by multiplying the recurring rate times the ratio of (the number of days the user was active in the prior period) / (number of days in the period).
@@ -109,6 +120,15 @@ Results:
 Results:
 Sept 1: $0 since nothing was active
 Oct 1: $100 * ((30-4+1)/30) = $90 for first plan, $53.33 for second plan
+
+#### Member joins on Sept 15 and is on the $1200 yearly plan.
+- Sept 1: No record is generated as member is not active.
+- Oct 2: $1200
+    - for "yearly"
+
+#### TODO: Scenarios we need to create tests for
+Dont do anything for these just yet.
+- Member changes from Yearly to Monthly, make sure edge cases are covered.
 
 # Billing Run
 

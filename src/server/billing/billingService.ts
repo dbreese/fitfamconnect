@@ -604,6 +604,47 @@ router.get(
 );
 
 /**
+ * DELETE /billing/clear-all
+ * Clear all billing and charge data (root access only)
+ */
+router.delete(
+    '/billing/clear-all',
+    authenticateUser,
+    authorizeRoles('root'),
+    async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            console.log('billingService.DELETE /billing/clear-all: Request received from user', req.user?._id);
+
+            // Double-check that user has root role
+            if (!req.user?.roles?.includes('root')) {
+                console.warn('billingService.DELETE /billing/clear-all: Unauthorized access attempt by user', req.user?._id);
+                return res.status(403).json(ResponseHelper.error('Root access required for this operation', 403));
+            }
+
+            // Clear all charge records first (due to foreign key constraints)
+            const chargeDeleteResult = await Charge.deleteMany({});
+            console.log(`billingService.DELETE /billing/clear-all: Deleted ${chargeDeleteResult.deletedCount} charge records`);
+
+            // Clear all billing records
+            const billingDeleteResult = await Billing.deleteMany({});
+            console.log(`billingService.DELETE /billing/clear-all: Deleted ${billingDeleteResult.deletedCount} billing records`);
+
+            const result = {
+                chargesDeleted: chargeDeleteResult.deletedCount,
+                billingsDeleted: billingDeleteResult.deletedCount,
+                totalDeleted: chargeDeleteResult.deletedCount + billingDeleteResult.deletedCount
+            };
+
+            console.log('billingService.DELETE /billing/clear-all: All billing data cleared successfully', result);
+            res.status(200).json(ResponseHelper.success(result, 'All billing data has been cleared successfully'));
+        } catch (error) {
+            console.error('billingService.DELETE /billing/clear-all: Error:', error);
+            res.status(500).json(ResponseHelper.error('Failed to clear billing data', 500));
+        }
+    }
+);
+
+/**
  * Convert BillingEngine result to legacy preview format for UI compatibility
  */
 function convertEngineResultToPreview(engineResult: any) {
