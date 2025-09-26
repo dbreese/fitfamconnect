@@ -13,6 +13,13 @@ export interface ILocation {
     name: string;
     description?: string;
     gymId: string; // Reference to Gym
+    address?: {
+        street?: string;
+        city?: string;
+        state?: string;
+        zipCode?: string;
+        country?: string;
+    };
     operatingHours: {
         dayOfWeek: number; // 0 = Sunday, 1 = Monday, etc.
         openTime: string; // HH:MM format
@@ -39,6 +46,13 @@ const locationSchema = new mongoose.Schema<ILocation>(
         name: { type: String, required: true },
         description: { type: String },
         gymId: { type: String, required: true }, // Reference to Gym._id
+        address: {
+            street: { type: String },
+            city: { type: String },
+            state: { type: String },
+            zipCode: { type: String },
+            country: { type: String }
+        },
         operatingHours: [
             {
                 dayOfWeek: { type: Number, required: true, min: 0, max: 6 },

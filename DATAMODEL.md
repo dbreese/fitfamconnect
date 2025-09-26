@@ -72,10 +72,11 @@ Mongoose schemas will be stored in src/server/db.
 # Location
 
 - Each Gym will have 1 or more locations.
+- These can represent rooms or spaces for activities. For example, maybe room 1 is for Yoga while room 2 is for
+  Spinning. 
+- A location may contain an optional address.
 - Operating hours.
 - When a gym is created, a default "main" location will be created that can be renamed.
-- These can represent rooms or spaces for activities. For example, maybe room 1 is for Yoga while room 2 is for
-  Spinning.
 - Max member count
 
 # Plan

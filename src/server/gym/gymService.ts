@@ -160,8 +160,8 @@ router.get('/gym/all', authenticateUser, authorizeRoles('root'), async (req: Aut
                 ...gym.toObject(),
                 owner: owner ? {
                     _id: owner._id,
-                    firstName: owner.fullname.split(' ')[0] || owner.username,
-                    lastName: owner.fullname.split(' ').slice(1).join(' ') || '',
+                    firstName: owner.fullname ? owner.fullname.split(' ')[0] || owner.username : owner.username,
+                    lastName: owner.fullname ? owner.fullname.split(' ').slice(1).join(' ') || '' : '',
                     email: owner.email,
                     username: owner.username
                 } : null
@@ -299,8 +299,8 @@ router.get('/gym/users/owners', authenticateUser, authorizeRoles('root'), async 
         // Format for frontend consumption
         const formattedOwners = ownerUsers.map(user => ({
             _id: user._id,
-            firstName: user.fullname.split(' ')[0] || user.username,
-            lastName: user.fullname.split(' ').slice(1).join(' ') || '',
+            firstName: user.fullname ? user.fullname.split(' ')[0] || user.username : user.username,
+            lastName: user.fullname ? user.fullname.split(' ').slice(1).join(' ') || '' : '',
             email: user.email,
             username: user.username
         }));

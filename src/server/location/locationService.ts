@@ -307,7 +307,16 @@ async function updateLocationByIdAndOwner(
     // Remove fields that shouldn't be updated
     const { gymId, isActive, createdAt, updatedAt, ...safeUpdateData } = updateData;
 
-    const updatedLocation = await Location.findByIdAndUpdate(locationId, safeUpdateData, {
+    // Prepare update object with MongoDB operators
+    const updateObject: any = { ...safeUpdateData };
+
+    // Handle address field - if undefined, remove it from the database
+    if (safeUpdateData.address === undefined) {
+        updateObject.$unset = { address: 1 };
+        delete updateObject.address;
+    }
+
+    const updatedLocation = await Location.findByIdAndUpdate(locationId, updateObject, {
         new: true,
         runValidators: true
     });

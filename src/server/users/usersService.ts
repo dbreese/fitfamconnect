@@ -32,7 +32,7 @@ router.get(
         try {
             console.log('usersService.GET /users/all: Request received', req.query);
 
-            const { page = 1, limit = 50, role, search, active } = req.query as {
+            const { page = '1', limit = '50', role, search, active } = req.query as {
                 page?: string;
                 limit?: string;
                 role?: string;

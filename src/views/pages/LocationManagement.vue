@@ -17,6 +17,8 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import ProgressSpinner from 'primevue/progressspinner';
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
+import AddressEditor from '@/components/AddressEditor.vue';
+import Fluid from 'primevue/fluid';
 import { ref, onMounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
@@ -36,6 +38,13 @@ const formData = ref({
     name: '',
     description: '',
     maxMemberCount: null as number | null,
+    address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'US'
+    },
     operatingHours: [] as Array<{
         dayOfWeek: number;
         openTime: string;
@@ -91,6 +100,13 @@ function openEditDialog(location: ILocation) {
         name: location.name,
         description: location.description || '',
         maxMemberCount: location.maxMemberCount || null,
+        address: {
+            street: location.address?.street || '',
+            city: location.address?.city || '',
+            state: location.address?.state || '',
+            zipCode: location.address?.zipCode || '',
+            country: location.address?.country || 'US'
+        },
         operatingHours: location.operatingHours ? [...location.operatingHours] : getDefaultOperatingHours()
     };
     showDialog.value = true;
@@ -101,6 +117,13 @@ function resetForm() {
         name: '',
         description: '',
         maxMemberCount: null,
+        address: {
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            country: 'US'
+        },
         operatingHours: getDefaultOperatingHours()
     };
 }
@@ -169,6 +192,7 @@ async function handleSubmit() {
             ...formData.value,
             description: formData.value.description.trim() || undefined,
             maxMemberCount: formData.value.maxMemberCount || undefined,
+            address: prepareAddressForSubmission(formData.value.address),
             subLocations: [] // Required by ILocation interface
         };
 
@@ -279,6 +303,42 @@ function formatOperatingHours(operatingHours: any[]): string {
     return `${openDays.length}/7 ${t('locations.daysOpen')}`;
 }
 
+function formatAddress(address: any): string {
+    if (!address) return t('locations.noAddress');
+
+    const parts = [];
+    if (address.street) parts.push(address.street);
+    if (address.city) parts.push(address.city);
+    if (address.state) parts.push(address.state);
+    if (address.zipCode) parts.push(address.zipCode);
+
+    return parts.length > 0 ? parts.join(', ') : t('locations.noAddress');
+}
+
+function prepareAddressForSubmission(address: any): any {
+    if (!address) return undefined;
+
+    // Clean up empty strings and trim whitespace
+    const cleanedAddress = {
+        street: address.street?.trim() || undefined,
+        city: address.city?.trim() || undefined,
+        state: address.state?.trim() || undefined,
+        zipCode: address.zipCode?.trim() || undefined,
+        country: address.country?.trim() || undefined
+    };
+
+    // Check if any field has a value
+    const hasAnyValue = Object.values(cleanedAddress).some(value => value !== undefined && value !== '');
+
+    // If no fields have values, return undefined to remove the address
+    if (!hasAnyValue) {
+        return undefined;
+    }
+
+    // Return the cleaned address with only defined fields
+    return cleanedAddress;
+}
+
 
 onMounted(() => {
     loadLocations();
@@ -302,6 +362,11 @@ onMounted(() => {
 
                     <DataTable :value="locations" paginator :rows="10" responsiveLayout="scroll">
                         <Column field="name" :header="t('locations.locationName')" sortable></Column>
+                        <Column field="address" :header="t('locations.address')">
+                            <template #body="{ data }">
+                                {{ formatAddress(data.address) }}
+                            </template>
+                        </Column>
                         <Column field="maxMemberCount" :header="t('locations.maxMembers')">
                             <template #body="{ data }">
                                 {{ data.maxMemberCount || t('locations.unlimited') }}
@@ -372,6 +437,21 @@ onMounted(() => {
                                     rows="3"
                                     class="w-full"
                                     :placeholder="t('locations.descriptionPlaceholder')"
+                                />
+                            </div>
+
+                            <div class="field col-span-full">
+                                <AddressEditor
+                                    v-model="formData.address"
+                                    field-id="location-address"
+                                    :label="t('locations.address')"
+                                    :street-placeholder="t('locations.street')"
+                                    :city-placeholder="t('locations.city')"
+                                    :state-placeholder="t('locations.state')"
+                                    :zip-code-placeholder="t('locations.zipCode')"
+                                    :country-placeholder="t('locations.country')"
+                                    :show-country="true"
+                                    :required="false"
                                 />
                             </div>
                         </form>
