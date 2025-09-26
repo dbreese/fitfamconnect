@@ -126,9 +126,16 @@ Oct 1: $100 * ((30-4+1)/30) = $90 for first plan, $53.33 for second plan
 - Oct 2: $1200
     - for "yearly"
 
+#### Member's plan ends on Sept 15 and is on the $100 monthly plan. 
+- The member joined in the month prior.
+- Was already billed for all previous months, so there are no outstanding bills.
+- Sept 1: $100 because the member is active on Sept 1. It is up to owner to offer refund outside billing.
+- Oct 1: $0 because the user is not active.
+
 #### TODO: Scenarios we need to create tests for
 Dont do anything for these just yet.
 - Member changes from Yearly to Monthly, make sure edge cases are covered.
+- Weekly plan calculations and edge cases.
 
 # Billing Run
 

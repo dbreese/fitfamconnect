@@ -549,8 +549,52 @@ describe('BillingEngine', () => {
             });
         });
 
-        describe('Yearly billing edge cases', () => {
-            it('should handle leap year billing correctly', async () => {
+    describe('Member plan ends mid-month', () => {
+        it('should bill $100 on Sept 1st and $0 on Oct 1st when plan ends Sept 15th', async () => {
+            // Setup - Member joined in August, was already billed for previous months
+            const gym = await createTestGym();
+            const member = await createTestMember(gym._id, 'Mid', 'Term');
+            const monthlyPlan = await createTestPlan('Monthly Plan', 10000, 'monthly', gym._id); // $100
+
+            // Member joined in August, plan ends Sept 15th
+            await createTestMembership(
+                member._id,
+                monthlyPlan._id,
+                new Date('2024-08-01'), // Joined in August
+                new Date('2024-09-15')  // Plan ends Sept 15th
+            );
+
+            // Simulate that member was already billed for August (no outstanding bills)
+            await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2024-08-01'));
+
+            // Test Sept 1st billing (member is active on Sept 1st, should be billed)
+            const sept1Result = await BillingEngine.generateBillingCharges(
+                gym._id,
+                new Date('2024-09-01'),
+                new Date('2024-09-30')
+            );
+
+            expect(sept1Result.charges).toHaveLength(1);
+            expect(sept1Result.charges[0].amount).toBe(10000); // $100
+            expect(sept1Result.charges[0].type).toBe('recurring-plan');
+            expect(sept1Result.charges[0].memberName).toBe('Mid Term');
+
+            // Simulate Sept 1st billing completion
+            await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2024-09-01'));
+
+            // Test Oct 1st billing (member is no longer active, should not be billed)
+            const oct1Result = await BillingEngine.generateBillingCharges(
+                gym._id,
+                new Date('2024-10-01'),
+                new Date('2024-10-31')
+            );
+
+            expect(oct1Result.charges).toHaveLength(0); // No charges as per BILLING.md
+        });
+    });
+
+    describe('Yearly billing edge cases', () => {
+        it('should handle leap year billing correctly', async () => {
                 // Setup
                 const gym = await createTestGym();
                 const member = await createTestMember(gym._id, 'Leap', 'Year');
