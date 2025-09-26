@@ -19,8 +19,8 @@
             </div>
 
             <!-- City, State, Zip Row -->
-            <div class="flex gap-2">
-                <div class="field flex-1">
+            <div class="address-row">
+                <div class="field city-field">
                     <InputText
                         :id="`${fieldId}-city`"
                         v-model="localAddress.city"
@@ -32,7 +32,7 @@
                     <small v-if="errors.city" class="p-error">{{ errors.city }}</small>
                 </div>
 
-                <div class="field" style="width: 100px">
+                <div class="field state-field">
                     <Select
                         :id="`${fieldId}-state`"
                         v-model="localAddress.state"
@@ -47,7 +47,7 @@
                     <small v-if="errors.state" class="p-error">{{ errors.state }}</small>
                 </div>
 
-                <div class="field" style="width: 120px">
+                <div class="field zip-field">
                     <InputText
                         :id="`${fieldId}-zipCode`"
                         v-model="localAddress.zipCode"
@@ -240,16 +240,38 @@ defineExpose({
     gap: 0.5rem;
 }
 
-.flex {
+.address-row {
     display: flex;
-}
-
-.gap-2 {
     gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
-.flex-1 {
+.city-field {
     flex: 1;
+    min-width: 200px;
+}
+
+.state-field {
+    width: 160px;
+    min-width: 140px;
+}
+
+.zip-field {
+    width: 120px;
+    min-width: 100px;
+}
+
+@media (max-width: 768px) {
+    .address-row {
+        flex-direction: column;
+    }
+
+    .city-field,
+    .state-field,
+    .zip-field {
+        width: 100%;
+        min-width: unset;
+    }
 }
 
 .w-full {
