@@ -715,6 +715,7 @@ export const messages = {
         every: 'Every',
         week: 'week',
         filter: 'Filter',
+        filterByLocation: 'Filter by Location',
         schedulesFound: 'schedules found',
         cancel: 'Cancel',
         save: 'Save',

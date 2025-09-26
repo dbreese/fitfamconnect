@@ -45,6 +45,7 @@ const hideEmptySlots = ref(false);
 const hideNoCoaches = ref(false);
 const activeTab = ref(0);
 const scheduleFilter = ref('all');
+const locationFilter = ref('all');
 
 const formData = ref({
     classId: '',
@@ -87,6 +88,16 @@ const filterOptions = [
     { label: 'One-Time Only', value: 'non-recurring' }
 ];
 
+const locationFilterOptions = computed(() => {
+    const options = [{ label: 'All Locations', value: 'all' }];
+    return options.concat(
+        locations.value.map((loc) => ({
+            label: loc.name,
+            value: loc._id || ''
+        }))
+    );
+});
+
 const classOptions = computed(() => {
     return classes.value.map((cls) => ({
         label: cls.category ? `${cls.name} (${cls.category})` : cls.name,
@@ -112,14 +123,21 @@ const coachOptions = computed(() => {
 });
 
 const filteredSchedules = computed(() => {
-    if (scheduleFilter.value === 'all') {
-        return schedules.value;
-    } else if (scheduleFilter.value === 'recurring') {
-        return schedules.value.filter((schedule) => schedule.isRecurring);
+    let filtered = schedules.value;
+
+    // Apply schedule type filter
+    if (scheduleFilter.value === 'recurring') {
+        filtered = filtered.filter((schedule) => schedule.isRecurring);
     } else if (scheduleFilter.value === 'non-recurring') {
-        return schedules.value.filter((schedule) => !schedule.isRecurring);
+        filtered = filtered.filter((schedule) => !schedule.isRecurring);
     }
-    return schedules.value;
+
+    // Apply location filter
+    if (locationFilter.value !== 'all') {
+        filtered = filtered.filter((schedule) => schedule.locationId === locationFilter.value);
+    }
+
+    return filtered;
 });
 
 // Color mapping for classes
@@ -237,6 +255,11 @@ async function loadLocations() {
         if (result) {
             locations.value = result;
             console.log(`Loaded ${result.length} locations`);
+
+            // Auto-select single location if only one exists
+            if (result.length === 1 && result[0]._id) {
+                locationFilter.value = result[0]._id;
+            }
         }
     } catch (error) {
         console.error('Error loading locations:', error);
@@ -756,6 +779,11 @@ function getSchedulesForTimeSlot(dayDate: Date, timeSlot: { hour: number; minute
             return false;
         }
 
+        // Apply location filter
+        if (locationFilter.value !== 'all' && schedule.locationId !== locationFilter.value) {
+            return false;
+        }
+
         const scheduleStart = new Date(schedule.startDateTime);
 
         // Check if schedule is on the same day
@@ -995,6 +1023,15 @@ onMounted(() => {
                                     />
                                 </div>
                                 <div class="flex gap-2">
+                                    <Select
+                                        v-model="locationFilter"
+                                        :options="locationFilterOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        class="w-48"
+                                        style="width: 200px;"
+                                        :placeholder="t('schedules.filterByLocation')"
+                                    />
                                     <Button
                                         :icon="hideEmptySlots ? 'pi pi-eye' : 'pi pi-eye-slash'"
                                         :label="
@@ -1109,6 +1146,15 @@ onMounted(() => {
                                         optionValue="value"
                                         class="w-48"
                                     />
+                                    <Select
+                                        v-model="locationFilter"
+                                        :options="locationFilterOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        class="w-48"
+                                        style="width: 200px;"
+                                        :placeholder="t('schedules.filterByLocation')"
+                                    />
                                     <span class="text-sm text-gray-600 whitespace-nowrap">
                                         {{ filteredSchedules.length }} {{ t('schedules.schedulesFound') }}
                                     </span>
@@ -1133,7 +1179,7 @@ onMounted(() => {
                                         </div>
                                     </template>
                                 </Column>
-                                <Column field="location" :header="t('schedules.location')" sortable>
+                                <Column field="location" :header="t('schedules.location')">
                                     <template #body="{ data }">
                                         {{ data.location?.name }}
                                     </template>
