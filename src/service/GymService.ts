@@ -14,6 +14,62 @@ export interface IGymWithOwner extends IGym {
 }
 
 export class GymService {
+
+    /**
+     * Get current user's gym (owner/root access)
+     */
+    static async getMyGym(): Promise<IGym | undefined> {
+        console.log("GymService.getMyGym: Starting to fetch user's gym");
+
+        try {
+            const response = await submit('GET', '/gym');
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('GymService.getMyGym: Response received', serverResponse);
+                return serverResponse.body.data as IGym;
+            } else if (response.status === 404) {
+                console.log('GymService.getMyGym: No gym found for user');
+                return undefined;
+            } else {
+                const errorResult = await response.json();
+                const errorResponse = errorResult as ServerResponse;
+                console.error('GymService.getMyGym: Request failed', response.status, errorResponse);
+                throw new Error(errorResponse.body.message || 'Failed to get gym');
+            }
+        } catch (error) {
+            console.error('GymService.getMyGym: Error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Update current user's gym (owner/root access)
+     */
+    static async updateMyGym(gymData: Partial<IGym>): Promise<ServerResponse> {
+        console.log('GymService.updateMyGym: Updating gym', gymData);
+
+        try {
+            const response = await submit('PUT', '/gym', gymData);
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverResponse = result as ServerResponse;
+                console.log('GymService.updateMyGym: Response received', serverResponse);
+                return serverResponse;
+            } else {
+                const errorResult = await response.json();
+                const errorResponse = errorResult as ServerResponse;
+                console.error('GymService.updateMyGym: Request failed', response.status, errorResponse);
+                throw new Error(errorResponse.body.message || 'Failed to update gym');
+            }
+        } catch (error) {
+            console.error('GymService.updateMyGym: Error:', error);
+            throw error;
+        }
+    }
+
     /**
      * Get all gyms (root access only)
      */

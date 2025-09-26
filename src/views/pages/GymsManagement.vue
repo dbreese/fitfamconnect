@@ -133,53 +133,16 @@
 
             <!-- Billing Address -->
             <div class="mb-4">
-                <h6 class="mb-3">{{ translate('root.gyms.billingAddress') }}</h6>
-                <div class="grid">
-                    <div class="col-12">
-                        <div class="field">
-                            <label for="street" class="font-semibold">{{ translate('root.gyms.street') }} *</label>
-                            <InputText
-                                id="street"
-                                v-model="formData.billingAddress.street"
-                                class="w-full"
-                                :class="{ 'p-invalid': formErrors.street }"
-                            />
-                        </div>
-                    </div>
-                    <div class="col-12 md:col-4">
-                        <div class="field">
-                            <label for="city" class="font-semibold">{{ translate('root.gyms.city') }} *</label>
-                            <InputText
-                                id="city"
-                                v-model="formData.billingAddress.city"
-                                class="w-full"
-                                :class="{ 'p-invalid': formErrors.city }"
-                            />
-                        </div>
-                    </div>
-                    <div class="col-12 md:col-4">
-                        <div class="field">
-                            <label for="state" class="font-semibold">{{ translate('root.gyms.state') }} *</label>
-                            <InputText
-                                id="state"
-                                v-model="formData.billingAddress.state"
-                                class="w-full"
-                                :class="{ 'p-invalid': formErrors.state }"
-                            />
-                        </div>
-                    </div>
-                    <div class="col-12 md:col-4">
-                        <div class="field">
-                            <label for="zipCode" class="font-semibold">{{ translate('root.gyms.zipCode') }} *</label>
-                            <InputText
-                                id="zipCode"
-                                v-model="formData.billingAddress.zipCode"
-                                class="w-full"
-                                :class="{ 'p-invalid': formErrors.zipCode }"
-                            />
-                        </div>
-                    </div>
-                </div>
+                <AddressEditor
+                    v-model="formData.billingAddress"
+                    field-id="billing-address"
+                    :label="translate('root.gyms.billingAddress')"
+                    :street-placeholder="translate('root.gyms.street')"
+                    :city-placeholder="translate('root.gyms.city')"
+                    :state-placeholder="translate('root.gyms.state')"
+                    :zip-code-placeholder="translate('root.gyms.zipCode')"
+                    :errors="formErrors"
+                />
             </div>
 
             <!-- Contact Information -->
@@ -240,6 +203,7 @@ import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import { translate } from '@/i18n/i18n';
 import { GymService } from '@/service/GymService';
+import AddressEditor from '@/components/AddressEditor.vue';
 
 const toast = useToast();
 const confirm = useConfirm();

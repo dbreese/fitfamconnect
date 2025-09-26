@@ -20,6 +20,8 @@ import Checkbox from 'primevue/checkbox';
 import Toast from 'primevue/toast';
 import ProgressSpinner from 'primevue/progressspinner';
 import Tag from 'primevue/tag';
+import AddressEditor from '@/components/AddressEditor.vue';
+import Fluid from 'primevue/fluid';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useI18n } from 'vue-i18n';
@@ -1026,29 +1028,16 @@ onMounted(() => {
                     </div>
 
                     <div class="field">
-                        <label class="font-medium">{{ t('memberships.address') }}</label>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="newStreet" class="text-sm text-gray-600">{{
-                                    t('memberships.street')
-                                }}</label>
-                                <InputText id="newStreet" v-model="newMemberFormData.address.street" class="w-full" />
-                            </div>
-                            <div>
-                                <label for="newCity" class="text-sm text-gray-600">{{ t('memberships.city') }}</label>
-                                <InputText id="newCity" v-model="newMemberFormData.address.city" class="w-full" />
-                            </div>
-                            <div>
-                                <label for="newState" class="text-sm text-gray-600">{{ t('memberships.state') }}</label>
-                                <InputText id="newState" v-model="newMemberFormData.address.state" class="w-full" />
-                            </div>
-                            <div>
-                                <label for="newZipCode" class="text-sm text-gray-600">{{
-                                    t('memberships.zipCode')
-                                }}</label>
-                                <InputText id="newZipCode" v-model="newMemberFormData.address.zipCode" class="w-full" />
-                            </div>
-                        </div>
+                        <AddressEditor
+                            v-model="newMemberFormData.address"
+                            field-id="new-member-address"
+                            :label="t('memberships.address')"
+                            :street-placeholder="t('memberships.street')"
+                            :city-placeholder="t('memberships.city')"
+                            :state-placeholder="t('memberships.state')"
+                            :zip-code-placeholder="t('memberships.zipCode')"
+                            :required="false"
+                        />
                     </div>
 
                     <div class="field">

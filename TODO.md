@@ -3,6 +3,12 @@
 ## Features
 
 ### Required for launch
+- [ ] Refactor
+    Locations can be at different addresses
+    Tax amount
+    - [ ] Coaches and Schedules are for locations
+    - [ ] 
+
 - [ ] Members / Member App
     - [x] can view monthly charges and bills
     - [x] can view schedule
@@ -21,6 +27,11 @@
     - [ ] One tab -- shows classes for the day along with existing signups.
         - [ ] Tapping on a signup checks the member in.
         - [ ] "Checkin" button to checkin via phone number.
+
+- [ ] Billing
+    - [ ] Taxes
+    - [ ] New member charges, instant charge
+    - [ ] Issue refunds
 
 - [ ] Payments
     - [ ] Stripe Restricted Key
@@ -52,8 +63,12 @@
 
 - [ ] Ability to publish schedule to external via snippet
 
-- [ ] members
-    - [ ] can send feedback
+- [ ] Members
+    - [ ] Can send feedback
+    - [ ] Cancel in app
+        - [ ] Review or feedback
+    - [ ] Annual review questionaire
+    - [ ] Belongs to a single location
 
 - [ ] Classes & Signups
     - [ ] Handle case where max member count has been reached.

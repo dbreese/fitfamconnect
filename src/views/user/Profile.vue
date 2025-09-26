@@ -14,6 +14,8 @@ import Toast from 'primevue/toast';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import NameValuePair from '@/components/NameValuePair.vue';
+import AddressEditor from '@/components/AddressEditor.vue';
+import Fluid from 'primevue/fluid';
 import { user } from '@/service/SessionUtils';
 import { MemberService } from '@/service/MemberService';
 
@@ -394,31 +396,16 @@ onMounted(() => {
                             </div>
 
                             <div class="field">
-                                <label class="font-semibold">{{ t('profile.memberInfo.address') }}</label>
-                                <div class="address-fields">
-                                    <InputText
-                                        v-model="editAddress.street"
-                                        :placeholder="t('profile.memberInfo.street')"
-                                        class="w-full mb-2"
-                                    />
-                                    <div class="flex gap-2">
-                                        <InputText
-                                            v-model="editAddress.city"
-                                            :placeholder="t('profile.memberInfo.city')"
-                                            class="flex-1"
-                                        />
-                                        <InputText
-                                            v-model="editAddress.state"
-                                            :placeholder="t('profile.memberInfo.state')"
-                                            style="width: 100px"
-                                        />
-                                        <InputText
-                                            v-model="editAddress.zipCode"
-                                            :placeholder="t('profile.memberInfo.zipCode')"
-                                            style="width: 120px"
-                                        />
-                                    </div>
-                                </div>
+                                <AddressEditor
+                                    v-model="editAddress"
+                                    field-id="profile-address"
+                                    :label="t('profile.memberInfo.address')"
+                                    :street-placeholder="t('profile.memberInfo.street')"
+                                    :city-placeholder="t('profile.memberInfo.city')"
+                                    :state-placeholder="t('profile.memberInfo.state')"
+                                    :zip-code-placeholder="t('profile.memberInfo.zipCode')"
+                                    :required="false"
+                                />
                             </div>
 
                             <div class="profile-edit-buttons">
