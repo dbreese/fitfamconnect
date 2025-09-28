@@ -289,18 +289,16 @@ async function openEditDialog(schedule: any) {
     editMode.value = true;
     selectedSchedule.value = schedule;
 
-    // If this is a recurring instance, we need to fetch the original schedule
+    // Always fetch the full schedule data when editing
     let originalSchedule = schedule;
-    if ((schedule as any).isRecurringInstance) {
-        try {
-            const result = await ScheduleService.getScheduleById(schedule._id);
-            if (result) {
-                originalSchedule = result;
-            }
-        } catch (error) {
-            console.error('Error fetching original schedule:', error);
-            // Fall back to the instance data if we can't fetch the original
+    try {
+        const result = await ScheduleService.getScheduleById(schedule._id);
+        if (result) {
+            originalSchedule = result;
         }
+    } catch (error) {
+        console.error('Error fetching schedule:', error);
+        // Fall back to the instance data if we can't fetch the original
     }
 
     // Extract date and time from startDateTime or separate fields
@@ -342,7 +340,7 @@ async function openEditDialog(schedule: any) {
         endTime: endTime,
         maxAttendees: originalSchedule.maxAttendees ? originalSchedule.maxAttendees.toString() : null,
         notes: originalSchedule.notes || '',
-        isRecurring: originalSchedule.isRecurring || false,
+        isRecurring: Boolean(originalSchedule.isRecurring || originalSchedule.is_recurring || originalSchedule.recurring || (originalSchedule as any).isRecurringInstance),
         recurringPattern: {
             frequency: originalSchedule.recurringPattern?.frequency || 'weekly',
             interval: originalSchedule.recurringPattern?.interval
@@ -460,9 +458,11 @@ async function handleSubmit() {
             // Always include startDateTime and endDateTime
             startDateTime: startDateTime,
             endDateTime: endDateTime,
+            // Explicitly include isRecurring
+            isRecurring: formData.value.isRecurring,
             // For recurring schedules, also include the separate date/time fields
             startDate: formData.value.isRecurring ? formData.value.startDate : undefined,
-            endDate: formData.value.isRecurring ? formData.value.endDate || undefined : undefined,
+            endDate: formData.value.isRecurring ? (formData.value.endDate || undefined) : undefined,
             timeOfDay: formData.value.isRecurring ? formData.value.startTime : undefined,
             maxAttendees: formData.value.maxAttendees ? parseInt(formData.value.maxAttendees) : undefined,
             notes: formData.value.notes.trim() || undefined,
@@ -474,6 +474,14 @@ async function handleSubmit() {
                   }
                 : undefined
         };
+
+        // Handle field removal for cleared fields
+        if (!formData.value.endDate || formData.value.endDate === null) {
+            submitData.endDate = undefined;
+        }
+        if (!formData.value.endTime || formData.value.endTime === null) {
+            submitData.endDateTime = undefined;
+        }
 
         console.log('ScheduleManagement.handleSubmit: submitData.coachId =', submitData.coachId);
         console.log('ScheduleManagement.handleSubmit: formData.coachId =', formData.value.coachId);
@@ -1350,7 +1358,7 @@ onMounted(() => {
 
                         <div class="field">
                             <div class="flex items-center gap-2">
-                                <Checkbox v-model="formData.isRecurring" binary />
+                                <Checkbox v-model="formData.isRecurring" binary :key="`recurring-${selectedSchedule?._id || 'new'}`" />
                                 <label class="font-medium">{{ t('schedules.recurring') }}</label>
                             </div>
                         </div>

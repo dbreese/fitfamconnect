@@ -956,6 +956,11 @@ async function updateScheduleByIdAndOwner(
             if (!mongoUpdate.$unset) mongoUpdate.$unset = {};
             mongoUpdate.$unset.coachId = 1;
             console.log(`scheduleService.updateScheduleByIdAndOwner: Will unset coachId (value was: ${value})`);
+        } else if ((key === 'endDate' || key === 'endDateTime') && value === undefined) {
+            // Explicitly unset end date fields when they are undefined
+            if (!mongoUpdate.$unset) mongoUpdate.$unset = {};
+            mongoUpdate.$unset[key] = 1;
+            console.log(`scheduleService.updateScheduleByIdAndOwner: Will unset ${key} (value was: ${value})`);
         } else if (value !== undefined && value !== null && value !== '__REMOVE__') {
             mongoUpdate.$set[key] = value;
         }
