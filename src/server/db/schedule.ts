@@ -6,14 +6,9 @@ export interface ISchedule {
     locationId: string; // Reference to Location
     coachId?: string; // Reference to Member (coach)
 
-    // For one-time schedules
-    startDateTime?: Date; // Single occurrence date/time
-    endDateTime?: Date; // Single occurrence end time
-
-    // For recurring schedules
-    startDate?: Date; // When the recurring schedule starts
-    endDate?: Date; // When the recurring schedule ends
-    timeOfDay?: Date; // Time of day (Date field, only time portion used)
+    // Unified date/time fields
+    startDateTime: Date; // Start date and time for both one-time and recurring schedules
+    endDate?: Date; // Optional end date (when the schedule should stop recurring)
 
     maxAttendees?: number; // Override class max if needed
     notes?: string;
@@ -36,14 +31,9 @@ const scheduleSchema = new mongoose.Schema<ISchedule>(
         locationId: { type: String, required: true },
         coachId: { type: String },
 
-        // For one-time schedules
-        startDateTime: { type: Date },
-        endDateTime: { type: Date },
-
-        // For recurring schedules
-        startDate: { type: Date },
-        endDate: { type: Date },
-        timeOfDay: { type: Date }, // Date field, only time portion used
+        // Unified date/time fields
+        startDateTime: { type: Date, required: true },
+        endDate: { type: Date }, // Optional end date for recurring schedules
 
         maxAttendees: { type: Number },
         notes: { type: String },
@@ -67,32 +57,26 @@ scheduleSchema.index({ classId: 1 });
 scheduleSchema.index({ locationId: 1 });
 scheduleSchema.index({ coachId: 1 });
 scheduleSchema.index({ startDateTime: 1 });
-scheduleSchema.index({ startDate: 1 });
+scheduleSchema.index({ endDate: 1 });
 scheduleSchema.index({ isRecurring: 1 });
 
 // Validation: ensure proper field usage based on schedule type
 scheduleSchema.pre('validate', function (next) {
-    // For one-time schedules
-    if (!this.isRecurring) {
-        if (!this.startDateTime) {
-            return next(new Error('startDateTime is required for one-time schedules'));
-        }
-        if (this.endDateTime && this.startDateTime >= this.endDateTime) {
-            return next(new Error('End time must be after start time'));
-        }
-    }
+    // startDateTime is always required (handled by schema required: true)
 
     // For recurring schedules
     if (this.isRecurring) {
-        if (!this.startDate) {
-            return next(new Error('startDate is required for recurring schedules'));
-        }
-        if (!this.timeOfDay) {
-            return next(new Error('timeOfDay is required for recurring schedules'));
-        }
         if (!this.recurringPattern) {
             return next(new Error('recurringPattern is required for recurring schedules'));
         }
+        if (this.recurringPattern.frequency === 'weekly' && (!this.recurringPattern.daysOfWeek || this.recurringPattern.daysOfWeek.length === 0)) {
+            return next(new Error('daysOfWeek is required for weekly recurring schedules'));
+        }
+    }
+
+    // Validate endDate is after startDateTime if provided
+    if (this.endDate && this.startDateTime >= this.endDate) {
+        return next(new Error('End date must be after start date/time'));
     }
 
     next();

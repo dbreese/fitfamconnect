@@ -271,34 +271,31 @@ async function createScheduleForOwner(
         throw new Error('Location not found or access denied');
     }
 
-    // Calculate end time if not provided (for one-time schedules)
-    let endDateTime = scheduleData.endDateTime;
-    if (!scheduleData.isRecurring && scheduleData.startDateTime && !endDateTime) {
-        endDateTime = new Date(new Date(scheduleData.startDateTime).getTime() + classObj.duration * 60000);
+    // Calculate end time from class duration for conflict checking
+    if (!scheduleData.startDateTime) {
+        throw new Error('startDateTime is required');
     }
 
-    // Check for scheduling conflicts (only for one-time schedules)
-    if (!scheduleData.isRecurring && scheduleData.startDateTime && endDateTime) {
-        const conflictingSchedule = await Schedule.findOne({
-            locationId: scheduleData.locationId,
-            startDateTime: { $lt: endDateTime },
-            endDateTime: { $gt: scheduleData.startDateTime }
-        });
+    const endDateTime = new Date(new Date(scheduleData.startDateTime).getTime() + classObj.duration * 60000);
 
-        if (conflictingSchedule) {
-            console.log(`scheduleService.createScheduleForOwner: Scheduling conflict detected`);
-            throw new Error('Scheduling conflict: Another class is already scheduled at this time and location');
+    // Check for scheduling conflicts
+    const conflictingSchedule = await Schedule.findOne({
+        locationId: scheduleData.locationId,
+        startDateTime: {
+            $lt: endDateTime,
+            $gte: new Date(new Date(scheduleData.startDateTime).getTime() - classObj.duration * 60000)
         }
+    });
+
+    if (conflictingSchedule) {
+        console.log(`scheduleService.createScheduleForOwner: Scheduling conflict detected`);
+        throw new Error('Scheduling conflict: Another class is already scheduled at this time and location');
     }
 
     // Remove sensitive fields
     const { createdAt, updatedAt, ...safeScheduleData } = scheduleData;
-    const newScheduleData = {
-        ...safeScheduleData,
-        endDateTime: endDateTime || undefined
-    };
 
-    const newSchedule = new Schedule(newScheduleData);
+    const newSchedule = new Schedule(safeScheduleData);
     const savedSchedule = await newSchedule.save();
 
     console.log(
@@ -423,10 +420,7 @@ async function findAugmentedSchedulesByGym(gymId: string): Promise<any[]> {
                 locationId: schedule.locationId,
                 coachId: schedule.coachId,
                 startDateTime: schedule.startDateTime,
-                endDateTime: schedule.endDateTime,
-                startDate: schedule.startDate,
                 endDate: schedule.endDate,
-                timeOfDay: schedule.timeOfDay,
                 maxAttendees: schedule.maxAttendees,
                 notes: schedule.notes,
                 recurringPattern: schedule.recurringPattern,
@@ -477,15 +471,13 @@ async function findAugmentedSchedulesByGym(gymId: string): Promise<any[]> {
 function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Date): any[] {
     const instances = [];
     const pattern = schedule.recurringPattern;
-    const scheduleStartDate = new Date(schedule.startDate);
+    const scheduleStartDateTime = new Date(schedule.startDateTime);
     const scheduleEndDate = schedule.endDate ? new Date(schedule.endDate) : null;
-    const timeOfDay = new Date(schedule.timeOfDay);
 
     console.log('getActiveRecurringInstances: Processing schedule', {
         scheduleId: schedule._id,
-        scheduleStartDate: scheduleStartDate.toISOString(),
+        scheduleStartDateTime: scheduleStartDateTime.toISOString(),
         scheduleEndDate: scheduleEndDate?.toISOString(),
-        timeOfDay: timeOfDay.toISOString(),
         pattern,
         rangeStart: startDate.toISOString(),
         rangeEnd: endDate.toISOString()
@@ -493,6 +485,10 @@ function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Da
 
     // Get duration from the class
     const duration = schedule.class?.duration || 60; // Default to 60 minutes if not found
+
+    // Extract the date and time components from startDateTime
+    const scheduleStartDate = new Date(scheduleStartDateTime);
+    scheduleStartDate.setHours(0, 0, 0, 0); // Get just the date part
 
     // Find the first occurrence that matches the pattern and is within our date range
     let currentDate = findFirstOccurrence(scheduleStartDate, pattern, startDate, endDate);
@@ -511,7 +507,7 @@ function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Da
 
         // Create instance with adjusted times but keep original schedule ID
         const instanceStart = new Date(currentDate);
-        instanceStart.setHours(timeOfDay.getHours(), timeOfDay.getMinutes(), 0, 0);
+        instanceStart.setHours(scheduleStartDateTime.getHours(), scheduleStartDateTime.getMinutes(), 0, 0);
 
         const instanceEnd = new Date(instanceStart.getTime() + duration * 60000);
 
@@ -524,7 +520,6 @@ function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Da
         instances.push({
             ...(schedule.toObject ? schedule.toObject() : schedule),
             startDateTime: instanceStart,
-            endDateTime: instanceEnd,
             isRecurring: false, // Individual instances are not recurring
             isRecurringInstance: true,
             // Preserve class data if it exists
@@ -700,7 +695,7 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
             // Recurring schedules that could generate instances in this range
             {
                 isRecurring: true,
-                startDate: { $lte: endDateObj },
+                startDateTime: { $lte: endDateObj },
                 $or: [{ endDate: { $exists: false } }, { endDate: null }, { endDate: { $gte: startDateObj } }]
             }
         ]
@@ -720,10 +715,8 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
         schedules: allSchedulesForClasses.map((s) => ({
             id: s._id,
             isRecurring: s.isRecurring,
-            startDate: s.startDate?.toISOString(),
             startDateTime: s.startDateTime?.toISOString(),
             classId: s.classId,
-            timeOfDay: s.timeOfDay?.toISOString(),
             recurringPattern: s.recurringPattern,
             endDate: s.endDate?.toISOString()
         }))
@@ -741,7 +734,7 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
         count: recurringSchedules.length,
         schedules: recurringSchedules.map((s) => ({
             id: s._id,
-            startDate: s.startDate?.toISOString(),
+            startDateTime: s.startDateTime?.toISOString(),
             endDate: s.endDate?.toISOString()
         }))
     });
@@ -750,21 +743,20 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
     const dateTestSchedules = await Schedule.find({
         classId: '68be2b9f7f0bac2dc28348f1',
         isRecurring: true,
-        startDate: { $lte: endDateObj }
+        startDateTime: { $lte: endDateObj }
     });
     console.log('findSchedulesByDateRange: Date condition test', {
         count: dateTestSchedules.length,
         endDateObj: endDateObj.toISOString()
     });
 
-    const schedules = await Schedule.find(query).sort({ startDateTime: 1, startDate: 1 });
+    const schedules = await Schedule.find(query).sort({ startDateTime: 1 });
 
     console.log('findSchedulesByDateRange: Found schedules from database', {
         count: schedules.length,
         schedules: schedules.map((s) => ({
             id: s._id,
             isRecurring: s.isRecurring,
-            startDate: s.startDate?.toISOString(),
             startDateTime: s.startDateTime?.toISOString(),
             classId: s.classId
         }))
@@ -956,8 +948,8 @@ async function updateScheduleByIdAndOwner(
             if (!mongoUpdate.$unset) mongoUpdate.$unset = {};
             mongoUpdate.$unset.coachId = 1;
             console.log(`scheduleService.updateScheduleByIdAndOwner: Will unset coachId (value was: ${value})`);
-        } else if ((key === 'endDate' || key === 'endDateTime') && value === undefined) {
-            // Explicitly unset end date fields when they are undefined
+        } else if (key === 'endDate' && value === undefined) {
+            // Explicitly unset end date field when it is undefined
             if (!mongoUpdate.$unset) mongoUpdate.$unset = {};
             mongoUpdate.$unset[key] = 1;
             console.log(`scheduleService.updateScheduleByIdAndOwner: Will unset ${key} (value was: ${value})`);

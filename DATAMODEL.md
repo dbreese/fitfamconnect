@@ -116,13 +116,10 @@ Mongoose schemas will be stored in src/server/db.
 # Schedule
 
 - A schedule is for a location.
-- It associates a class with a location at a specific time and date.
+- It associates a class with a location at a specific start date and time.
+- It may have an end-date, but it is optional.
+- The end time can be calculated using the class duration.
 - The class can be a 1-time, or recurring.
-- Use the following information to determine the best data model:
-    - If it is a 1-time, then it should have a date/time field for the single occurance.
-    - If it is a recurring, then it will have just a start date and end date that specifies when it starts and ends.
-    - If it is a recurring, then a separate time field can be populated to indicate the time of day it occurs on.
-    - The start and end dates should be separate from the time field.
 - Scheduling should be easy for the owner to do. It would be nice to see a week and month at a time and easily add
   classes to the schedule.
 - A class can be scheduled multiple times in a day, but look for an overlap to ensure multiple classes are not scheduled

@@ -77,7 +77,7 @@ router.get(
                     // Recurring schedules that could have instances on this date
                     {
                         isRecurring: true,
-                        startDate: { $lte: dayEnd },
+                        startDateTime: { $lte: dayEnd },
                         $or: [
                             { endDate: { $exists: false } },
                             { endDate: null },
@@ -130,7 +130,7 @@ router.get(
                 let actualStartTime = null;
                 let actualEndTime = null;
 
-                if (schedule.isRecurring && schedule.timeOfDay) {
+                if (schedule.isRecurring && schedule.startDateTime) {
                     // Check if this recurring schedule occurs on the selected day of week
                     const selectedDayOfWeek = selectedDate.getDay(); // 0=Sunday, 1=Monday, etc.
 
@@ -146,17 +146,20 @@ router.get(
                         }
                     }
 
-                    // Calculate actual time for this date
-                    const timeOfDay = new Date(schedule.timeOfDay);
+                    // Calculate actual time for this date using startDateTime
+                    const startDateTime = new Date(schedule.startDateTime);
                     actualStartTime = new Date(selectedDate);
-                    actualStartTime.setHours(timeOfDay.getHours(), timeOfDay.getMinutes(), 0, 0);
+                    actualStartTime.setHours(startDateTime.getHours(), startDateTime.getMinutes(), 0, 0);
 
                     if (classObj) {
                         actualEndTime = new Date(actualStartTime.getTime() + classObj.duration * 60000);
                     }
                 } else if (!schedule.isRecurring) {
                     actualStartTime = schedule.startDateTime;
-                    actualEndTime = schedule.endDateTime;
+                    // Calculate end time from class duration
+                    if (classObj && actualStartTime) {
+                        actualEndTime = new Date(actualStartTime.getTime() + classObj.duration * 60000);
+                    }
                 }
 
                 return {
@@ -427,17 +430,20 @@ router.get(
                 let actualStartTime = null;
                 let actualEndTime = null;
 
-                if (schedule.isRecurring && schedule.timeOfDay) {
-                    const timeOfDay = new Date(schedule.timeOfDay);
+                if (schedule.isRecurring && schedule.startDateTime) {
+                    const startDateTime = new Date(schedule.startDateTime);
                     actualStartTime = new Date(signup.classDate);
-                    actualStartTime.setHours(timeOfDay.getHours(), timeOfDay.getMinutes(), 0, 0);
+                    actualStartTime.setHours(startDateTime.getHours(), startDateTime.getMinutes(), 0, 0);
 
                     if (classObj) {
                         actualEndTime = new Date(actualStartTime.getTime() + classObj.duration * 60000);
                     }
                 } else if (!schedule.isRecurring) {
                     actualStartTime = schedule.startDateTime;
-                    actualEndTime = schedule.endDateTime;
+                    // Calculate end time from class duration
+                    if (classObj && actualStartTime) {
+                        actualEndTime = new Date(actualStartTime.getTime() + classObj.duration * 60000);
+                    }
                 }
 
                 const memberData = signup.memberId as any; // Type assertion for populated data

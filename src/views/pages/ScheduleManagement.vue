@@ -51,11 +51,9 @@ const formData = ref({
     classId: '',
     locationId: '',
     coachId: '',
-    // Date and time fields (used for both recurring and non-recurring)
-    startDate: new Date(),
-    startTime: new Date(),
+    // Simplified date/time fields
+    startDateTime: new Date(),
     endDate: null as Date | null,
-    endTime: null as Date | null,
     maxAttendees: null as string | null,
     notes: '',
     isRecurring: false,
@@ -190,7 +188,7 @@ async function loadSchedules() {
                     isRecurring: withStartDateTime[0].isRecurring,
                     isRecurringInstance: (withStartDateTime[0] as any).isRecurringInstance,
                     startDateTime: withStartDateTime[0].startDateTime,
-                    endDateTime: withStartDateTime[0].endDateTime,
+                    endDate: withStartDateTime[0].endDate,
                     className: (withStartDateTime[0] as any).class?.name
                 });
             }
@@ -301,43 +299,19 @@ async function openEditDialog(schedule: any) {
         // Fall back to the instance data if we can't fetch the original
     }
 
-    // Extract date and time from startDateTime or separate fields
-    let startDate, startTime;
-    if (originalSchedule.startDateTime) {
-        const startDateTime = new Date(originalSchedule.startDateTime);
-        startDate = startDateTime;
-        startTime = startDateTime;
-    } else if (originalSchedule.startDate && originalSchedule.timeOfDay) {
-        startDate = new Date(originalSchedule.startDate);
-        startTime = new Date(originalSchedule.timeOfDay);
-    } else {
-        startDate = new Date();
-        startTime = new Date();
-    }
+    // Extract startDateTime (always present in new model)
+    const startDateTime = originalSchedule.startDateTime ? new Date(originalSchedule.startDateTime) : new Date();
 
-    // Extract end date and time
-    let endDate, endTime;
-    if (originalSchedule.endDateTime) {
-        const endDateTime = new Date(originalSchedule.endDateTime);
-        endDate = endDateTime;
-        endTime = endDateTime;
-    } else if (originalSchedule.endDate) {
-        endDate = new Date(originalSchedule.endDate);
-        endTime = originalSchedule.timeOfDay ? new Date(originalSchedule.timeOfDay) : null;
-    } else {
-        endDate = null;
-        endTime = null;
-    }
+    // Extract endDate (optional)
+    const endDate = originalSchedule.endDate ? new Date(originalSchedule.endDate) : null;
 
     formData.value = {
         classId: originalSchedule.classId,
         locationId: originalSchedule.locationId,
         coachId: originalSchedule.coachId || '',
-        // Date and time fields (used for both recurring and non-recurring)
-        startDate: startDate,
-        startTime: startTime,
+        // Simplified date/time fields
+        startDateTime: startDateTime,
         endDate: endDate,
-        endTime: endTime,
         maxAttendees: originalSchedule.maxAttendees ? originalSchedule.maxAttendees.toString() : null,
         notes: originalSchedule.notes || '',
         isRecurring: Boolean(originalSchedule.isRecurring || originalSchedule.is_recurring || originalSchedule.recurring || (originalSchedule as any).isRecurringInstance),
@@ -353,12 +327,9 @@ async function openEditDialog(schedule: any) {
 }
 
 function resetForm() {
-    // Set default start date to today
-    const defaultStartDate = new Date();
-
-    // Set default start time to 6:00 AM (within 4 AM - 10 PM range)
-    const defaultStartTime = new Date();
-    defaultStartTime.setHours(6, 0, 0, 0);
+    // Set default start date/time to today at 6:00 AM
+    const defaultStartDateTime = new Date();
+    defaultStartDateTime.setHours(6, 0, 0, 0);
 
     // Auto-select location if only one exists
     const defaultLocationId = locations.value && locations.value.length === 1 && locations.value[0]._id
@@ -369,11 +340,9 @@ function resetForm() {
         classId: '',
         locationId: defaultLocationId,
         coachId: '',
-        // Date and time fields (used for both recurring and non-recurring)
-        startDate: defaultStartDate,
-        startTime: defaultStartTime,
+        // Simplified date/time fields
+        startDateTime: defaultStartDateTime,
         endDate: null,
-        endTime: null,
         maxAttendees: null,
         notes: '',
         isRecurring: false,
@@ -396,17 +365,13 @@ function validateForm(): { isValid: boolean; errors: string[] } {
         errors.push(t('schedules.validation.locationRequired'));
     }
 
-    if (!formData.value.startDate) {
-        errors.push(t('schedules.validation.startDateRequired'));
-    }
-
-    if (!formData.value.startTime) {
-        errors.push(t('schedules.validation.startTimeRequired'));
+    if (!formData.value.startDateTime) {
+        errors.push(t('schedules.validation.startDateTimeRequired'));
     }
 
     if (formData.value.isRecurring) {
         // For recurring schedules
-        if (formData.value.recurringPattern.daysOfWeek.length === 0) {
+        if (formData.value.recurringPattern.frequency === 'weekly' && formData.value.recurringPattern.daysOfWeek.length === 0) {
             errors.push(t('schedules.validation.daysRequired'));
         }
     }
@@ -433,37 +398,12 @@ async function handleSubmit() {
     try {
         let result;
 
-        // Combine date and time fields
-        const startDateTime = new Date(formData.value.startDate);
-        startDateTime.setHours(
-            formData.value.startTime.getHours(),
-            formData.value.startTime.getMinutes(),
-            0,
-            0
-        );
-
-        let endDateTime = undefined;
-        if (formData.value.endDate && formData.value.endTime) {
-            endDateTime = new Date(formData.value.endDate);
-            endDateTime.setHours(
-                formData.value.endTime.getHours(),
-                formData.value.endTime.getMinutes(),
-                0,
-                0
-            );
-        }
-
         const submitData = {
             ...formData.value,
-            // Always include startDateTime and endDateTime
-            startDateTime: startDateTime,
-            endDateTime: endDateTime,
-            // Explicitly include isRecurring
-            isRecurring: formData.value.isRecurring,
-            // For recurring schedules, also include the separate date/time fields
-            startDate: formData.value.isRecurring ? formData.value.startDate : undefined,
+            // Use the simplified startDateTime field directly
+            startDateTime: formData.value.startDateTime,
+            // Handle endDate (only for recurring schedules)
             endDate: formData.value.isRecurring ? (formData.value.endDate || undefined) : undefined,
-            timeOfDay: formData.value.isRecurring ? formData.value.startTime : undefined,
             maxAttendees: formData.value.maxAttendees ? parseInt(formData.value.maxAttendees) : undefined,
             notes: formData.value.notes.trim() || undefined,
             coachId: formData.value.coachId && formData.value.coachId.trim() ? formData.value.coachId : undefined,
@@ -478,9 +418,6 @@ async function handleSubmit() {
         // Handle field removal for cleared fields
         if (!formData.value.endDate || formData.value.endDate === null) {
             submitData.endDate = undefined;
-        }
-        if (!formData.value.endTime || formData.value.endTime === null) {
-            submitData.endDateTime = undefined;
         }
 
         console.log('ScheduleManagement.handleSubmit: submitData.coachId =', submitData.coachId);
@@ -936,35 +873,7 @@ function navigateWeek(direction: 'prev' | 'next') {
     loadSchedules();
 }
 
-// Watch for class selection changes to auto-calculate end time
-watch(
-    () => formData.value.classId,
-    (newClassId) => {
-        if (newClassId && formData.value.startTime) {
-            const selectedClass = classes.value.find((cls) => cls._id === newClassId);
-            if (selectedClass) {
-                const startTime = new Date(formData.value.startTime);
-                const endTime = new Date(startTime.getTime() + selectedClass.duration * 60000);
-                formData.value.endTime = endTime;
-            }
-        }
-    }
-);
-
-// Watch for start time changes to auto-calculate end time
-watch(
-    () => formData.value.startTime,
-    (newStartTime) => {
-        if (newStartTime && formData.value.classId) {
-            const selectedClass = classes.value.find((cls) => cls._id === formData.value.classId);
-            if (selectedClass) {
-                const startTime = new Date(newStartTime);
-                const endTime = new Date(startTime.getTime() + selectedClass.duration * 60000);
-                formData.value.endTime = endTime;
-            }
-        }
-    }
-);
+// Note: End time is now calculated from class duration on the server side
 
 // Watch for tab changes to load appropriate data
 watch(
@@ -1307,23 +1216,13 @@ onMounted(() => {
                             <small class="text-gray-500">{{ t('schedules.maxAttendeesHelp') }}</small>
                         </div>
 
-                        <!-- Start Date and Time (for both recurring and non-recurring) -->
+                        <!-- Start Date and Time (unified field) -->
                         <div class="field">
-                            <label for="startDate" class="font-medium">{{ t('schedules.startDate') }} *</label>
+                            <label for="startDateTime" class="font-medium">{{ t('schedules.startDateTime') }} *</label>
                             <Calendar
-                                id="startDate"
-                                v-model="formData.startDate"
-                                class="w-full"
-                                required
-                            />
-                        </div>
-
-                        <div class="field">
-                            <label for="startTime" class="font-medium">{{ t('schedules.startTime') }} *</label>
-                            <Calendar
-                                id="startTime"
-                                v-model="formData.startTime"
-                                timeOnly
+                                id="startDateTime"
+                                v-model="formData.startDateTime"
+                                showTime
                                 hourFormat="12"
                                 :stepMinute="15"
                                 class="w-full"
@@ -1331,8 +1230,8 @@ onMounted(() => {
                             />
                         </div>
 
-                        <!-- End Date and Time (optional) -->
-                        <div class="field">
+                        <!-- End Date (only for recurring schedules) -->
+                        <div v-if="formData.isRecurring" class="field">
                             <label for="endDate" class="font-medium">{{ t('schedules.endDate') }}</label>
                             <Calendar
                                 id="endDate"
@@ -1340,20 +1239,6 @@ onMounted(() => {
                                 class="w-full"
                             />
                             <small class="text-gray-500">{{ t('schedules.endDateHelp') }}</small>
-                        </div>
-
-                        <div class="field">
-                            <label for="endTime" class="font-medium">{{ t('schedules.endTime') }}</label>
-                            <Calendar
-                                id="endTime"
-                                v-model="formData.endTime"
-                                timeOnly
-                                hourFormat="12"
-                                :stepMinute="15"
-                                class="w-full"
-                                :disabled="true"
-                            />
-                            <small class="text-gray-500">{{ t('schedules.endTimeAutoCalculated') }}</small>
                         </div>
 
                         <div class="field">
