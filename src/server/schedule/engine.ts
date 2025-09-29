@@ -101,28 +101,141 @@ export class SchedulingEngine {
 
         console.log(`SchedulingEngine.validateRecurringSchedule: All ${instances.length} instances validated successfully`);
     }
+
+    /**
+     * Validate a schedule update for conflicts according to SCHEDULING.md rules
+     * This handles both 1-time and recurring schedules, excluding the current schedule from conflicts
+     */
+    static async validateScheduleUpdate(
+        locationId: string,
+        startDateTime: Date,
+        classDurationMinutes: number,
+        excludeScheduleId: string,
+        recurringPattern?: {
+            frequency: 'daily' | 'weekly' | 'monthly';
+            interval: number;
+            daysOfWeek?: number[];
+        },
+        endDate?: Date
+    ): Promise<void> {
+        console.log(`SchedulingEngine.validateScheduleUpdate: Validating schedule update, excluding ${excludeScheduleId}`);
+        console.log(`  Location: ${locationId}`);
+        console.log(`  Start: ${startDateTime.toISOString()}`);
+        console.log(`  Duration: ${classDurationMinutes} minutes`);
+        console.log(`  Recurring: ${recurringPattern ? 'Yes' : 'No'}`);
+        if (recurringPattern) {
+            console.log(`  Pattern: ${recurringPattern.frequency}, interval: ${recurringPattern.interval}`);
+            if (recurringPattern.daysOfWeek) {
+                console.log(`  Days: ${recurringPattern.daysOfWeek.join(', ')}`);
+            }
+        }
+        if (endDate) {
+            console.log(`  End Date: ${endDate.toISOString()}`);
+        }
+
+        if (!recurringPattern) {
+            // For 1-time schedules, just check this specific date/time
+            const endDateTime = new Date(startDateTime.getTime() + classDurationMinutes * 60000);
+            await this.checkForSchedulingConflicts(locationId, startDateTime, endDateTime, excludeScheduleId);
+        } else {
+            // For recurring schedules, generate all instances and check each one
+            await this.validateRecurringScheduleUpdate(locationId, startDateTime, classDurationMinutes, excludeScheduleId, recurringPattern, endDate);
+        }
+
+        console.log(`SchedulingEngine.validateScheduleUpdate: Validation passed - no conflicts found`);
+    }
+
+    /**
+     * Validate a recurring schedule update by checking all its instances for conflicts
+     */
+    private static async validateRecurringScheduleUpdate(
+        locationId: string,
+        startDateTime: Date,
+        classDurationMinutes: number,
+        excludeScheduleId: string,
+        recurringPattern: {
+            frequency: 'daily' | 'weekly' | 'monthly';
+            interval: number;
+            daysOfWeek?: number[];
+        },
+        endDate?: Date
+    ): Promise<void> {
+        console.log(`SchedulingEngine.validateRecurringScheduleUpdate: Validating recurring schedule update, excluding ${excludeScheduleId}`);
+
+        // For validation, check conflicts for a reasonable period (1 year if no end date)
+        const validationEndDate = endDate || new Date(startDateTime.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+        // Create a temporary schedule object to generate instances
+        const tempSchedule = {
+            _id: 'temp-validation',
+            isRecurring: true,
+            startDateTime: startDateTime,
+            endDate: endDate,
+            recurringPattern: recurringPattern,
+            class: { duration: classDurationMinutes }
+        };
+
+        // Generate all instances for the recurring schedule
+        const instances = this.getActiveRecurringInstances(tempSchedule, startDateTime, validationEndDate);
+
+        console.log(`SchedulingEngine.validateRecurringScheduleUpdate: Generated ${instances.length} instances to validate`);
+
+        // Check each instance for conflicts (excluding the current schedule)
+        for (const instance of instances) {
+            const instanceStart = new Date(instance.startDateTime);
+            const instanceEnd = new Date(instanceStart.getTime() + classDurationMinutes * 60000);
+
+            console.log(`SchedulingEngine.validateRecurringScheduleUpdate: Checking instance ${instanceStart.toISOString()}`);
+
+            try {
+                await this.checkForSchedulingConflicts(locationId, instanceStart, instanceEnd, excludeScheduleId);
+            } catch (error) {
+                // Add more context to the error for recurring schedules
+                const conflictDate = instanceStart.toLocaleDateString();
+                const conflictTime = instanceStart.toLocaleTimeString();
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                throw new Error(`Recurring schedule conflict on ${conflictDate} at ${conflictTime}: ${errorMessage}`);
+            }
+        }
+
+        console.log(`SchedulingEngine.validateRecurringScheduleUpdate: All ${instances.length} instances validated successfully`);
+    }
     /**
      * Check for scheduling conflicts including recurring schedule instances
+     * @param locationId - The location to check conflicts in
+     * @param startDateTime - Start time of the new schedule
+     * @param endDateTime - End time of the new schedule
+     * @param excludeScheduleId - Optional schedule ID to exclude from conflict detection (for updates)
      */
     static async checkForSchedulingConflicts(
         locationId: string,
         startDateTime: Date,
-        endDateTime: Date
+        endDateTime: Date,
+        excludeScheduleId?: string
     ): Promise<void> {
-        console.log(`SchedulingEngine.checkForSchedulingConflicts: Checking conflicts for location ${locationId} from ${startDateTime.toISOString()} to ${endDateTime.toISOString()}`);
+        const logPrefix = excludeScheduleId ? 'checkForSchedulingConflictsExcluding' : 'checkForSchedulingConflicts';
+        const excludeText = excludeScheduleId ? `, excluding ${excludeScheduleId}` : '';
+        console.log(`SchedulingEngine.${logPrefix}: Checking conflicts for location ${locationId} from ${startDateTime.toISOString()} to ${endDateTime.toISOString()}${excludeText}`);
 
-        // Check for direct schedule conflicts (non-recurring schedules)
-        const directConflict = await Schedule.findOne({
+        // Build query for direct schedule conflicts (non-recurring schedules)
+        const directConflictQuery: any = {
             locationId: locationId,
             isRecurring: false,
             startDateTime: {
                 $lt: endDateTime,
                 $gte: new Date(startDateTime.getTime() - 60 * 60 * 1000) // Check 1 hour before to account for class duration
             }
-        });
+        };
+
+        // Add exclusion clause if needed
+        if (excludeScheduleId) {
+            directConflictQuery._id = { $ne: excludeScheduleId };
+        }
+
+        const directConflict = await Schedule.findOne(directConflictQuery);
 
         if (directConflict) {
-            console.log(`SchedulingEngine.checkForSchedulingConflicts: Direct conflict detected with schedule ${directConflict._id}`);
+            console.log(`SchedulingEngine.${logPrefix}: Direct conflict detected with schedule ${directConflict._id}`);
             throw new Error('Scheduling conflict: Another class is already scheduled at this time and location');
         }
 
@@ -132,8 +245,8 @@ export class SchedulingEngine {
         const dayEnd = new Date(startDateTime);
         dayEnd.setHours(23, 59, 59, 999);
 
-        // Find all recurring schedules that could generate instances on this day
-        const recurringSchedules = await Schedule.find({
+        // Build query for recurring schedules
+        const recurringQuery: any = {
             locationId: locationId,
             isRecurring: true,
             startDateTime: { $lte: dayEnd }, // Schedule started before or on this day
@@ -142,9 +255,16 @@ export class SchedulingEngine {
                 { endDate: null }, // No end date
                 { endDate: { $gte: dayStart } } // End date is after or on this day
             ]
-        }).populate('classId');
+        };
 
-        console.log(`SchedulingEngine.checkForSchedulingConflicts: Found ${recurringSchedules.length} recurring schedules to check`);
+        // Add exclusion clause if needed
+        if (excludeScheduleId) {
+            recurringQuery._id = { $ne: excludeScheduleId };
+        }
+
+        const recurringSchedules = await Schedule.find(recurringQuery).populate('classId');
+
+        console.log(`SchedulingEngine.${logPrefix}: Found ${recurringSchedules.length} recurring schedules to check`);
 
         // Check each recurring schedule for conflicts
         for (const recurringSchedule of recurringSchedules) {
@@ -168,7 +288,7 @@ export class SchedulingEngine {
                 const hasConflict = instanceStart < endDateTime && instanceEnd > startDateTime;
 
                 if (hasConflict) {
-                    console.log(`SchedulingEngine.checkForSchedulingConflicts: Recurring instance conflict detected`);
+                    console.log(`SchedulingEngine.${logPrefix}: Recurring instance conflict detected`);
                     console.log(`  Instance: ${instanceStart.toISOString()} - ${instanceEnd.toISOString()}`);
                     console.log(`  New schedule: ${startDateTime.toISOString()} - ${endDateTime.toISOString()}`);
                     throw new Error('Scheduling conflict: A recurring class instance is already scheduled at this time and location');
@@ -176,11 +296,12 @@ export class SchedulingEngine {
             }
         }
 
-        console.log(`SchedulingEngine.checkForSchedulingConflicts: No conflicts found`);
+        console.log(`SchedulingEngine.${logPrefix}: No conflicts found`);
     }
 
     /**
-     * Check for scheduling conflicts including recurring schedule instances, excluding a specific schedule
+     * Check for scheduling conflicts excluding a specific schedule (for updates)
+     * @deprecated Use checkForSchedulingConflicts with excludeScheduleId parameter instead
      */
     static async checkForSchedulingConflictsExcluding(
         locationId: string,
@@ -188,76 +309,7 @@ export class SchedulingEngine {
         endDateTime: Date,
         excludeScheduleId: string
     ): Promise<void> {
-        console.log(`SchedulingEngine.checkForSchedulingConflictsExcluding: Checking conflicts for location ${locationId} from ${startDateTime.toISOString()} to ${endDateTime.toISOString()}, excluding ${excludeScheduleId}`);
-
-        // Check for direct schedule conflicts (non-recurring schedules)
-        const directConflict = await Schedule.findOne({
-            _id: { $ne: excludeScheduleId }, // Exclude the current schedule
-            locationId: locationId,
-            isRecurring: false,
-            startDateTime: {
-                $lt: endDateTime,
-                $gte: new Date(startDateTime.getTime() - 60 * 60 * 1000) // Check 1 hour before to account for class duration
-            }
-        });
-
-        if (directConflict) {
-            console.log(`SchedulingEngine.checkForSchedulingConflictsExcluding: Direct conflict detected with schedule ${directConflict._id}`);
-            throw new Error('Scheduling conflict: Another class is already scheduled at this time and location');
-        }
-
-        // Check for recurring schedule conflicts
-        const dayStart = new Date(startDateTime);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(startDateTime);
-        dayEnd.setHours(23, 59, 59, 999);
-
-        // Find all recurring schedules that could generate instances on this day
-        const recurringSchedules = await Schedule.find({
-            _id: { $ne: excludeScheduleId }, // Exclude the current schedule
-            locationId: locationId,
-            isRecurring: true,
-            startDateTime: { $lte: dayEnd }, // Schedule started before or on this day
-            $or: [
-                { endDate: { $exists: false } }, // No end date
-                { endDate: null }, // No end date
-                { endDate: { $gte: dayStart } } // End date is after or on this day
-            ]
-        }).populate('classId');
-
-        console.log(`SchedulingEngine.checkForSchedulingConflictsExcluding: Found ${recurringSchedules.length} recurring schedules to check`);
-
-        // Check each recurring schedule for conflicts
-        for (const recurringSchedule of recurringSchedules) {
-            const instances = this.getActiveRecurringInstances(recurringSchedule, dayStart, dayEnd);
-
-            for (const instance of instances) {
-                if (!instance.startDateTime) continue;
-
-                const instanceStart = new Date(instance.startDateTime);
-
-                // Calculate instance end time from class duration
-                let instanceEnd = instanceStart;
-                if (instance.class && instance.class.duration) {
-                    instanceEnd = new Date(instanceStart.getTime() + instance.class.duration * 60000);
-                } else {
-                    // Default to 60 minutes if no duration specified
-                    instanceEnd = new Date(instanceStart.getTime() + 60 * 60 * 1000);
-                }
-
-                // Check if this instance conflicts with the new schedule
-                const hasConflict = instanceStart < endDateTime && instanceEnd > startDateTime;
-
-                if (hasConflict) {
-                    console.log(`SchedulingEngine.checkForSchedulingConflictsExcluding: Recurring instance conflict detected`);
-                    console.log(`  Instance: ${instanceStart.toISOString()} - ${instanceEnd.toISOString()}`);
-                    console.log(`  New schedule: ${startDateTime.toISOString()} - ${endDateTime.toISOString()}`);
-                    throw new Error('Scheduling conflict: A recurring class instance is already scheduled at this time and location');
-                }
-            }
-        }
-
-        console.log(`SchedulingEngine.checkForSchedulingConflictsExcluding: No conflicts found`);
+        return this.checkForSchedulingConflicts(locationId, startDateTime, endDateTime, excludeScheduleId);
     }
 
     /**

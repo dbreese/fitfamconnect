@@ -459,6 +459,204 @@ describe('SchedulingEngine', () => {
             });
         });
     });
+
+    describe('validateScheduleUpdate - Update Scenarios', () => {
+        describe('Schedule updates should exclude current schedule from conflicts', () => {
+            it('should allow updating schedule to same time when excluding itself', async () => {
+                // Create a schedule first
+                const gym = await createTestGym();
+                const location = await createTestLocation(gym._id, 'Main Floor');
+                const testClass = await createTestClass(gym._id, 'Yoga', 60);
+
+                const startDateTime = new Date('2025-09-01T12:00:00.000Z'); // Monday at 5am MST
+                const duration = 60;
+
+                const existingSchedule = await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    startDateTime,
+                    false // non-recurring
+                );
+
+                // Should allow "updating" to the same time when excluding the existing schedule
+                await expect(
+                    SchedulingEngine.validateScheduleUpdate(
+                        location._id,
+                        startDateTime,
+                        duration,
+                        existingSchedule._id.toString()
+                    )
+                ).resolves.not.toThrow();
+            });
+
+            it('should detect conflict when updating to conflict with different schedule', async () => {
+                // Create two schedules
+                const gym = await createTestGym();
+                const location = await createTestLocation(gym._id, 'Main Floor');
+                const testClass = await createTestClass(gym._id, 'Yoga', 60);
+
+                const firstDateTime = new Date('2025-09-01T12:00:00.000Z'); // Monday at 5am MST
+                const secondDateTime = new Date('2025-09-02T12:00:00.000Z'); // Tuesday at 5am MST
+                const duration = 60;
+
+                // Create first schedule
+                await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    firstDateTime,
+                    false // non-recurring
+                );
+
+                // Create second schedule
+                const secondSchedule = await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    secondDateTime,
+                    false // non-recurring
+                );
+
+                // Should detect conflict when trying to update second schedule to same time as first
+                await expect(
+                    SchedulingEngine.validateScheduleUpdate(
+                        location._id,
+                        firstDateTime,
+                        duration,
+                        secondSchedule._id.toString()
+                    )
+                ).rejects.toThrow('Scheduling conflict');
+            });
+
+            it('should handle recurring schedule updates with exclusion', async () => {
+                // Create a recurring schedule
+                const gym = await createTestGym();
+                const location = await createTestLocation(gym._id, 'Main Floor');
+                const testClass = await createTestClass(gym._id, 'Yoga', 60);
+
+                const recurringStart = new Date('2025-09-01T12:00:00.000Z'); // Monday at 5am MST
+                const conflictDate = new Date('2025-09-08T12:00:00.000Z'); // Monday at 5am MST (second instance)
+
+                // Create existing recurring schedule (Mondays)
+                const existingRecurring = await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    recurringStart,
+                    true, // recurring
+                    {
+                        frequency: 'weekly',
+                        interval: 1,
+                        daysOfWeek: [1] // Monday
+                    }
+                );
+
+                // Create a 1-time schedule that would conflict with the recurring schedule
+                const oneTimeSchedule = await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    conflictDate,
+                    false // non-recurring
+                );
+
+                // Should detect conflict when trying to update the one-time schedule without excluding the recurring
+                await expect(
+                    SchedulingEngine.validateScheduleUpdate(
+                        location._id,
+                        conflictDate,
+                        60,
+                        oneTimeSchedule._id.toString() // Only exclude the one-time, not the recurring
+                    )
+                ).rejects.toThrow(/recurring.*instance.*already scheduled/i);
+
+                // Should NOT allow when excluding only the recurring schedule, because there's still the one-time schedule
+                // This test verifies that excluding only the recurring doesn't prevent conflict with the one-time
+                await expect(
+                    SchedulingEngine.validateScheduleUpdate(
+                        location._id,
+                        conflictDate,
+                        60,
+                        existingRecurring._id.toString() // Exclude the recurring schedule
+                    )
+                ).rejects.toThrow('Another class is already scheduled');
+            });
+        });
+
+        describe('Recurring schedule updates', () => {
+            it('should validate recurring schedule updates with pattern changes', async () => {
+                // Create a recurring schedule
+                const gym = await createTestGym();
+                const location = await createTestLocation(gym._id, 'Main Floor');
+                const testClass = await createTestClass(gym._id, 'Yoga', 60);
+
+                const startDateTime = new Date('2025-09-01T12:00:00.000Z'); // Monday at 5am MST
+
+                // Create existing recurring schedule (Mondays only)
+                const existingSchedule = await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    startDateTime,
+                    true, // recurring
+                    {
+                        frequency: 'weekly',
+                        interval: 1,
+                        daysOfWeek: [1] // Monday only
+                    }
+                );
+
+                // Should allow updating to include more days (Mon + Wed)
+                await expect(
+                    SchedulingEngine.validateScheduleUpdate(
+                        location._id,
+                        startDateTime,
+                        60,
+                        existingSchedule._id.toString(),
+                        {
+                            frequency: 'weekly',
+                            interval: 1,
+                            daysOfWeek: [1, 3] // Monday and Wednesday
+                        }
+                    )
+                ).resolves.not.toThrow();
+            });
+        });
+
+        describe('Location isolation during updates', () => {
+            it('should allow updating to same time in different location', async () => {
+                // Create schedule in location A
+                const gym = await createTestGym();
+                const locationA = await createTestLocation(gym._id, 'Main Floor');
+                const locationB = await createTestLocation(gym._id, 'Second Floor');
+                const testClass = await createTestClass(gym._id, 'Yoga', 60);
+
+                const startDateTime = new Date('2025-09-01T12:00:00.000Z');
+                const duration = 60;
+
+                // Create schedule in location A
+                await createTestSchedule(
+                    testClass._id,
+                    locationA._id,
+                    startDateTime,
+                    false // non-recurring
+                );
+
+                // Create schedule in location B
+                const scheduleB = await createTestSchedule(
+                    testClass._id,
+                    locationB._id,
+                    new Date('2025-09-02T12:00:00.000Z'), // Different time initially
+                    false // non-recurring
+                );
+
+                // Should allow updating schedule B to same time as A (different locations)
+                await expect(
+                    SchedulingEngine.validateScheduleUpdate(
+                        locationB._id, // Checking in location B (where schedule B will be)
+                        startDateTime,
+                        duration,
+                        scheduleB._id.toString() // Exclude schedule B being updated
+                    )
+                ).resolves.not.toThrow();
+            });
+        });
+    });
 });
 
 // Helper functions for testing

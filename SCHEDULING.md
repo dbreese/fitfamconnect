@@ -12,7 +12,9 @@ This file contains information on how scheduling works, including rules and test
 - The Schedule datamodel is defined in /src/server/db/schedule.ts
 - The Class datamodel is defined in /src/server/db/class.ts
     - duration in minutes
-    - 
+- Schedules can be updated and created.
+    - therefore, on an update, we shouldn't consider a conflict with itself.
+
 # Test Scenarios
 - Use a real database test approach instead of mocking the database. I want the database to be tested too. See billing/__tests__/engine.test.ts as an example.
 - all dates are modern in 2025
@@ -103,6 +105,14 @@ Results:
 Test Steps:
 - Schedule a recurring class that starts on Monday, Sept 1 at 5am and occurs every Monday. The class ends on Sept 7.
 - Schedule a 1-time class for Monday, Sept 8 at 5am.
+
+Results:
+- No conflict occurs.
+
+## Two classes scheduled for the same time, but different locations.
+Test Steps:
+- Schedule a 1-time class for location A.
+- Schedule a 1-time class for same date and time as location A, but for location B.
 
 Results:
 - No conflict occurs.
