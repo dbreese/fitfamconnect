@@ -608,7 +608,7 @@ function formatScheduleType(schedule: any): string {
 
 function formatScheduleDates(schedule: any): string {
     if (schedule.isRecurring) {
-        const startDate = schedule.startDate ? formatDate(schedule.startDate) : '';
+        const startDate = schedule.startDateTime ? formatDate(schedule.startDateTime) : '';
         const endDate = schedule.endDate ? formatDate(schedule.endDate) : t('schedules.noEndDate');
         return `${startDate} - ${endDate}`;
     } else {
@@ -617,16 +617,13 @@ function formatScheduleDates(schedule: any): string {
 }
 
 function formatScheduleTimes(schedule: any): string {
-    if (schedule.isRecurring) {
-        return schedule.timeOfDay ? formatTime(schedule.timeOfDay) : '';
-    } else {
-        if (!schedule.startDateTime) return '';
-        const startTime = formatTime(schedule.startDateTime);
-        if (schedule.endDateTime) {
-            return `${startTime} - ${formatTime(schedule.endDateTime)}`;
-        }
-        return startTime;
-    }
+    if (!schedule.startDateTime) return '';
+
+    const startTime = formatTime(schedule.startDateTime);
+
+    // For both recurring and non-recurring schedules, we just show the start time
+    // End time is calculated from class duration
+    return startTime;
 }
 
 function formatRecurringPattern(schedule: any): string {

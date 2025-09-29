@@ -8,6 +8,7 @@ import { Location, type ILocation } from '../db/location';
 import { Member, type IMember } from '../db/member';
 import { Gym } from '../db/gym';
 import { type ServerResponse } from '../../shared/ServerResponse';
+import { SchedulingEngine } from './engine';
 
 export const router = Router();
 router.use(express.json());
@@ -232,6 +233,8 @@ router.delete(
     }
 );
 
+
+
 /**
  * Create new schedule for user's gym
  */
@@ -276,21 +279,14 @@ async function createScheduleForOwner(
         throw new Error('startDateTime is required');
     }
 
+    if (!scheduleData.locationId) {
+        throw new Error('locationId is required');
+    }
+
     const endDateTime = new Date(new Date(scheduleData.startDateTime).getTime() + classObj.duration * 60000);
 
-    // Check for scheduling conflicts
-    const conflictingSchedule = await Schedule.findOne({
-        locationId: scheduleData.locationId,
-        startDateTime: {
-            $lt: endDateTime,
-            $gte: new Date(new Date(scheduleData.startDateTime).getTime() - classObj.duration * 60000)
-        }
-    });
-
-    if (conflictingSchedule) {
-        console.log(`scheduleService.createScheduleForOwner: Scheduling conflict detected`);
-        throw new Error('Scheduling conflict: Another class is already scheduled at this time and location');
-    }
+    // Check for scheduling conflicts (both direct schedules and recurring instances)
+    await SchedulingEngine.checkForSchedulingConflicts(scheduleData.locationId, new Date(scheduleData.startDateTime), endDateTime);
 
     // Remove sensitive fields
     const { createdAt, updatedAt, ...safeScheduleData } = scheduleData;
@@ -465,176 +461,6 @@ async function findAugmentedSchedulesByGym(gymId: string): Promise<any[]> {
     return augmentedSchedules;
 }
 
-/**
- * Get active recurring instances for a schedule within a date range
- */
-function getActiveRecurringInstances(schedule: any, startDate: Date, endDate: Date): any[] {
-    const instances = [];
-    const pattern = schedule.recurringPattern;
-    const scheduleStartDateTime = new Date(schedule.startDateTime);
-    const scheduleEndDate = schedule.endDate ? new Date(schedule.endDate) : null;
-
-    console.log('getActiveRecurringInstances: Processing schedule', {
-        scheduleId: schedule._id,
-        scheduleStartDateTime: scheduleStartDateTime.toISOString(),
-        scheduleEndDate: scheduleEndDate?.toISOString(),
-        pattern,
-        rangeStart: startDate.toISOString(),
-        rangeEnd: endDate.toISOString()
-    });
-
-    // Get duration from the class
-    const duration = schedule.class?.duration || 60; // Default to 60 minutes if not found
-
-    // Extract the date and time components from startDateTime
-    const scheduleStartDate = new Date(scheduleStartDateTime);
-    scheduleStartDate.setHours(0, 0, 0, 0); // Get just the date part
-
-    // Find the first occurrence that matches the pattern and is within our date range
-    let currentDate = findFirstOccurrence(scheduleStartDate, pattern, startDate, endDate);
-
-    console.log('getActiveRecurringInstances: First occurrence found', {
-        scheduleId: schedule._id,
-        firstOccurrence: currentDate?.toISOString()
-    });
-
-    // Generate instances until we exceed the end date or the recurring end date
-    while (currentDate && currentDate <= endDate) {
-        // Check if we've exceeded the recurring end date
-        if (scheduleEndDate && currentDate > scheduleEndDate) {
-            break;
-        }
-
-        // Create instance with adjusted times but keep original schedule ID
-        const instanceStart = new Date(currentDate);
-        instanceStart.setHours(scheduleStartDateTime.getHours(), scheduleStartDateTime.getMinutes(), 0, 0);
-
-        const instanceEnd = new Date(instanceStart.getTime() + duration * 60000);
-
-        console.log('getActiveRecurringInstances: Creating instance', {
-            scheduleId: schedule._id,
-            instanceStart: instanceStart.toISOString(),
-            instanceEnd: instanceEnd.toISOString()
-        });
-
-        instances.push({
-            ...(schedule.toObject ? schedule.toObject() : schedule),
-            startDateTime: instanceStart,
-            isRecurring: false, // Individual instances are not recurring
-            isRecurringInstance: true,
-            // Preserve class data if it exists
-            class: schedule.class || null,
-            location: schedule.location || null,
-            coach: schedule.coach || null
-        });
-
-        // Move to next occurrence
-        currentDate = getNextRecurrenceDate(currentDate, pattern, scheduleStartDate);
-    }
-
-    console.log('getActiveRecurringInstances: Generated instances', {
-        scheduleId: schedule._id,
-        instanceCount: instances.length
-    });
-
-    return instances;
-}
-
-/**
- * Find the first occurrence that matches the pattern and is within the date range
- */
-function findFirstOccurrence(scheduleStartDate: Date, pattern: any, startDate: Date, endDate: Date): Date | null {
-    let currentDate = new Date(scheduleStartDate);
-
-    console.log('findFirstOccurrence: Starting search', {
-        scheduleStartDate: scheduleStartDate.toISOString(),
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        pattern
-    });
-
-    // If the schedule start date is after our end date, no instances possible
-    if (currentDate > endDate) {
-        console.log('findFirstOccurrence: Schedule start date is after end date');
-        return null;
-    }
-
-    // For weekly patterns with specific days
-    if (pattern.frequency === 'weekly' && pattern.daysOfWeek && pattern.daysOfWeek.length > 0) {
-        console.log('findFirstOccurrence: Processing weekly pattern with days', pattern.daysOfWeek);
-        // Start from the schedule start date and find the first matching day
-        while (currentDate <= endDate) {
-            const dayOfWeek = currentDate.getDay();
-            console.log('findFirstOccurrence: Checking date', {
-                date: currentDate.toISOString(),
-                dayOfWeek,
-                matches: pattern.daysOfWeek.includes(dayOfWeek)
-            });
-
-            if (pattern.daysOfWeek.includes(dayOfWeek)) {
-                // Found a matching day, check if it's within our range
-                if (currentDate >= startDate) {
-                    console.log('findFirstOccurrence: Found first occurrence', currentDate.toISOString());
-                    return currentDate;
-                }
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-        console.log('findFirstOccurrence: No matching days found in range');
-        return null;
-    }
-
-    // For other patterns, start from the schedule start date or the range start date, whichever is later
-    if (currentDate < startDate) {
-        currentDate = new Date(startDate);
-    }
-
-    const result = currentDate <= endDate ? currentDate : null;
-    console.log('findFirstOccurrence: Result', result?.toISOString() || 'null');
-    return result;
-}
-
-/**
- * Get the next recurrence date based on the pattern
- */
-function getNextRecurrenceDate(currentDate: Date, pattern: any, originalStart: Date): Date {
-    const nextDate = new Date(currentDate);
-
-    switch (pattern.frequency) {
-        case 'daily':
-            nextDate.setDate(nextDate.getDate() + pattern.interval);
-            break;
-
-        case 'weekly':
-            if (pattern.daysOfWeek && pattern.daysOfWeek.length > 0) {
-                // Find next occurrence on one of the specified days
-                let found = false;
-                for (let i = 0; i < 7; i++) {
-                    nextDate.setDate(nextDate.getDate() + 1);
-                    if (pattern.daysOfWeek.includes(nextDate.getDay())) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    // If no day found in the next 7 days, go to the next week
-                    nextDate.setDate(nextDate.getDate() + 7 * pattern.interval);
-                }
-            } else {
-                nextDate.setDate(nextDate.getDate() + 7 * pattern.interval);
-            }
-            break;
-
-        case 'monthly':
-            nextDate.setMonth(nextDate.getMonth() + pattern.interval);
-            break;
-
-        default:
-            nextDate.setDate(nextDate.getDate() + 1);
-    }
-
-    return nextDate;
-}
 
 /**
  * Find schedules by date range for the user's gym
@@ -815,7 +641,7 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
     for (const schedule of enrichedSchedules) {
         if (schedule.isRecurring && schedule.recurringPattern) {
             // Check if this recurring schedule has any active instances in the date range
-            const activeInstances = getActiveRecurringInstances(schedule, startDateObj, endDateObj);
+            const activeInstances = SchedulingEngine.getActiveRecurringInstances(schedule, startDateObj, endDateObj);
             activeSchedules.push(...activeInstances);
         } else {
             // Direct schedule - already in date range
@@ -964,6 +790,25 @@ async function updateScheduleByIdAndOwner(
     }
 
     console.log(`scheduleService.updateScheduleByIdAndOwner: MongoDB update query:`, mongoUpdate);
+
+    // Check for conflicts if startDateTime or locationId is being updated
+    if (mongoUpdate.$set && (mongoUpdate.$set.startDateTime || mongoUpdate.$set.locationId)) {
+        const newStartDateTime = mongoUpdate.$set.startDateTime || schedule.startDateTime;
+        const newLocationId = mongoUpdate.$set.locationId || schedule.locationId;
+
+        if (newStartDateTime && newLocationId) {
+            // Calculate end time from class duration for conflict checking
+            const endDateTime = new Date(new Date(newStartDateTime).getTime() + classObj.duration * 60000);
+
+            // Check for conflicts, but exclude the current schedule being updated
+            try {
+                await SchedulingEngine.checkForSchedulingConflictsExcluding(newLocationId, new Date(newStartDateTime), endDateTime, scheduleId);
+            } catch (error) {
+                console.log(`scheduleService.updateScheduleByIdAndOwner: Conflict detected during update: ${error}`);
+                throw error;
+            }
+        }
+    }
 
     const updatedSchedule = await Schedule.findByIdAndUpdate(scheduleId, mongoUpdate, {
         new: true,
