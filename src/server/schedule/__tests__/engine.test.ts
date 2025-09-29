@@ -420,6 +420,44 @@ describe('SchedulingEngine', () => {
                 ).rejects.toThrow('Scheduling conflict');
             });
         });
+
+        describe('Recurring schedule with end date - no conflict after end date', () => {
+            it('should allow 1-time schedule after recurring schedule ends', async () => {
+                // Test Steps from SCHEDULING.md:
+                // - Schedule a recurring class that starts on Monday, Sept 1 at 5am and occurs every Monday. The class ends on Sept 7.
+                // - Schedule a 1-time class for Monday, Sept 8 at 5am.
+
+                // Setup test data
+                const gym = await createTestGym();
+                const location = await createTestLocation(gym._id, 'Main Floor');
+                const testClass = await createTestClass(gym._id, 'Yoga', 60);
+
+                const recurringStart = new Date('2025-09-01T12:00:00.000Z'); // Monday, Sept 1 at 5am MST
+                const recurringEnd = new Date('2025-09-07T12:00:00.000Z'); // Sunday, Sept 7 at 5am MST (end date)
+                const oneTimeStart = new Date('2025-09-08T12:00:00.000Z'); // Monday, Sept 8 at 5am MST
+                const duration = 60;
+
+                // Create recurring schedule that ends on Sept 7
+                await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    recurringStart,
+                    true, // recurring
+                    {
+                        frequency: 'weekly',
+                        interval: 1,
+                        daysOfWeek: [1] // Monday
+                    },
+                    recurringEnd // end date
+                );
+
+                // Should not conflict since the recurring schedule ended on Sept 7
+                // and the new 1-time schedule is on Sept 8
+                await expect(
+                    SchedulingEngine.validateNewSchedule(location._id, oneTimeStart, duration)
+                ).resolves.not.toThrow();
+            });
+        });
     });
 });
 

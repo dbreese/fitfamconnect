@@ -99,5 +99,13 @@ Test Steps:
 Results:
 - Error occurs because the new schedule conflicts with the first schedule.
 
+## Recurring schedule has end date, so new 1-time does not intersect.
+Test Steps:
+- Schedule a recurring class that starts on Monday, Sept 1 at 5am and occurs every Monday. The class ends on Sept 7.
+- Schedule a 1-time class for Monday, Sept 8 at 5am.
+
+Results:
+- No conflict occurs.
+
 ## TODO
 - end date scenarios on recurring schedules
