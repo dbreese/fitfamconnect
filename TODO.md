@@ -2,12 +2,16 @@
 
 ## Features
 
+### Questions
+- [ ] Billing
+    - [ ] Will a member ever have multiple PLANS? Ie, a monthly membership plan and some other weekly plan for example? Or will this be a 1-time charge?
+    - [ ] Do we need to worry about WEEKLY plans right now?
+    
 ### Required for launch
 - [ ] Refactor
-    Locations can be at different addresses
-    Tax amount
-    - [ ] Coaches and Schedules are for locations
-    - [ ] 
+    - [X] Locations can be at different addresses
+    - [ ] Taxes
+    - [ ] Coaches and Schedules are for locations?
 
 - [ ] Members / Member App
     - [x] can view monthly charges and bills
@@ -17,6 +21,9 @@
 
 - [ ] Coach assignments
     - [x] filter classes with no coaches
+
+- [ ] Schedules
+    - [ ] By location.
 
 - [ ] Timesheets for coaches (is this just a kiosk feature for clock in/out)
     - [ ] Can we auto-calculate this based on scheduled coaches?

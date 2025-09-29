@@ -456,11 +456,16 @@ async function handleSubmit() {
         }
     } catch (error) {
         console.error('Error submitting schedule:', error);
+
+        // Use the detailed error message if available, otherwise fall back to generic message
+        const errorMessage = typeof error === 'string' ? error :
+                           (editMode.value ? t('schedules.error.updateFailed') : t('schedules.error.createFailed'));
+
         toast.add({
             severity: 'error',
             summary: t('feedback.errorTitle'),
-            detail: editMode.value ? t('schedules.error.updateFailed') : t('schedules.error.createFailed'),
-            life: 3000
+            detail: errorMessage,
+            life: 5000 // Longer duration for detailed error messages
         });
     } finally {
         loading.value = false;
@@ -1213,31 +1218,35 @@ onMounted(() => {
                             <small class="text-gray-500">{{ t('schedules.maxAttendeesHelp') }}</small>
                         </div>
 
-                        <!-- Start Date and Time (unified field) -->
-                        <div class="field">
-                            <label for="startDateTime" class="font-medium">{{ t('schedules.startDateTime') }} *</label>
-                            <Calendar
-                                id="startDateTime"
-                                v-model="formData.startDateTime"
-                                showTime
-                                hourFormat="12"
-                                :stepMinute="15"
-                                class="w-full"
-                                required
-                            />
+                        <!-- Date fields row - Start Date and End Date side by side -->
+                        <div class="flex gap-4 mb-4">
+                            <!-- Start Date and Time (unified field) -->
+                            <div class="field flex-1">
+                                <label for="startDateTime" class="font-medium">{{ t('schedules.startDateTime') }} *</label>
+                                <Calendar
+                                    id="startDateTime"
+                                    v-model="formData.startDateTime"
+                                    showTime
+                                    hourFormat="12"
+                                    :stepMinute="15"
+                                    class="w-full"
+                                    required
+                                />
+                            </div>
+
+                            <!-- End Date (only for recurring schedules) - appears to the right of Start Date -->
+                            <div v-if="formData.isRecurring" class="field flex-1">
+                                <label for="endDate" class="font-medium">{{ t('schedules.endDate') }}</label>
+                                <Calendar
+                                    id="endDate"
+                                    v-model="formData.endDate"
+                                    class="w-full"
+                                />
+                                <small class="text-gray-500">{{ t('schedules.endDateHelp') }}</small>
+                            </div>
                         </div>
 
-                        <!-- End Date (only for recurring schedules) -->
-                        <div v-if="formData.isRecurring" class="field">
-                            <label for="endDate" class="font-medium">{{ t('schedules.endDate') }}</label>
-                            <Calendar
-                                id="endDate"
-                                v-model="formData.endDate"
-                                class="w-full"
-                            />
-                            <small class="text-gray-500">{{ t('schedules.endDateHelp') }}</small>
-                        </div>
-
+                        <!-- Recurring checkbox - on its own row below the date fields -->
                         <div class="field">
                             <div class="flex items-center gap-2">
                                 <Checkbox v-model="formData.isRecurring" binary :key="`recurring-${selectedSchedule?._id || 'new'}`" />

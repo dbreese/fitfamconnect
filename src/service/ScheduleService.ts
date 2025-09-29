@@ -111,16 +111,26 @@ export const ScheduleService = {
                         responseCode: response.responseCode
                     });
                     return response;
+                } else {
+                    // Handle error responses (like 409 conflicts) by extracting the error message
+                    const errorResponse = await result.json();
+                    const errorMessage = errorResponse.message || 'Unknown error occurred';
+                    console.log('ScheduleService.createSchedule: Server error response', {
+                        classId: scheduleData.classId,
+                        status: result.status,
+                        errorMessage
+                    });
+                    return Promise.reject(errorMessage);
                 }
-                console.log('ScheduleService.createSchedule: Response not OK', { classId: scheduleData.classId });
-                return undefined;
             })
             .catch((error) => {
                 console.error('ScheduleService.createSchedule: Error creating schedule:', {
                     classId: scheduleData.classId,
                     error
                 });
-                return Promise.reject('Error creating schedule.');
+                // If it's already a string (from our error handling above), use it; otherwise use generic message
+                const errorMessage = typeof error === 'string' ? error : 'Error creating schedule.';
+                return Promise.reject(errorMessage);
             });
     },
 
@@ -149,9 +159,18 @@ export const ScheduleService = {
                 } else if (result.status === 404) {
                     console.log('ScheduleService.updateSchedule: Schedule not found', { id });
                     return undefined;
+                } else {
+                    // Handle error responses (like 409 conflicts) by extracting the error message
+                    const errorResponse = await result.json();
+                    const errorMessage = errorResponse.message || 'Unknown error occurred';
+                    console.log('ScheduleService.updateSchedule: Server error response', {
+                        id,
+                        classId: scheduleData.classId,
+                        status: result.status,
+                        errorMessage
+                    });
+                    return Promise.reject(errorMessage);
                 }
-                console.log('ScheduleService.updateSchedule: Response not OK', { id, classId: scheduleData.classId });
-                return undefined;
             })
             .catch((error) => {
                 console.error('ScheduleService.updateSchedule: Error updating schedule:', {
@@ -159,7 +178,9 @@ export const ScheduleService = {
                     classId: scheduleData.classId,
                     error
                 });
-                return Promise.reject('Error updating schedule.');
+                // If it's already a string (from our error handling above), use it; otherwise use generic message
+                const errorMessage = typeof error === 'string' ? error : 'Error updating schedule.';
+                return Promise.reject(errorMessage);
             });
     },
 

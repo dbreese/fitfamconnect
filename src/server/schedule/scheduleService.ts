@@ -151,7 +151,16 @@ router.post(
             console.log('scheduleService.createSchedule: Response sent successfully');
         } catch (error) {
             console.error(`scheduleService.createSchedule: Error creating schedule:`, error);
-            res.status(500).json({ message: 'Error creating schedule' });
+
+            // Check if this is a scheduling conflict error and provide a more specific message
+            const errorMessage = error instanceof Error ? error.message : 'Error creating schedule';
+            const isConflictError = errorMessage.includes('Scheduling conflict') || errorMessage.includes('conflict');
+
+            if (isConflictError) {
+                res.status(409).json({ message: `Failed to create schedule: ${errorMessage}` });
+            } else {
+                res.status(500).json({ message: errorMessage });
+            }
         }
     }
 );
@@ -191,7 +200,16 @@ router.put(
             console.log('scheduleService.updateSchedule: Response sent successfully');
         } catch (error) {
             console.error(`scheduleService.updateSchedule: Error updating schedule with id=${id}:`, error);
-            res.status(500).json({ message: 'Error updating schedule' });
+
+            // Check if this is a scheduling conflict error and provide a more specific message
+            const errorMessage = error instanceof Error ? error.message : 'Error updating schedule';
+            const isConflictError = errorMessage.includes('Scheduling conflict') || errorMessage.includes('conflict');
+
+            if (isConflictError) {
+                res.status(409).json({ message: `Failed to update schedule: ${errorMessage}` });
+            } else {
+                res.status(500).json({ message: errorMessage });
+            }
         }
     }
 );
@@ -274,7 +292,7 @@ async function createScheduleForOwner(
         throw new Error('Location not found or access denied');
     }
 
-    // Calculate end time from class duration for conflict checking
+    // Validate required fields for scheduling
     if (!scheduleData.startDateTime) {
         throw new Error('startDateTime is required');
     }
@@ -283,10 +301,14 @@ async function createScheduleForOwner(
         throw new Error('locationId is required');
     }
 
-    const endDateTime = new Date(new Date(scheduleData.startDateTime).getTime() + classObj.duration * 60000);
-
-    // Check for scheduling conflicts (both direct schedules and recurring instances)
-    await SchedulingEngine.checkForSchedulingConflicts(scheduleData.locationId, new Date(scheduleData.startDateTime), endDateTime);
+    // Use the comprehensive SchedulingEngine validation which handles both 1-time and recurring schedules
+    await SchedulingEngine.validateNewSchedule(
+        scheduleData.locationId,
+        new Date(scheduleData.startDateTime),
+        classObj.duration,
+        scheduleData.recurringPattern,
+        scheduleData.endDate ? new Date(scheduleData.endDate) : undefined
+    );
 
     // Remove sensitive fields
     const { createdAt, updatedAt, ...safeScheduleData } = scheduleData;
@@ -791,18 +813,40 @@ async function updateScheduleByIdAndOwner(
 
     console.log(`scheduleService.updateScheduleByIdAndOwner: MongoDB update query:`, mongoUpdate);
 
-    // Check for conflicts if startDateTime or locationId is being updated
-    if (mongoUpdate.$set && (mongoUpdate.$set.startDateTime || mongoUpdate.$set.locationId)) {
+    // Check for conflicts if any scheduling-related fields are being updated
+    if (mongoUpdate.$set && (
+        mongoUpdate.$set.startDateTime ||
+        mongoUpdate.$set.locationId ||
+        mongoUpdate.$set.recurringPattern ||
+        mongoUpdate.$set.isRecurring ||
+        mongoUpdate.$unset?.endDate
+    )) {
         const newStartDateTime = mongoUpdate.$set.startDateTime || schedule.startDateTime;
         const newLocationId = mongoUpdate.$set.locationId || schedule.locationId;
+        const newRecurringPattern = mongoUpdate.$set.recurringPattern || schedule.recurringPattern;
+        const newIsRecurring = mongoUpdate.$set.isRecurring !== undefined ? mongoUpdate.$set.isRecurring : schedule.isRecurring;
+
+        // Handle endDate: if it's being unset or updated
+        let newEndDate: Date | undefined;
+        if (mongoUpdate.$unset?.endDate) {
+            newEndDate = undefined; // Being cleared
+        } else if (mongoUpdate.$set.endDate) {
+            newEndDate = new Date(mongoUpdate.$set.endDate);
+        } else if (schedule.endDate) {
+            newEndDate = new Date(schedule.endDate);
+        }
 
         if (newStartDateTime && newLocationId) {
-            // Calculate end time from class duration for conflict checking
-            const endDateTime = new Date(new Date(newStartDateTime).getTime() + classObj.duration * 60000);
-
-            // Check for conflicts, but exclude the current schedule being updated
+            // Use the comprehensive SchedulingEngine validation for updates
             try {
-                await SchedulingEngine.checkForSchedulingConflictsExcluding(newLocationId, new Date(newStartDateTime), endDateTime, scheduleId);
+                await SchedulingEngine.validateScheduleUpdate(
+                    newLocationId,
+                    new Date(newStartDateTime),
+                    classObj.duration,
+                    scheduleId,
+                    newIsRecurring ? newRecurringPattern : undefined,
+                    newEndDate
+                );
             } catch (error) {
                 console.log(`scheduleService.updateScheduleByIdAndOwner: Conflict detected during update: ${error}`);
                 throw error;
