@@ -8,7 +8,7 @@ import { Location, type ILocation } from '../db/location';
 import { Member, type IMember } from '../db/member';
 import { Gym } from '../db/gym';
 import { type ServerResponse } from '../../shared/ServerResponse';
-import { SchedulingEngine } from './engine';
+import { SchedulingEngine } from './scheduleEngine';
 
 export const router = Router();
 router.use(express.json());

@@ -1,4 +1,4 @@
-import { SchedulingEngine } from '../engine';
+import { SchedulingEngine } from '../scheduleEngine';
 import { Schedule } from '../../db/schedule';
 import { Class } from '../../db/class';
 import { Location } from '../../db/location';
