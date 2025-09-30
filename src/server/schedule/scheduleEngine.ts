@@ -218,6 +218,7 @@ export class SchedulingEngine {
 
         console.log(`SchedulingEngine.getActiveRecurringInstances: Processing recurring schedule ${schedule._id}`);
         console.log(`  Pattern: ${pattern.frequency}, interval: ${pattern.interval}`);
+        console.log(`  Days of week: [${pattern.daysOfWeek ? pattern.daysOfWeek.join(', ') : 'none'}]`);
         console.log(`  Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
         console.log(`  Schedule start: ${scheduleStartDateTime.toISOString()}`);
         console.log(`  Schedule end: ${scheduleEndDate ? scheduleEndDate.toISOString() : 'No end date'}`);
@@ -244,6 +245,7 @@ export class SchedulingEngine {
             // For weekly schedules, check if this day is in the allowed days
             if (pattern.frequency === 'weekly' && pattern.daysOfWeek && pattern.daysOfWeek.length > 0) {
                 const dayOfWeek = currentDate.getDay();
+                console.log(`SchedulingEngine.getActiveRecurringInstances: Checking day ${dayOfWeek} (${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek]}) for pattern days: [${pattern.daysOfWeek.join(', ')}]`);
                 if (!pattern.daysOfWeek.includes(dayOfWeek)) {
                     console.log(`SchedulingEngine.getActiveRecurringInstances: Skipping ${currentDate.toISOString()} - day ${dayOfWeek} not in allowed days`);
                     currentDate = SchedulingEngine.getNextRecurrenceDate(currentDate, pattern, scheduleStartDateTime);
@@ -392,8 +394,9 @@ export class SchedulingEngine {
             return null;
         }
 
-        // Start from the schedule start date and find the first valid occurrence
-        let currentDate = new Date(scheduleStartDate);
+        // Start from the beginning of the search range, not the schedule start date
+        // This ensures we find all occurrences within the current week, even if the schedule started earlier
+        let currentDate = new Date(startDate);
         let iterationCount = 0;
         const maxIterations = 1000; // Safety limit
 
@@ -405,20 +408,15 @@ export class SchedulingEngine {
                 const dayOfWeek = currentDate.getDay();
                 if (pattern.daysOfWeek.includes(dayOfWeek)) {
                     // This day matches the pattern
-                    if (currentDate >= startDate && currentDate <= endDate) {
-                        console.log(`SchedulingEngine.findFirstOccurrence: Found first occurrence in range: ${currentDate.toISOString()}`);
-                        return currentDate;
-                    }
+                    console.log(`SchedulingEngine.findFirstOccurrence: Found first occurrence in range: ${currentDate.toISOString()}`);
+                    return currentDate;
                 }
                 // Move to next day to find a matching day
                 currentDate.setDate(currentDate.getDate() + 1);
             } else {
                 // For daily/monthly, use the original logic
-                if (currentDate >= startDate && currentDate <= endDate) {
-                    console.log(`SchedulingEngine.findFirstOccurrence: Found first occurrence in range: ${currentDate.toISOString()}`);
-                    return currentDate;
-                }
-                currentDate = SchedulingEngine.getNextRecurrenceDate(currentDate, pattern, scheduleStartDate);
+                console.log(`SchedulingEngine.findFirstOccurrence: Found first occurrence in range: ${currentDate.toISOString()}`);
+                return currentDate;
             }
         }
 
@@ -438,7 +436,17 @@ export class SchedulingEngine {
                 break;
 
             case 'weekly':
-                nextDate.setDate(nextDate.getDate() + (7 * pattern.interval));
+                // For weekly schedules with multiple days, advance by 1 day at a time
+                // to find all matching days within the same week
+                if (pattern.daysOfWeek && pattern.daysOfWeek.length > 1) {
+                    console.log(`SchedulingEngine.getNextRecurrenceDate: Advancing from ${currentDate.toISOString()} (day ${currentDate.getDay()}) to next day`);
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    console.log(`SchedulingEngine.getNextRecurrenceDate: Next date: ${nextDate.toISOString()} (day ${nextDate.getDay()})`);
+                } else {
+                    // For single day weekly schedules, advance by full weeks
+                    console.log(`SchedulingEngine.getNextRecurrenceDate: Advancing by ${7 * pattern.interval} days for single day weekly schedule`);
+                    nextDate.setDate(nextDate.getDate() + (7 * pattern.interval));
+                }
                 break;
 
             case 'monthly':

@@ -164,11 +164,35 @@ function getClassColor(classId: string): string {
 async function loadSchedules() {
     loading.value = true;
     try {
+        console.log('loadSchedules: currentDate.value =', currentDate.value);
+        console.log('loadSchedules: currentDate.value.getDay() =', currentDate.value.getDay());
+
         const startDate = new Date(currentDate.value);
         startDate.setDate(startDate.getDate() - startDate.getDay()); // Start of week
+        startDate.setHours(0, 0, 0, 0); // Set to start of day
 
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + 6); // End of week
+        endDate.setHours(23, 59, 59, 999); // Set to end of day
+
+        console.log('loadSchedules: Calculated date range:', {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            startDateDay: startDate.getDay(),
+            endDateDay: endDate.getDay(),
+            startDateLocal: startDate.toString(),
+            endDateLocal: endDate.toString()
+        });
+
+        // Debug: Check if September 28th is in the range
+        const sept28 = new Date('2025-09-28T12:00:00.000Z');
+        console.log('loadSchedules: Checking if Sept 28 schedule is in range:', {
+            sept28: sept28.toISOString(),
+            sept28Day: sept28.getDay(),
+            isInRange: sept28 >= startDate && sept28 <= endDate,
+            startDateCheck: sept28 >= startDate,
+            endDateCheck: sept28 <= endDate
+        });
 
         const result = await ScheduleService.getSchedulesByDateRange(startDate.toISOString(), endDate.toISOString());
 
@@ -176,25 +200,36 @@ async function loadSchedules() {
             schedules.value = result;
             console.log(`Loaded ${result.length} schedules for week view`);
 
-            // Debug: Check what we actually got
-            const withStartDateTime = result.filter(s => s.startDateTime);
-            const withoutStartDateTime = result.filter(s => !s.startDateTime);
-            console.log(`Schedules WITH startDateTime: ${withStartDateTime.length}`);
-            console.log(`Schedules WITHOUT startDateTime: ${withoutStartDateTime.length}`);
+            // Debug: Check for Sunday schedules specifically
+            const sundaySchedules = result.filter(s => {
+                if (s.startDateTime) {
+                    const scheduleDate = new Date(s.startDateTime);
+                    return scheduleDate.getDay() === 0; // Sunday
+                }
+                return false;
+            });
+            console.log(`Sunday schedules: ${sundaySchedules.length}`);
+            if (sundaySchedules.length > 0) {
+                console.log('Sunday schedule details:', sundaySchedules.map(s => ({
+                    id: s._id,
+                    startDateTime: s.startDateTime,
+                    dayOfWeek: new Date(s.startDateTime).getDay(),
+                    className: (s as any).class?.name,
+                    isRecurring: s.isRecurring,
+                    isRecurringInstance: (s as any).isRecurringInstance
+                })));
+            }
 
-            if (withStartDateTime.length > 0) {
-                console.log('First schedule with startDateTime:', {
-                    id: withStartDateTime[0]._id,
-                    isRecurring: withStartDateTime[0].isRecurring,
-                    isRecurringInstance: (withStartDateTime[0] as any).isRecurringInstance,
-                    startDateTime: withStartDateTime[0].startDateTime,
-                    endDate: withStartDateTime[0].endDate,
-                    className: (withStartDateTime[0] as any).class?.name
-                });
-            }
-            if (withoutStartDateTime.length > 0) {
-                console.log('First schedule without startDateTime:', withoutStartDateTime[0]);
-            }
+            // Debug: Check what days we have
+            const dayCounts: { [key: string]: number } = {};
+            result.forEach(s => {
+                if (s.startDateTime) {
+                    const day = new Date(s.startDateTime).getDay();
+                    const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day];
+                    dayCounts[dayName] = (dayCounts[dayName] || 0) + 1;
+                }
+            });
+            console.log('Schedule counts by day:', dayCounts);
         } else {
             schedules.value = [];
         }

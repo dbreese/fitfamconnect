@@ -528,7 +528,11 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
     console.log('findSchedulesByDateRange: Date range', {
         startDate: startDateObj.toISOString(),
         endDate: endDateObj.toISOString(),
-        extendedEndDate: extendedEndDateObj.toISOString()
+        extendedEndDate: extendedEndDateObj.toISOString(),
+        startDateDay: startDateObj.getDay(),
+        endDateDay: endDateObj.getDay(),
+        startDateDayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][startDateObj.getDay()],
+        endDateDayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][endDateObj.getDay()]
     });
 
     // Get all schedules that could potentially have instances in this date range
@@ -570,32 +574,21 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
         }))
     });
 
-    // Test the query step by step
-    console.log('findSchedulesByDateRange: Testing query components...');
-
-    // Test 1: Just find recurring schedules for this class
-    const recurringSchedules = await Schedule.find({
-        classId: '68be2b9f7f0bac2dc28348f1',
-        isRecurring: true
+    // Debug: Check for Sunday schedules specifically
+    const sundaySchedules = await Schedule.find({
+        classId: { $in: classIds.map((id) => id.toString()) },
+        $expr: {
+            $eq: [{ $dayOfWeek: '$startDateTime' }, 1] // Sunday is day 1 in MongoDB
+        }
     });
-    console.log('findSchedulesByDateRange: Recurring schedules for class', {
-        count: recurringSchedules.length,
-        schedules: recurringSchedules.map((s) => ({
+    console.log('findSchedulesByDateRange: Sunday schedules found', {
+        count: sundaySchedules.length,
+        schedules: sundaySchedules.map((s) => ({
             id: s._id,
+            isRecurring: s.isRecurring,
             startDateTime: s.startDateTime?.toISOString(),
-            endDate: s.endDate?.toISOString()
+            classId: s.classId
         }))
-    });
-
-    // Test 2: Test the date condition
-    const dateTestSchedules = await Schedule.find({
-        classId: '68be2b9f7f0bac2dc28348f1',
-        isRecurring: true,
-        startDateTime: { $lte: endDateObj }
-    });
-    console.log('findSchedulesByDateRange: Date condition test', {
-        count: dateTestSchedules.length,
-        endDateObj: endDateObj.toISOString()
     });
 
     const schedules = await Schedule.find(query).sort({ startDateTime: 1 });
@@ -606,9 +599,21 @@ async function findSchedulesByDateRange(user: IUser | undefined, startDate: stri
             id: s._id,
             isRecurring: s.isRecurring,
             startDateTime: s.startDateTime?.toISOString(),
-            classId: s.classId
+            classId: s.classId,
+            dayOfWeek: s.startDateTime ? s.startDateTime.getDay() : 'unknown'
         }))
     });
+
+    // Debug: Check what days we have in the results
+    const dayCounts: { [key: string]: number } = {};
+    schedules.forEach(s => {
+        if (s.startDateTime) {
+            const day = s.startDateTime.getDay();
+            const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day];
+            dayCounts[dayName] = (dayCounts[dayName] || 0) + 1;
+        }
+    });
+    console.log('findSchedulesByDateRange: Schedule counts by day:', dayCounts);
 
     // First enrich all schedules with class, location, and instructor details
     const enrichedSchedules = await Promise.all(
