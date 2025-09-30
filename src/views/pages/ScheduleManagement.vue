@@ -409,8 +409,9 @@ async function handleSubmit() {
             coachId: formData.value.coachId && formData.value.coachId.trim() ? formData.value.coachId : undefined,
             recurringPattern: formData.value.isRecurring
                 ? {
-                      ...formData.value.recurringPattern,
-                      interval: parseInt(formData.value.recurringPattern.interval)
+                      frequency: formData.value.recurringPattern.frequency,
+                      interval: parseInt(formData.value.recurringPattern.interval),
+                      daysOfWeek: formData.value.recurringPattern.daysOfWeek
                   }
                 : undefined
         };

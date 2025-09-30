@@ -14,6 +14,9 @@ This file contains information on how scheduling works, including rules and test
     - duration in minutes
 - Schedules can be updated and created.
     - therefore, on an update, we shouldn't consider a conflict with itself.
+- Schedules can have an interval which indicates how often the frequency occurs. 
+    - For example, a WEEK with an interval of 2 indicates every 2 weeks.
+    - 
 
 # Test Scenarios
 - Use a real database test approach instead of mocking the database. I want the database to be tested too. See billing/__tests__/engine.test.ts as an example.
@@ -116,6 +119,22 @@ Test Steps:
 
 Results:
 - No conflict occurs.
+
+## Two classes scheduled for the same date, but different intervals.
+Test Steps:
+- Schedule a recurring class starting Monday, Sept 1 at 1pm, that occurs every 2 weeks.
+- Schedule a recurring clsas starting Monday, Sept 8 at 1pm, that occurs every 2 weeks.
+
+Results:
+- No conflict occurs.
+
+## Scheduled 1-time on Monday, then recurring schedule on Mondays, both for 1pm.
+Test Steps:
+- Schedule a 1-time class for Monday, Sept 29 at 1pm.
+- Schedule a recurring class that starts on Sept 28, but occurs every Monday at 1pm.
+
+Results:
+- Conflict with the recurring class.
 
 ## TODO
 - end date scenarios on recurring schedules
