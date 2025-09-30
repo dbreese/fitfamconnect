@@ -1,5 +1,5 @@
 # Billing Management
-This docuemtn contains information about billing logic and rules for the application.
+This document contains information about billing logic and rules for the application.
 
 # Billing Logic
 
