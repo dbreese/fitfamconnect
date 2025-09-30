@@ -1,4 +1,4 @@
-import { BillingEngine } from '../billingEngine';
+import { MonthlyBillingEngine } from '../monthlyEngine';
 import { Member } from '../../db/member';
 import { Plan } from '../../db/plan';
 import { Membership } from '../../db/membership';
@@ -25,7 +25,7 @@ afterEach(async () => {
     await Gym.deleteMany({});
 });
 
-describe('BillingEngine', () => {
+describe('MonthlyBillingEngine', () => {
     describe('Member joins Aug 31st, monthly billing, start date Sept 1st', () => {
         it('should bill $100 on Sept 1st and Oct 1st', async () => {
             // Setup
@@ -37,7 +37,7 @@ describe('BillingEngine', () => {
             await createTestMembership(member._id, monthlyPlan._id, new Date('2024-09-01'));
 
             // Test Sept 1st billing
-            const sept1Result = await BillingEngine.generateBillingCharges(
+            const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-01'),
                 new Date('2024-09-30')
@@ -51,7 +51,7 @@ describe('BillingEngine', () => {
             await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2024-09-01'));
 
             // Test Oct 1st billing
-            const oct1Result = await BillingEngine.generateBillingCharges(
+            const oct1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-10-01'),
                 new Date('2024-10-31')
@@ -73,7 +73,7 @@ describe('BillingEngine', () => {
             await createTestMembership(member._id, monthlyPlan._id, new Date('2024-09-15'));
 
             // Test Sept 1st billing (member not active yet)
-            const sept1Result = await BillingEngine.generateBillingCharges(
+            const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-01'),
                 new Date('2024-09-30')
@@ -82,7 +82,7 @@ describe('BillingEngine', () => {
             expect(sept1Result.charges).toHaveLength(0); // No charges
 
             // Test Oct 1st billing (should include regular + pro-rated)
-            const oct1Result = await BillingEngine.generateBillingCharges(
+            const oct1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-10-01'),
                 new Date('2024-10-31')
@@ -113,7 +113,7 @@ describe('BillingEngine', () => {
             await createTestMembership(member._id, weeklyPlan._id, new Date('2024-09-01'));
 
             // Test Sept 1st billing
-            const sept1Result = await BillingEngine.generateBillingCharges(
+            const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-01'),
                 new Date('2024-09-07')
@@ -125,7 +125,7 @@ describe('BillingEngine', () => {
             // Simulate billing and test Sept 8th
             await simulateBillingCompletion(member._id, weeklyPlan._id, new Date('2024-09-01'));
 
-            const sept8Result = await BillingEngine.generateBillingCharges(
+            const sept8Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-08'),
                 new Date('2024-09-14')
@@ -147,7 +147,7 @@ describe('BillingEngine', () => {
             await createTestMembership(member._id, weeklyPlan._id, new Date('2024-09-04'));
 
             // Test Sept 1st billing (member not active yet)
-            const sept1Result = await BillingEngine.generateBillingCharges(
+            const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-01'),
                 new Date('2024-09-07')
@@ -156,7 +156,7 @@ describe('BillingEngine', () => {
             expect(sept1Result.charges).toHaveLength(0);
 
             // Test Sept 8th billing (should include regular + pro-rated)
-            const sept8Result = await BillingEngine.generateBillingCharges(
+            const sept8Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-08'),
                 new Date('2024-09-14')
@@ -188,7 +188,7 @@ describe('BillingEngine', () => {
             const membership1 = await createTestMembership(member._id, plan100._id, new Date('2024-09-01'));
 
             // Test Sept 1st billing
-            const sept1Result = await BillingEngine.generateBillingCharges(
+            const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-01'),
                 new Date('2024-09-30')
@@ -205,7 +205,7 @@ describe('BillingEngine', () => {
             await createTestMembership(member._id, plan75._id, new Date('2024-10-01'));
 
             // Test Oct 1st billing (should only have new plan, old plan was already billed)
-            const oct1Result = await BillingEngine.generateBillingCharges(
+            const oct1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-10-01'),
                 new Date('2024-10-31')
@@ -233,7 +233,7 @@ describe('BillingEngine', () => {
             );
 
             // Test Sept 1st billing
-            const sept1Result = await BillingEngine.generateBillingCharges(
+            const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-01'),
                 new Date('2024-09-30')
@@ -246,7 +246,7 @@ describe('BillingEngine', () => {
             await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2024-09-01'));
 
             // Test Oct 1st billing (should be empty because plan ended and was already billed)
-            const oct1Result = await BillingEngine.generateBillingCharges(
+            const oct1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-10-01'),
                 new Date('2024-10-31')
@@ -272,7 +272,7 @@ describe('BillingEngine', () => {
             );
 
             // Test Sept 1st billing (member not active yet)
-            const sept1Result = await BillingEngine.generateBillingCharges(
+            const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-01'),
                 new Date('2024-09-30')
@@ -281,7 +281,7 @@ describe('BillingEngine', () => {
             expect(sept1Result.charges).toHaveLength(0);
 
             // Test Oct 1st billing (should include pro-rated for 6 days)
-            const oct1Result = await BillingEngine.generateBillingCharges(
+            const oct1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-10-01'),
                 new Date('2024-10-31')
@@ -318,7 +318,7 @@ describe('BillingEngine', () => {
             );
 
             // Test Sept 1st billing (member not active yet)
-            const sept1Result = await BillingEngine.generateBillingCharges(
+            const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-01'),
                 new Date('2024-09-30')
@@ -327,7 +327,7 @@ describe('BillingEngine', () => {
             expect(sept1Result.charges).toHaveLength(0);
 
             // Test Oct 1st billing (should include pro-rated for both plans)
-            const oct1Result = await BillingEngine.generateBillingCharges(
+            const oct1Result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-10-01'),
                 new Date('2024-10-31')
@@ -361,7 +361,7 @@ describe('BillingEngine', () => {
             await createTestCharge(member._id, 200, 'Already billed', new Date('2024-09-05'), true); // $2 - already billed
 
             // Test Sept billing
-            const result = await BillingEngine.generateBillingCharges(
+            const result = await MonthlyBillingEngine.generateBillingCharges(
                 gym._id,
                 new Date('2024-09-01'),
                 new Date('2024-09-30')
@@ -384,7 +384,7 @@ describe('BillingEngine', () => {
                 const yearlyPlan = await createTestPlan('Yearly Plan', 120000, 'yearly', gym._id); // $1200
 
                 // Test Sept 1st billing (member not active yet)
-                const sept1Result = await BillingEngine.generateBillingCharges(
+                const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-09-01'),
                     new Date('2024-09-30')
@@ -396,7 +396,7 @@ describe('BillingEngine', () => {
                 await createTestMembership(member._id, yearlyPlan._id, new Date('2024-09-15'));
 
                 // Test Oct 1st billing (should include yearly charge)
-                const oct1Result = await BillingEngine.generateBillingCharges(
+                const oct1Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-10-01'),
                     new Date('2024-10-31')
@@ -411,14 +411,14 @@ describe('BillingEngine', () => {
                 await simulateBillingCompletion(member._id, yearlyPlan._id, new Date('2024-10-01'));
 
                 // Test following Aug and Sept 1st billing
-                const nextAugResult = await BillingEngine.generateBillingCharges(
+                const nextAugResult = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2025-08-01'),
                     new Date('2025-08-31')
                 );
                 expect(nextAugResult.charges).toHaveLength(0);
 
-                const nextSeptResult = await BillingEngine.generateBillingCharges(
+                const nextSeptResult = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2025-09-01'),
                     new Date('2025-09-31')
@@ -428,7 +428,7 @@ describe('BillingEngine', () => {
                 expect(nextSeptResult.charges[0].type).toBe('recurring-plan');
                 expect(nextSeptResult.charges[0].memberName).toBe('John Yearly');
 
-                const nextOctResult = await BillingEngine.generateBillingCharges(
+                const nextOctResult = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2025-08-01'),
                     new Date('2025-08-31')
@@ -448,7 +448,7 @@ describe('BillingEngine', () => {
                 await createTestMembership(member._id, yearlyPlan._id, new Date('2024-01-01'));
 
                 // Test Jan billing (should charge)
-                const jan1Result = await BillingEngine.generateBillingCharges(
+                const jan1Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-01-01'),
                     new Date('2024-01-31')
@@ -462,7 +462,7 @@ describe('BillingEngine', () => {
                 await simulateBillingCompletion(member._id, yearlyPlan._id, new Date('2024-01-01'));
 
                 // Test subsequent months in same year (should not charge)
-                const feb1Result = await BillingEngine.generateBillingCharges(
+                const feb1Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-02-01'),
                     new Date('2024-02-29')
@@ -470,7 +470,7 @@ describe('BillingEngine', () => {
 
                 expect(feb1Result.charges).toHaveLength(0); // No double billing
 
-                const jun1Result = await BillingEngine.generateBillingCharges(
+                const jun1Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-06-01'),
                     new Date('2024-06-30')
@@ -478,7 +478,7 @@ describe('BillingEngine', () => {
 
                 expect(jun1Result.charges).toHaveLength(0); // Still no billing
 
-                const dec1Result = await BillingEngine.generateBillingCharges(
+                const dec1Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-12-01'),
                     new Date('2024-12-31')
@@ -501,7 +501,7 @@ describe('BillingEngine', () => {
                 await simulateBillingCompletion(member._id, yearlyPlan._id, new Date('2024-01-15'));
 
                 // Test billing before one year is up (Dec 2024) - should not charge
-                const dec2024Result = await BillingEngine.generateBillingCharges(
+                const dec2024Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-12-01'),
                     new Date('2024-12-31')
@@ -510,7 +510,7 @@ describe('BillingEngine', () => {
                 expect(dec2024Result.charges).toHaveLength(0);
 
                 // Test billing exactly one year later (Jan 15, 2025 falls in Jan 1-31 period)
-                const jan2025Result = await BillingEngine.generateBillingCharges(
+                const jan2025Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2025-01-01'),
                     new Date('2025-01-31')
@@ -521,7 +521,7 @@ describe('BillingEngine', () => {
                 expect(jan2025Result.charges[0].type).toBe('recurring-plan');
 
                 // Test billing in Feb 2025 (should not charge since Jan 15 was the renewal date)
-                const feb2025Result = await BillingEngine.generateBillingCharges(
+                const feb2025Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2025-02-01'),
                     new Date('2025-02-28')
@@ -542,7 +542,7 @@ describe('BillingEngine', () => {
                 await createTestMembership(member._id, yearlyPlan._id, new Date('2024-03-10'));
 
                 // Test March billing (plan starts in this period - should charge)
-                const mar2024Result = await BillingEngine.generateBillingCharges(
+                const mar2024Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-03-01'),
                     new Date('2024-03-31')
@@ -556,7 +556,7 @@ describe('BillingEngine', () => {
                 await simulateBillingCompletion(member._id, yearlyPlan._id, new Date('2024-03-10'));
 
                 // Test billing throughout the rest of 2024 (should not charge)
-                const jun2024Result = await BillingEngine.generateBillingCharges(
+                const jun2024Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-06-01'),
                     new Date('2024-06-30')
@@ -565,7 +565,7 @@ describe('BillingEngine', () => {
                 expect(jun2024Result.charges).toHaveLength(0);
 
                 // Test renewal billing in March 2025 (March 10, 2025 falls in March 1-31 period)
-                const mar2025Result = await BillingEngine.generateBillingCharges(
+                const mar2025Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2025-03-01'),
                     new Date('2025-03-31')
@@ -596,7 +596,7 @@ describe('BillingEngine', () => {
                 await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2024-08-01'));
 
                 // Test Sept 1st billing (member is active on Sept 1st, should be billed)
-                const sept1Result = await BillingEngine.generateBillingCharges(
+                const sept1Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-09-01'),
                     new Date('2024-09-30')
@@ -611,7 +611,7 @@ describe('BillingEngine', () => {
                 await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2024-09-01'));
 
                 // Test Oct 1st billing (member is no longer active, should not be billed)
-                const oct1Result = await BillingEngine.generateBillingCharges(
+                const oct1Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-10-01'),
                     new Date('2024-10-31')
@@ -637,7 +637,7 @@ describe('BillingEngine', () => {
                 );
 
                 // Test Jan billing (should charge since membership is active)
-                const jan2024Result = await BillingEngine.generateBillingCharges(
+                const jan2024Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-01-01'),
                     new Date('2024-01-31')
@@ -649,7 +649,7 @@ describe('BillingEngine', () => {
                 await createTestCharge(member._id, 120000, 'Short Term Yearly', new Date('2024-01-01'), true, yearlyPlan._id);
 
                 // Test billing after membership ended (should not charge)
-                const aug2024Result = await BillingEngine.generateBillingCharges(
+                const aug2024Result = await MonthlyBillingEngine.generateBillingCharges(
                     gym._id,
                     new Date('2024-08-01'),
                     new Date('2024-08-31')

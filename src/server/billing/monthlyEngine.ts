@@ -29,7 +29,7 @@ export interface BillingResult {
     endDate: Date;
 }
 
-export class BillingEngine {
+export class MonthlyBillingEngine {
     /**
      * Generate billing charges for a given period
      */

@@ -9,7 +9,7 @@ import { Plan } from '../db/plan';
 import { Charge } from '../db/charge';
 import { Billing, type IBilling } from '../db/billing';
 import type { ServerResponse } from '../../shared/ServerResponse';
-import { BillingEngine } from './billingEngine';
+import { MonthlyBillingEngine } from './monthlyEngine';
 
 // Helper class for creating server responses
 class ResponseHelper {
@@ -441,7 +441,7 @@ router.post(
             }
 
             const gym = await getCurrentUserGym(req.user);
-            const engineResult = await BillingEngine.generateBillingCharges(gym._id.toString(), start, end);
+            const engineResult = await MonthlyBillingEngine.generateBillingCharges(gym._id.toString(), start, end);
 
             // Convert engine result to legacy format for compatibility
             const preview = convertEngineResultToPreview(engineResult);
@@ -645,7 +645,7 @@ router.delete(
 );
 
 /**
- * Convert BillingEngine result to legacy preview format for UI compatibility
+ * Convert MonthlyBillingEngine result to legacy preview format for UI compatibility
  */
 function convertEngineResultToPreview(engineResult: any) {
     // Group charges by member
@@ -723,7 +723,7 @@ async function commitBillingRunWithEngine(
     console.log(`billingService.commitBillingRunWithEngine: Created billing record ${savedBilling._id}`);
 
     // Use engine to create charge records
-    const createdCharges = await BillingEngine.createChargeRecords(charges, savedBilling._id.toString());
+    const createdCharges = await MonthlyBillingEngine.createChargeRecords(charges, savedBilling._id.toString());
 
     return {
         billingId: savedBilling._id,

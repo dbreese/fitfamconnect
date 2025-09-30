@@ -156,7 +156,7 @@ A billing run is a single instance of a billing process. It is created by the ow
 All billing records should serve as audit trails to see what was charged. No records should ever be updated once created.
 
 # Code Location
-- I want the billing logic to be located in /src/server/billing/billingEngine.ts.
+- I want the billing logic to be located in /src/server/billing/monthlyEngine.ts.
 - We need unit tests for all of the above scenarios.
 - Keep unit tests updated that cover at least the above scenarios.
 
