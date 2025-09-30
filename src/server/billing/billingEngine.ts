@@ -305,6 +305,19 @@ export class BillingEngine {
             return false;
         }
 
+        // If we have a nextBilledDate, use it for more accurate billing decisions
+        if (membership.nextBilledDate) {
+            const nextBillDate = new Date(membership.nextBilledDate);
+
+            // If the next bill date is after the end of the billing period, don't bill yet
+            // Add a small buffer (2 days) to handle edge cases like leap years
+            const twoDaysAfterEnd = new Date(endDate);
+            twoDaysAfterEnd.setDate(twoDaysAfterEnd.getDate() + 2);
+
+            return nextBillDate > twoDaysAfterEnd;
+        }
+
+        // Fallback to the old logic if nextBilledDate is not available
         const lastBilled = new Date(membership.lastBilledDate);
 
         // Check based on plan frequency
@@ -607,12 +620,52 @@ export class BillingEngine {
     }
 
     /**
-     * Update membership lastBilledDate after successful billing
+     * Calculate the next billing date based on the plan's recurring period
      */
-    static async updateMembershipBillingDate(membershipId: string, billingDate: Date): Promise<void> {
-        await Membership.findByIdAndUpdate(membershipId, {
+    private static calculateNextBillingDate(billingDate: Date, recurringPeriod: string): Date {
+        // Create a new date to avoid mutating the original
+        const nextDate = new Date(billingDate.getTime());
+
+        switch (recurringPeriod?.toLowerCase()) {
+            case 'weekly':
+                nextDate.setUTCDate(nextDate.getUTCDate() + 7);
+                break;
+            case 'monthly':
+                nextDate.setUTCMonth(nextDate.getUTCMonth() + 1);
+                break;
+            case 'quarterly':
+                nextDate.setUTCMonth(nextDate.getUTCMonth() + 3);
+                break;
+            case 'yearly':
+            case 'annual':
+                nextDate.setUTCFullYear(nextDate.getUTCFullYear() + 1);
+                break;
+            default:
+                // Default to monthly if unknown
+                nextDate.setUTCMonth(nextDate.getUTCMonth() + 1);
+                break;
+        }
+
+        return nextDate;
+    }
+
+    /**
+     * Update membership lastBilledDate and nextBilledDate after successful billing
+     */
+    static async updateMembershipBillingDate(membershipId: string, billingDate: Date, planId?: string): Promise<void> {
+        const updateData: any = {
             lastBilledDate: billingDate
-        });
+        };
+
+        // If we have a plan ID, calculate the next billing date
+        if (planId) {
+            const plan = await Plan.findById(planId);
+            if (plan && plan.recurringPeriod) {
+                updateData.nextBilledDate = this.calculateNextBillingDate(billingDate, plan.recurringPeriod);
+            }
+        }
+
+        await Membership.findByIdAndUpdate(membershipId, updateData);
     }
 
     /**
@@ -653,9 +706,9 @@ export class BillingEngine {
                 await newCharge.save();
                 createdCount++;
 
-                // Update membership lastBilledDate
+                // Update membership lastBilledDate and nextBilledDate
                 if (charge.membershipId) {
-                    await this.updateMembershipBillingDate(charge.membershipId, new Date());
+                    await this.updateMembershipBillingDate(charge.membershipId, new Date(), charge.planId);
                 }
             }
         }

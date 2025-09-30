@@ -407,6 +407,9 @@ describe('BillingEngine', () => {
                 expect(oct1Result.charges[0].type).toBe('recurring-plan');
                 expect(oct1Result.charges[0].memberName).toBe('John Yearly');
 
+                // Simulate billing completion
+                await simulateBillingCompletion(member._id, yearlyPlan._id, new Date('2024-10-01'));
+
                 // Test following Aug and Sept 1st billing
                 const nextAugResult = await BillingEngine.generateBillingCharges(
                     gym._id,
@@ -776,8 +779,47 @@ async function createTestCharge(
 }
 
 async function simulateBillingCompletion(memberId: string, planId: string, billingDate: Date): Promise<void> {
+    // Get the plan to calculate next billing date
+    const plan = await Plan.findById(planId);
+    let nextBilledDate: Date | undefined;
+
+    if (plan && plan.recurringPeriod) {
+        nextBilledDate = calculateNextBillingDate(billingDate, plan.recurringPeriod);
+    }
+
+    const updateData: any = { lastBilledDate: billingDate };
+    if (nextBilledDate) {
+        updateData.nextBilledDate = nextBilledDate;
+    }
+
     await Membership.findOneAndUpdate(
         { memberId, planId },
-        { lastBilledDate: billingDate }
+        updateData
     );
+}
+
+function calculateNextBillingDate(billingDate: Date, recurringPeriod: string): Date {
+    const nextDate = new Date(billingDate.getTime());
+
+    switch (recurringPeriod?.toLowerCase()) {
+        case 'weekly':
+            nextDate.setUTCDate(nextDate.getUTCDate() + 7);
+            break;
+        case 'monthly':
+            nextDate.setUTCMonth(nextDate.getUTCMonth() + 1);
+            break;
+        case 'quarterly':
+            nextDate.setUTCMonth(nextDate.getUTCMonth() + 3);
+            break;
+        case 'yearly':
+        case 'annual':
+            nextDate.setUTCFullYear(nextDate.getUTCFullYear() + 1);
+            break;
+        default:
+            // Default to monthly if unknown
+            nextDate.setUTCMonth(nextDate.getUTCMonth() + 1);
+            break;
+    }
+
+    return nextDate;
 }
