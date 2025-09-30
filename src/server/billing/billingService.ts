@@ -10,6 +10,7 @@ import { Charge } from '../db/charge';
 import { Billing, type IBilling } from '../db/billing';
 import type { ServerResponse } from '../../shared/ServerResponse';
 import { MonthlyBillingEngine } from './monthlyEngine';
+import { DailyBillingEngine } from './dailyEngine';
 
 // Helper class for creating server responses
 class ResponseHelper {
@@ -441,10 +442,12 @@ router.post(
             }
 
             const gym = await getCurrentUserGym(req.user);
-            const engineResult = await MonthlyBillingEngine.generateBillingCharges(gym._id.toString(), start, end);
+
+            // Use daily billing engine to generate preview for the date range
+            const engineResult = await DailyBillingEngine.generateDailyBillingChargesForRange(gym._id.toString(), start, end);
 
             // Convert engine result to legacy format for compatibility
-            const preview = convertEngineResultToPreview(engineResult);
+            const preview = convertDailyRangeEngineResultToPreview(engineResult);
 
             console.log('billingService.POST /billing/preview: Response sent successfully');
             res.status(200).json(ResponseHelper.success(preview, 'Billing preview generated successfully'));
@@ -643,6 +646,63 @@ router.delete(
         }
     }
 );
+
+/**
+ * Convert DailyBillingEngine range result to legacy preview format for UI compatibility
+ */
+function convertDailyRangeEngineResultToPreview(engineResult: any) {
+    // Group charges by member
+    const memberChargeGroups = new Map();
+
+    engineResult.allCharges.forEach((charge: any) => {
+        const memberId = charge.memberId;
+        if (!memberChargeGroups.has(memberId)) {
+            memberChargeGroups.set(memberId, {
+                memberId,
+                memberName: charge.memberName,
+                charges: [],
+                subtotal: 0
+            });
+        }
+
+        const group = memberChargeGroups.get(memberId);
+        group.charges.push({
+            type: charge.type,
+            chargeId: charge.chargeId,
+            memberId: charge.memberId,
+            planId: charge.planId,
+            amount: charge.amount,
+            description: charge.note,
+            date: charge.chargeDate
+        });
+        group.subtotal += charge.amount;
+    });
+
+    const groupedCharges = Array.from(memberChargeGroups.values()).sort((a, b) =>
+        a.memberName.localeCompare(b.memberName)
+    );
+
+    return {
+        startDate: engineResult.startDate,
+        endDate: engineResult.endDate,
+        charges: engineResult.allCharges.map((c: any) => ({
+            type: c.type,
+            chargeId: c.chargeId,
+            memberId: c.memberId,
+            planId: c.planId,
+            amount: c.amount,
+            description: c.note,
+            date: c.chargeDate
+        })),
+        groupedCharges,
+        totalAmount: engineResult.summary.totalAmount,
+        summary: {
+            recurringPlans: engineResult.summary.recurringPlans,
+            oneTimeCharges: engineResult.summary.oneTimeCharges,
+            totalCharges: engineResult.summary.totalCharges
+        }
+    };
+}
 
 /**
  * Convert MonthlyBillingEngine result to legacy preview format for UI compatibility

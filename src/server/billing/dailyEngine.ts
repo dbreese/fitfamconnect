@@ -26,13 +26,98 @@ export interface DailyBillingResult {
     billingDate: Date;
 }
 
+export interface DailyBillingRangeResult {
+    chargesByDate: Map<string, DailyBillingChargeWithMeta[]>;
+    allCharges: DailyBillingChargeWithMeta[];
+    summary: {
+        recurringPlans: number;
+        oneTimeCharges: number;
+        totalCharges: number;
+        totalAmount: number;
+        daysProcessed: number;
+    };
+    startDate: Date;
+    endDate: Date;
+}
+
 export class DailyBillingEngine {
     /**
-     * Generate billing charges for a specific date (daily billing)
+     * Generate billing charges for a date range (iterates day-by-day)
+     * This is used for batch billing when catching up on multiple days
      */
-    static async generateDailyBillingCharges(
+    static async generateDailyBillingChargesForRange(
         gymId: string,
-        billingDate: Date
+        startDate: Date,
+        endDate: Date
+    ): Promise<DailyBillingRangeResult> {
+        // Normalize dates to midnight UTC
+        const normalizedStart = new Date(Date.UTC(
+            startDate.getUTCFullYear(),
+            startDate.getUTCMonth(),
+            startDate.getUTCDate()
+        ));
+
+        const normalizedEnd = new Date(Date.UTC(
+            endDate.getUTCFullYear(),
+            endDate.getUTCMonth(),
+            endDate.getUTCDate()
+        ));
+
+        // Fetch members once for the entire range (optimization)
+        const members = await Member.find({ gymId, status: 'approved' });
+
+        const chargesByDate = new Map<string, DailyBillingChargeWithMeta[]>();
+        const allCharges: DailyBillingChargeWithMeta[] = [];
+        let daysProcessed = 0;
+
+        // Iterate through each day in the range
+        let currentDate = new Date(normalizedStart);
+
+        while (currentDate <= normalizedEnd) {
+            // Generate charges for this specific day, passing in pre-fetched members
+            const dayResult = await this.generateDailyBillingCharges(gymId, new Date(currentDate), members);
+
+            // Store charges by date
+            const dateKey = currentDate.toISOString().split('T')[0];
+            chargesByDate.set(dateKey, dayResult.charges);
+
+            // Accumulate all charges
+            allCharges.push(...dayResult.charges);
+
+            daysProcessed++;
+
+            // Move to next day
+            currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+        }
+
+        // Calculate totals
+        const totalAmount = allCharges.reduce((sum, charge) => sum + charge.amount, 0);
+        const recurringPlans = allCharges.filter(c => c.type === 'recurring-plan').length;
+        const oneTimeCharges = allCharges.filter(c => c.type === 'one-time-charge').length;
+
+        return {
+            chargesByDate,
+            allCharges,
+            summary: {
+                recurringPlans,
+                oneTimeCharges,
+                totalCharges: allCharges.length,
+                totalAmount,
+                daysProcessed
+            },
+            startDate: normalizedStart,
+            endDate: normalizedEnd
+        };
+    }
+
+    /**
+     * Generate billing charges for a specific date (daily billing)
+     * Private method - use generateDailyBillingChargesForRange for public API
+     */
+    private static async generateDailyBillingCharges(
+        gymId: string,
+        billingDate: Date,
+        members?: IMember[]
     ): Promise<DailyBillingResult> {
         // Normalize billing date to midnight UTC
         const normalizedBillingDate = new Date(Date.UTC(
@@ -41,12 +126,12 @@ export class DailyBillingEngine {
             billingDate.getUTCDate()
         ));
 
-        // Get all approved members for this gym
-        const members = await Member.find({ gymId, status: 'approved' });
+        // Get all approved members for this gym (if not provided)
+        const gymMembers = members || await Member.find({ gymId, status: 'approved' });
 
         // Get all charges (one-time charges and recurring charges)
-        const oneTimeCharges = await this.getOneTimeCharges(members, normalizedBillingDate);
-        const recurringCharges = await this.getRecurringCharges(members, normalizedBillingDate);
+        const oneTimeCharges = await this.getOneTimeCharges(gymMembers, normalizedBillingDate);
+        const recurringCharges = await this.getRecurringCharges(gymMembers, normalizedBillingDate);
 
         const allCharges = [...oneTimeCharges, ...recurringCharges];
         const totalAmount = allCharges.reduce((sum, charge) => sum + charge.amount, 0);
