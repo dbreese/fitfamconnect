@@ -746,15 +746,15 @@ async function createTestCharge(
 async function simulateBillingCompletion(memberId: string, planId: string, billingDate: Date): Promise<void> {
     // Get the plan to calculate next billing date
     const plan = await Plan.findById(planId);
-    let nextBilledDate: Date | undefined;
+    let nextBillDate: Date | undefined;
 
     if (plan && plan.recurringPeriod) {
-        nextBilledDate = calculateNextBillingDate(billingDate, plan.recurringPeriod);
+        nextBillDate = calculateNextBillingDate(billingDate, plan.recurringPeriod);
     }
 
     const updateData: any = { lastBilledDate: billingDate };
-    if (nextBilledDate) {
-        updateData.nextBilledDate = nextBilledDate;
+    if (nextBillDate) {
+        updateData.nextBillDate = nextBillDate;
     }
 
     await Membership.findOneAndUpdate(

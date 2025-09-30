@@ -49,10 +49,10 @@ describe('DailyBillingEngine', () => {
             // Simulate billing completion
             await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2025-09-01'));
 
-            // Verify nextBilledDate was set correctly (should be Oct 1)
+            // Verify nextBillDate was set correctly (should be Oct 1)
             let membership = await Membership.findOne({ memberId: member._id, planId: monthlyPlan._id });
-            expect(membership?.nextBilledDate).toBeDefined();
-            expect(membership?.nextBilledDate?.getTime()).toBe(new Date('2025-10-01').getTime());
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2025-10-01').getTime());
 
             // Test Sept 2nd billing (should be $0)
             const sept2Result = await DailyBillingEngine.generateDailyBillingCharges(
@@ -103,10 +103,10 @@ describe('DailyBillingEngine', () => {
             // Simulate billing completion
             await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2025-09-01'));
 
-            // Verify nextBilledDate was set correctly (should be Oct 1)
+            // Verify nextBillDate was set correctly (should be Oct 1)
             let membership = await Membership.findOne({ memberId: member._id, planId: monthlyPlan._id });
-            expect(membership?.nextBilledDate).toBeDefined();
-            expect(membership?.nextBilledDate?.getTime()).toBe(new Date('2025-10-01').getTime());
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2025-10-01').getTime());
 
             // Test Sept 2nd billing (should be $0)
             const sept2Result = await DailyBillingEngine.generateDailyBillingCharges(
@@ -157,10 +157,10 @@ describe('DailyBillingEngine', () => {
             // Simulate billing and test Sept 8th
             await simulateBillingCompletion(member._id, weeklyPlan._id, new Date('2025-09-01'));
 
-            // Verify nextBilledDate was set correctly (should be Sept 8)
+            // Verify nextBillDate was set correctly (should be Sept 8)
             let membership = await Membership.findOne({ memberId: member._id, planId: weeklyPlan._id });
-            expect(membership?.nextBilledDate).toBeDefined();
-            expect(membership?.nextBilledDate?.getTime()).toBe(new Date('2025-09-08').getTime());
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2025-09-08').getTime());
 
             const sept8Result = await DailyBillingEngine.generateDailyBillingCharges(
                 gym._id,
@@ -173,10 +173,10 @@ describe('DailyBillingEngine', () => {
             // Simulate billing and test Sept 15th
             await simulateBillingCompletion(member._id, weeklyPlan._id, new Date('2025-09-08'));
 
-            // Verify nextBilledDate was set correctly (should be Sept 15)
+            // Verify nextBillDate was set correctly (should be Sept 15)
             membership = await Membership.findOne({ memberId: member._id, planId: weeklyPlan._id });
-            expect(membership?.nextBilledDate).toBeDefined();
-            expect(membership?.nextBilledDate?.getTime()).toBe(new Date('2025-09-15').getTime());
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2025-09-15').getTime());
 
             const sept15Result = await DailyBillingEngine.generateDailyBillingCharges(
                 gym._id,
@@ -189,10 +189,10 @@ describe('DailyBillingEngine', () => {
             // Simulate billing and test Sept 22nd
             await simulateBillingCompletion(member._id, weeklyPlan._id, new Date('2025-09-15'));
 
-            // Verify nextBilledDate was set correctly (should be Sept 22)
+            // Verify nextBillDate was set correctly (should be Sept 22)
             membership = await Membership.findOne({ memberId: member._id, planId: weeklyPlan._id });
-            expect(membership?.nextBilledDate).toBeDefined();
-            expect(membership?.nextBilledDate?.getTime()).toBe(new Date('2025-09-22').getTime());
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2025-09-22').getTime());
 
             const sept22Result = await DailyBillingEngine.generateDailyBillingCharges(
                 gym._id,
@@ -205,10 +205,10 @@ describe('DailyBillingEngine', () => {
             // Simulate billing and test Sept 29th
             await simulateBillingCompletion(member._id, weeklyPlan._id, new Date('2025-09-22'));
 
-            // Verify nextBilledDate was set correctly (should be Sept 29)
+            // Verify nextBillDate was set correctly (should be Sept 29)
             membership = await Membership.findOne({ memberId: member._id, planId: weeklyPlan._id });
-            expect(membership?.nextBilledDate).toBeDefined();
-            expect(membership?.nextBilledDate?.getTime()).toBe(new Date('2025-09-29').getTime());
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2025-09-29').getTime());
 
             const sept29Result = await DailyBillingEngine.generateDailyBillingCharges(
                 gym._id,
@@ -221,10 +221,10 @@ describe('DailyBillingEngine', () => {
             // Simulate billing and test Oct 6th
             await simulateBillingCompletion(member._id, weeklyPlan._id, new Date('2025-09-29'));
 
-            // Verify nextBilledDate was set correctly (should be Oct 6)
+            // Verify nextBillDate was set correctly (should be Oct 6)
             membership = await Membership.findOne({ memberId: member._id, planId: weeklyPlan._id });
-            expect(membership?.nextBilledDate).toBeDefined();
-            expect(membership?.nextBilledDate?.getTime()).toBe(new Date('2025-10-06').getTime());
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2025-10-06').getTime());
 
             const oct6Result = await DailyBillingEngine.generateDailyBillingCharges(
                 gym._id,
@@ -266,10 +266,10 @@ describe('DailyBillingEngine', () => {
             // Simulate billing completion
             await simulateBillingCompletion(member._id, yearlyPlan._id, new Date('2025-09-01'));
 
-            // Verify nextBilledDate was set correctly (should be Sept 1, 2026)
+            // Verify nextBillDate was set correctly (should be Sept 1, 2026)
             let membership = await Membership.findOne({ memberId: member._id, planId: yearlyPlan._id });
-            expect(membership?.nextBilledDate).toBeDefined();
-            expect(membership?.nextBilledDate?.getTime()).toBe(new Date('2026-09-01').getTime());
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2026-09-01').getTime());
 
             // Test Aug 31 next year (should be $0)
             const aug31Result = await DailyBillingEngine.generateDailyBillingCharges(
@@ -288,13 +288,29 @@ describe('DailyBillingEngine', () => {
             expect(sept1NextYearResult.charges).toHaveLength(1);
             expect(sept1NextYearResult.charges[0].amount).toBe(120000); // $1200
 
-            // Test all other days between start date and Sept 1 next year are $0
-            const randomDayResult = await DailyBillingEngine.generateDailyBillingCharges(
-                gym._id,
-                new Date('2026-05-15')
-            );
+            // Test ALL days between Sept 1, 2025 and Sept 1, 2026 to ensure $0 charges
+            // This is computationally intensive but ensures correctness
+            const startDate = new Date('2025-09-02'); // Day after first billing
+            const endDate = new Date('2026-08-31'); // Day before second billing
 
-            expect(randomDayResult.charges).toHaveLength(0);
+            let currentDate = new Date(startDate);
+            let daysChecked = 0;
+
+            while (currentDate <= endDate) {
+                const result = await DailyBillingEngine.generateDailyBillingCharges(
+                    gym._id,
+                    new Date(currentDate)
+                );
+
+                expect(result.charges).toHaveLength(0);
+                daysChecked++;
+
+                // Move to next day
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Verify we checked all 364 days (365 days total - 1 billing day on Sept 1, 2026)
+            expect(daysChecked).toBe(364);
         });
     });
 

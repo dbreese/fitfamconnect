@@ -50,7 +50,7 @@ Mongoose schemas will be stored in src/server/db.
   - startDate: When this plan assignment starts for the member
   - endDate: When this plan assignment ends (null/undefined = active/ongoing)
   - lastBilledDate: Last time this membership was billed
-  - nextBilledDate: Next scheduled billing date for this membership
+  - nextBillDate: Next scheduled billing date for this membership
   - createdAt: Record creation timestamp
   - updatedAt: Record last update timestamp
 
@@ -77,6 +77,7 @@ Mongoose schemas will be stored in src/server/db.
 - A location is owned by a single member who is as an "Owner" member type.
 - Each gym has a unique 6-alpha-numeric gym code that is randomly assigned to it. This code is used by members to join
   the gym.
+- lastBillingRunDate - The UTC date/time the last billing run was performed.
 
 # Location
 

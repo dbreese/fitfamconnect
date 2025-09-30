@@ -324,15 +324,15 @@ export class BillingEngine {
             return false;
         }
 
-        // If we have a nextBilledDate, use it for more accurate billing decisions
-        if (membership.nextBilledDate) {
-            const nextBillDate = new Date(membership.nextBilledDate);
+        // If we have a nextBillDate, use it for more accurate billing decisions
+        if (membership.nextBillDate) {
+            const nextBillDate = new Date(membership.nextBillDate);
 
             // If the next bill date is after the end of the billing period, don't bill yet
             return nextBillDate > endDate;
         }
 
-        // Fallback to the old logic if nextBilledDate is not available
+        // Fallback to the old logic if nextBillDate is not available
         const lastBilled = new Date(membership.lastBilledDate);
 
         // Check based on plan frequency
@@ -655,7 +655,7 @@ export class BillingEngine {
     }
 
     /**
-     * Update membership lastBilledDate and nextBilledDate after successful billing
+     * Update membership lastBilledDate and nextBillDate after successful billing
      */
     static async updateMembershipBillingDate(membershipId: string, billingDate: Date, planId?: string): Promise<void> {
         const updateData: any = {
@@ -666,7 +666,7 @@ export class BillingEngine {
         if (planId) {
             const plan = await Plan.findById(planId);
             if (plan && plan.recurringPeriod) {
-                updateData.nextBilledDate = this.calculateNextBillingDate(billingDate, plan.recurringPeriod);
+                updateData.nextBillDate = this.calculateNextBillingDate(billingDate, plan.recurringPeriod);
             }
         }
 
@@ -711,7 +711,7 @@ export class BillingEngine {
                 await newCharge.save();
                 createdCount++;
 
-                // Update membership lastBilledDate and nextBilledDate
+                // Update membership lastBilledDate and nextBillDate
                 if (charge.membershipId) {
                     await this.updateMembershipBillingDate(charge.membershipId, new Date(), charge.planId);
                 }

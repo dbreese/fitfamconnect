@@ -28,9 +28,9 @@ Charges can include:
 ### Yearly billing special rules
 - Do not worry about leap years
 
-### Scenarios 
+### Test Scenarios 
 
-For the following scenarios, assume:
+For the following test scenarios, assume:
 - weekly billing is $25/week
 - monthly billing is $100/month
 - quarterly billing is $300/quarter

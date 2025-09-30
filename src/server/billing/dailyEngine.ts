@@ -109,16 +109,16 @@ export class DailyBillingEngine {
     ): Promise<DailyBillingChargeWithMeta[]> {
         const memberIds = members.map(m => m._id!.toString());
 
-        // Find memberships where nextBilledDate matches the billing date
+        // Find memberships where nextBillDate matches the billing date
         // OR memberships that start on this date and have never been billed
         const memberships = await Membership.find({
             memberId: { $in: memberIds },
             $and: [
-                // Condition 1: nextBilledDate matches OR membership starts today
+                // Condition 1: nextBillDate matches OR membership starts today
                 {
                     $or: [
-                        // Case 1: nextBilledDate matches billing date
-                        { nextBilledDate: billingDate },
+                        // Case 1: nextBillDate matches billing date
+                        { nextBillDate: billingDate },
                         // Case 2: Membership starts today and has never been billed
                         {
                             startDate: billingDate,
@@ -198,7 +198,7 @@ export class DailyBillingEngine {
     }
 
     /**
-     * Update membership lastBilledDate and nextBilledDate after successful billing
+     * Update membership lastBilledDate and nextBillDate after successful billing
      */
     static async updateMembershipBillingDate(membershipId: string, billingDate: Date, planId?: string): Promise<void> {
         const updateData: any = {
@@ -209,7 +209,7 @@ export class DailyBillingEngine {
         if (planId) {
             const plan = await Plan.findById(planId);
             if (plan && plan.recurringPeriod) {
-                updateData.nextBilledDate = this.calculateNextBillingDate(billingDate, plan.recurringPeriod);
+                updateData.nextBillDate = this.calculateNextBillingDate(billingDate, plan.recurringPeriod);
             }
         }
 
@@ -254,7 +254,7 @@ export class DailyBillingEngine {
                 await newCharge.save();
                 createdCount++;
 
-                // Update membership lastBilledDate and nextBilledDate
+                // Update membership lastBilledDate and nextBillDate
                 if (charge.membershipId) {
                     await this.updateMembershipBillingDate(charge.membershipId, new Date(), charge.planId);
                 }

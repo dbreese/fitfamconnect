@@ -14,7 +14,7 @@ module.exports = {
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
   ],
-  setupFilesAfterEnv: ['<rootDir>/src/server/billing/__tests__/setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/server/__tests__/setup.ts'],
   testTimeout: 30000,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
