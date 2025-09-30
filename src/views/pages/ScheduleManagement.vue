@@ -565,7 +565,17 @@ async function deleteSchedule(schedule: any) {
                 detail: t('schedules.success.deleted'),
                 life: 3000
             });
-            await loadSchedules();
+            // Reload data based on current tab
+            if (activeTab.value === 1) {
+                // List view - load all schedules
+                await loadAllSchedules();
+            } else {
+                // Week view - load schedules for current week
+                await loadSchedules();
+            }
+
+            // Force reactivity update
+            schedules.value = [...schedules.value];
         } else {
             toast.add({
                 severity: 'error',
@@ -601,7 +611,14 @@ async function deleteScheduleFromDialog() {
                 life: 3000
             });
             showDialog.value = false; // Close the dialog
-            await loadSchedules();
+            // Reload data based on current tab
+            if (activeTab.value === 1) {
+                // List view - load all schedules
+                await loadAllSchedules();
+            } else {
+                // Week view - load schedules for current week
+                await loadSchedules();
+            }
         } else {
             toast.add({
                 severity: 'error',
@@ -786,17 +803,6 @@ function getSchedulesForTimeSlot(dayDate: Date, timeSlot: { hour: number; minute
         // Check if schedule overlaps with this time slot
         // Schedule overlaps if: schedule starts before slot ends AND schedule ends after slot starts
         const overlaps = scheduleStart < slotEnd && scheduleEnd > slotStart;
-
-        // Debug: Log when we find a match
-        if (overlaps) {
-            console.log(`✅ MATCH: ${(schedule as any).class?.name} on ${dayDate.toDateString()} at ${timeSlot.hour}:${timeSlot.minute.toString().padStart(2, '0')}`, {
-                scheduleStart: scheduleStart.toISOString(),
-                scheduleEnd: scheduleEnd.toISOString(),
-                slotStart: slotStart.toISOString(),
-                slotEnd: slotEnd.toISOString()
-            });
-        }
-
         return overlaps;
     });
 
