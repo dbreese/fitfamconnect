@@ -144,6 +144,25 @@ export class BillingEngine {
             }
         }
 
+        // Also get yearly memberships that start DURING the billing period (for first-time billing)
+        const yearlyMembershipsDuringPeriod = await Membership.find({
+            memberId: { $in: memberIds },
+            startDate: { $gte: startDate, $lte: endDate }, // Started during billing period
+            $or: [
+                { endDate: { $exists: false } }, // No end date (ongoing)
+                { endDate: null }, // Explicitly null
+                { endDate: { $gte: startDate } } // Still active during billing period
+            ]
+        });
+
+        // Check which ones have yearly plans
+        for (const membership of yearlyMembershipsDuringPeriod) {
+            const plan = await Plan.findById(membership.planId);
+            if (plan && (plan.recurringPeriod?.toLowerCase() === 'yearly' || plan.recurringPeriod?.toLowerCase() === 'annual')) {
+                yearlyMembershipsWithPlans.push(membership);
+            }
+        }
+
         // Combine regular memberships with yearly memberships, removing duplicates
         const membershipIds = new Set(activeMemberships.map(m => m._id!.toString()));
         const uniqueYearlyMemberships = yearlyMembershipsWithPlans.filter(m => !membershipIds.has(m._id!.toString()));
@@ -310,11 +329,7 @@ export class BillingEngine {
             const nextBillDate = new Date(membership.nextBilledDate);
 
             // If the next bill date is after the end of the billing period, don't bill yet
-            // Add a small buffer (2 days) to handle edge cases like leap years
-            const twoDaysAfterEnd = new Date(endDate);
-            twoDaysAfterEnd.setDate(twoDaysAfterEnd.getDate() + 2);
-
-            return nextBillDate > twoDaysAfterEnd;
+            return nextBillDate > endDate;
         }
 
         // Fallback to the old logic if nextBilledDate is not available
@@ -342,17 +357,12 @@ export class BillingEngine {
 
             case 'yearly':
             case 'annual':
-                // For yearly plans, use the exact yearly billing logic instead of day approximation
+                // For yearly plans, use the exact yearly billing logic
                 // Check if the next bill date (last billed + 1 year) has not yet arrived
                 const nextBillDate = new Date(lastBilled);
                 nextBillDate.setFullYear(nextBillDate.getFullYear() + 1);
 
-                // Handle leap year edge case: if next bill date is within 2 days after the billing period,
-                // consider it as due for billing (e.g., Feb 29 -> March 1 should still bill in Feb period)
-                const twoDaysAfterEnd = new Date(endDate);
-                twoDaysAfterEnd.setDate(twoDaysAfterEnd.getDate() + 2);
-
-                return nextBillDate > twoDaysAfterEnd;
+                return nextBillDate > endDate;
 
             default:
                 // Unknown frequency, assume monthly
@@ -419,12 +429,7 @@ export class BillingEngine {
             nextBillDate.setFullYear(nextBillDate.getFullYear() + 1);
 
             // Check if next bill date falls within the current billing period
-            // Handle leap year edge case: if next bill date is within 2 days after the billing period,
-            // consider it as due for billing (e.g., Feb 29 -> March 1 should still bill in Feb period)
-            const twoDaysAfterEnd = new Date(endDate);
-            twoDaysAfterEnd.setDate(twoDaysAfterEnd.getDate() + 2);
-
-            const shouldBill = nextBillDate >= startDate && nextBillDate <= twoDaysAfterEnd;
+            const shouldBill = nextBillDate >= startDate && nextBillDate <= endDate;
 
             return shouldBill;
         } else {

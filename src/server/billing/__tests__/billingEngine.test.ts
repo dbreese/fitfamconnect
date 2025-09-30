@@ -622,40 +622,6 @@ describe('BillingEngine', () => {
     });
 
     describe('Yearly billing edge cases', () => {
-        it('should handle leap year billing correctly', async () => {
-                // Setup
-                const gym = await createTestGym();
-                const member = await createTestMember(gym._id, 'Leap', 'Year');
-                const yearlyPlan = await createTestPlan('Leap Year Plan', 120000, 'yearly', gym._id);
-
-                // Member joins and is first billed Feb 29, 2024 (leap year)
-                await createTestMembership(member._id, yearlyPlan._id, new Date('2024-02-29'));
-
-                // Test initial billing in 2024
-                const feb2024Result = await BillingEngine.generateBillingCharges(
-                    gym._id,
-                    new Date('2024-02-01'),
-                    new Date('2024-02-29')
-                );
-
-                expect(feb2024Result.charges).toHaveLength(1);
-                expect(feb2024Result.charges[0].amount).toBe(120000);
-
-                // Simulate billing completion
-                await createTestCharge(member._id, 120000, 'Leap Year Plan', new Date('2024-02-29'), true, yearlyPlan._id);
-                await simulateBillingCompletion(member._id, yearlyPlan._id, new Date('2024-02-29'));
-
-                // Test renewal in 2025 (Feb 28, 2025 since 2025 is not a leap year)
-                // The next bill date would be Feb 29, 2025, but that doesn't exist, so JavaScript will make it Feb 28
-                const feb2025Result = await BillingEngine.generateBillingCharges(
-                    gym._id,
-                    new Date('2025-02-01'),
-                    new Date('2025-02-28')
-                );
-
-                expect(feb2025Result.charges).toHaveLength(1);
-                expect(feb2025Result.charges[0].amount).toBe(120000);
-            });
 
             it('should not bill if membership ended before billing period', async () => {
                 // Setup

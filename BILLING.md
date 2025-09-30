@@ -13,6 +13,7 @@ Billing charges can fall into these categories. See details in following section
 - start and end dates are INCLUSIVE. Therefore,
     - member is considered active starting at 00:00am on their start date.
     - member is considered active until midnight on their end date.
+- do not worry about leap years
 
 ## One Time Charges Rules
 - Billed in arrears for items in the charge table that have no planId associated with them.
@@ -28,10 +29,13 @@ Billing charges can fall into these categories. See details in following section
 - We will need special logic for each type of recurring plan. The following sections describe the rules for each. The engine should have clear-cut functions for the logic for each, only sharing code where it makes sense.
 
 ### Monthly billing special rules
+- Find the previous charge and calculate the next bill date by adding 1 month.
+- If no previous charge exists, and the plan start date is in the current billing period, then create a charge record.
 
 ### Yearly billing special rules
-- Find the previous charge and calculate the next bill date by adding 1 year to it. If bill date falls within the billing period, then charge the member and create a charge record.
+- Find the previous charge and calculate the next bill date by adding 1 year.
 - If no previous charge exists, and the plan start date is in the current billing period, then create a charge record.
+- Do not worry about leap years
 
 ### Pro-rated Billing Rules
 - When looking at active membership plans, if a membership start date is before the billing period's start date AND the membership has never been billed before (ie, the lastBilledDate is empty), we need to calculate pro-rated charges.
