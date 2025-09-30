@@ -20,21 +20,6 @@ export class SchedulingEngine {
         },
         endDate?: Date
     ): Promise<void> {
-        console.log(`SchedulingEngine.validateNewSchedule: Validating new schedule`);
-        console.log(`  Location: ${locationId}`);
-        console.log(`  Start: ${startDateTime.toISOString()}`);
-        console.log(`  Duration: ${classDurationMinutes} minutes`);
-        console.log(`  Recurring: ${recurringPattern ? 'Yes' : 'No'}`);
-        if (recurringPattern) {
-            console.log(`  Pattern: ${recurringPattern.frequency}, interval: ${recurringPattern.interval}`);
-            if (recurringPattern.daysOfWeek) {
-                console.log(`  Days: ${recurringPattern.daysOfWeek.join(', ')}`);
-            }
-        }
-        if (endDate) {
-            console.log(`  End Date: ${endDate.toISOString()}`);
-        }
-
         if (!recurringPattern) {
             // For 1-time schedules, just check this specific date/time
             const endDateTime = new Date(startDateTime.getTime() + classDurationMinutes * 60000);
@@ -43,8 +28,6 @@ export class SchedulingEngine {
             // For recurring schedules, generate all instances and check each one
             await SchedulingEngine.validateRecurringSchedule(locationId, startDateTime, classDurationMinutes, recurringPattern, endDate);
         }
-
-        console.log(`SchedulingEngine.validateNewSchedule: Validation passed - no conflicts found`);
     }
 
     /**
@@ -60,8 +43,6 @@ export class SchedulingEngine {
         },
         endDate?: Date
     ): Promise<void> {
-        console.log(`SchedulingEngine.validateRecurringSchedule: Validating recurring schedule`);
-
         // For validation, check conflicts for a reasonable period (1 year if no end date)
         const validationEndDate = endDate || new Date(startDateTime.getTime() + 365 * 24 * 60 * 60 * 1000);
 
@@ -78,14 +59,10 @@ export class SchedulingEngine {
         // Generate all instances for the recurring schedule
         const instances = SchedulingEngine.getActiveRecurringInstances(tempSchedule, startDateTime, validationEndDate);
 
-        console.log(`SchedulingEngine.validateRecurringSchedule: Generated ${instances.length} instances to validate`);
-
         // Check each instance for conflicts
         for (const instance of instances) {
             const instanceStart = new Date(instance.startDateTime);
             const instanceEnd = new Date(instanceStart.getTime() + classDurationMinutes * 60000);
-
-            console.log(`SchedulingEngine.validateRecurringSchedule: Checking instance ${instanceStart.toISOString()}`);
 
             try {
                 await SchedulingEngine.checkForSchedulingConflicts(locationId, instanceStart, instanceEnd);
@@ -97,8 +74,6 @@ export class SchedulingEngine {
                 throw new Error(`Recurring schedule conflict on ${conflictDate} at ${conflictTime}: ${errorMessage}`);
             }
         }
-
-        console.log(`SchedulingEngine.validateRecurringSchedule: All ${instances.length} instances validated successfully`);
     }
 
     /**
@@ -117,21 +92,6 @@ export class SchedulingEngine {
         },
         endDate?: Date
     ): Promise<void> {
-        console.log(`SchedulingEngine.validateScheduleUpdate: Validating schedule update, excluding ${excludeScheduleId}`);
-        console.log(`  Location: ${locationId}`);
-        console.log(`  Start: ${startDateTime.toISOString()}`);
-        console.log(`  Duration: ${classDurationMinutes} minutes`);
-        console.log(`  Recurring: ${recurringPattern ? 'Yes' : 'No'}`);
-        if (recurringPattern) {
-            console.log(`  Pattern: ${recurringPattern.frequency}, interval: ${recurringPattern.interval}`);
-            if (recurringPattern.daysOfWeek) {
-                console.log(`  Days: ${recurringPattern.daysOfWeek.join(', ')}`);
-            }
-        }
-        if (endDate) {
-            console.log(`  End Date: ${endDate.toISOString()}`);
-        }
-
         if (!recurringPattern) {
             // For 1-time schedules, just check this specific date/time
             const endDateTime = new Date(startDateTime.getTime() + classDurationMinutes * 60000);
@@ -140,8 +100,6 @@ export class SchedulingEngine {
             // For recurring schedules, generate all instances and check each one
             await SchedulingEngine.validateRecurringScheduleUpdate(locationId, startDateTime, classDurationMinutes, excludeScheduleId, recurringPattern, endDate);
         }
-
-        console.log(`SchedulingEngine.validateScheduleUpdate: Validation passed - no conflicts found`);
     }
 
     /**
@@ -158,8 +116,6 @@ export class SchedulingEngine {
         },
         endDate?: Date
     ): Promise<void> {
-        console.log(`SchedulingEngine.validateRecurringScheduleUpdate: Validating recurring schedule update, excluding ${excludeScheduleId}`);
-
         // For validation, check conflicts for a reasonable period (1 year if no end date)
         const validationEndDate = endDate || new Date(startDateTime.getTime() + 365 * 24 * 60 * 60 * 1000);
 
@@ -176,14 +132,10 @@ export class SchedulingEngine {
         // Generate all instances for the recurring schedule
         const instances = SchedulingEngine.getActiveRecurringInstances(tempSchedule, startDateTime, validationEndDate);
 
-        console.log(`SchedulingEngine.validateRecurringScheduleUpdate: Generated ${instances.length} instances to validate`);
-
         // Check each instance for conflicts (excluding the current schedule)
         for (const instance of instances) {
             const instanceStart = new Date(instance.startDateTime);
             const instanceEnd = new Date(instanceStart.getTime() + classDurationMinutes * 60000);
-
-            console.log(`SchedulingEngine.validateRecurringScheduleUpdate: Checking instance ${instanceStart.toISOString()}`);
 
             try {
                 await SchedulingEngine.checkForSchedulingConflicts(locationId, instanceStart, instanceEnd, excludeScheduleId);
@@ -195,8 +147,6 @@ export class SchedulingEngine {
                 throw new Error(`Recurring schedule conflict on ${conflictDate} at ${conflictTime}: ${errorMessage}`);
             }
         }
-
-        console.log(`SchedulingEngine.validateRecurringScheduleUpdate: All ${instances.length} instances validated successfully`);
     }
 
     /**
@@ -216,17 +166,9 @@ export class SchedulingEngine {
         const classObj = schedule.classId || schedule.class;
         const duration = classObj && classObj.duration ? classObj.duration : 60; // Default 60 minutes
 
-        console.log(`SchedulingEngine.getActiveRecurringInstances: Processing recurring schedule ${schedule._id}`);
-        console.log(`  Pattern: ${pattern.frequency}, interval: ${pattern.interval}`);
-        console.log(`  Days of week: [${pattern.daysOfWeek ? pattern.daysOfWeek.join(', ') : 'none'}]`);
-        console.log(`  Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
-        console.log(`  Schedule start: ${scheduleStartDateTime.toISOString()}`);
-        console.log(`  Schedule end: ${scheduleEndDate ? scheduleEndDate.toISOString() : 'No end date'}`);
-
         // Find the first occurrence within our date range
         let currentDate = SchedulingEngine.findFirstOccurrence(scheduleStartDateTime, pattern, startDate, endDate);
         if (!currentDate) {
-            console.log(`SchedulingEngine.getActiveRecurringInstances: No occurrences found in date range`);
             return instances;
         }
 
@@ -238,16 +180,13 @@ export class SchedulingEngine {
 
             // Check if this occurrence is before the schedule's end date (if any)
             if (scheduleEndDate && currentDate > scheduleEndDate) {
-                console.log(`SchedulingEngine.getActiveRecurringInstances: Occurrence ${currentDate.toISOString()} is after schedule end date`);
                 break;
             }
 
             // For weekly schedules, check if this day is in the allowed days
             if (pattern.frequency === 'weekly' && pattern.daysOfWeek && pattern.daysOfWeek.length > 0) {
                 const dayOfWeek = currentDate.getDay();
-                console.log(`SchedulingEngine.getActiveRecurringInstances: Checking day ${dayOfWeek} (${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek]}) for pattern days: [${pattern.daysOfWeek.join(', ')}]`);
                 if (!pattern.daysOfWeek.includes(dayOfWeek)) {
-                    console.log(`SchedulingEngine.getActiveRecurringInstances: Skipping ${currentDate.toISOString()} - day ${dayOfWeek} not in allowed days`);
                     currentDate = SchedulingEngine.getNextRecurrenceDate(currentDate, pattern, scheduleStartDateTime);
                     continue;
                 }
@@ -258,8 +197,6 @@ export class SchedulingEngine {
             instanceStart.setHours(scheduleStartDateTime.getHours(), scheduleStartDateTime.getMinutes(), 0, 0);
 
             const instanceEnd = new Date(instanceStart.getTime() + duration * 60000);
-
-            console.log(`SchedulingEngine.getActiveRecurringInstances: Generated instance ${instanceStart.toISOString()} - ${instanceEnd.toISOString()}`);
 
             instances.push({
                 ...(schedule.toObject ? schedule.toObject() : schedule),
@@ -276,7 +213,6 @@ export class SchedulingEngine {
             currentDate = SchedulingEngine.getNextRecurrenceDate(currentDate, pattern, scheduleStartDateTime);
         }
 
-        console.log(`SchedulingEngine.getActiveRecurringInstances: Generated ${instances.length} instances`);
         return instances;
     }
 
@@ -295,7 +231,6 @@ export class SchedulingEngine {
    ): Promise<void> {
        const logPrefix = excludeScheduleId ? 'checkForSchedulingConflictsExcluding' : 'checkForSchedulingConflicts';
        const excludeText = excludeScheduleId ? `, excluding ${excludeScheduleId}` : '';
-       console.log(`SchedulingEngine.${logPrefix}: Checking conflicts for location ${locationId} from ${startDateTime.toISOString()} to ${endDateTime.toISOString()}${excludeText}`);
 
        // Build query for direct schedule conflicts (non-recurring schedules)
        const directConflictQuery: any = {
@@ -315,7 +250,6 @@ export class SchedulingEngine {
        const directConflict = await Schedule.findOne(directConflictQuery);
 
        if (directConflict) {
-           console.log(`SchedulingEngine.${logPrefix}: Direct conflict detected with schedule ${directConflict._id}`);
            throw new Error('Scheduling conflict: Another class is already scheduled at this time and location');
        }
 
@@ -344,8 +278,6 @@ export class SchedulingEngine {
 
        const recurringSchedules = await Schedule.find(recurringQuery).populate('classId');
 
-       console.log(`SchedulingEngine.${logPrefix}: Found ${recurringSchedules.length} recurring schedules to check`);
-
        // Check each recurring schedule for conflicts
        for (const recurringSchedule of recurringSchedules) {
             const instances = SchedulingEngine.getActiveRecurringInstances(recurringSchedule, dayStart, dayEnd);
@@ -368,15 +300,10 @@ export class SchedulingEngine {
                const hasConflict = instanceStart < endDateTime && instanceEnd > startDateTime;
 
                if (hasConflict) {
-                   console.log(`SchedulingEngine.${logPrefix}: Recurring instance conflict detected`);
-                   console.log(`  Instance: ${instanceStart.toISOString()} - ${instanceEnd.toISOString()}`);
-                   console.log(`  New schedule: ${startDateTime.toISOString()} - ${endDateTime.toISOString()}`);
                    throw new Error('Scheduling conflict: A recurring class instance is already scheduled at this time and location');
                }
            }
        }
-
-       console.log(`SchedulingEngine.${logPrefix}: No conflicts found`);
    }
 
 
@@ -384,13 +311,8 @@ export class SchedulingEngine {
      * Find the first occurrence of a recurring schedule within a date range
      */
     private static findFirstOccurrence(scheduleStartDate: Date, pattern: any, startDate: Date, endDate: Date): Date | null {
-        console.log(`SchedulingEngine.findFirstOccurrence: Finding first occurrence`);
-        console.log(`  Schedule starts: ${scheduleStartDate.toISOString()}`);
-        console.log(`  Search range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
-
         // If the schedule starts after our end date, no occurrences
         if (scheduleStartDate > endDate) {
-            console.log(`SchedulingEngine.findFirstOccurrence: Schedule starts after search range`);
             return null;
         }
 
@@ -408,19 +330,16 @@ export class SchedulingEngine {
                 const dayOfWeek = currentDate.getDay();
                 if (pattern.daysOfWeek.includes(dayOfWeek)) {
                     // This day matches the pattern
-                    console.log(`SchedulingEngine.findFirstOccurrence: Found first occurrence in range: ${currentDate.toISOString()}`);
                     return currentDate;
                 }
                 // Move to next day to find a matching day
                 currentDate.setDate(currentDate.getDate() + 1);
             } else {
                 // For daily/monthly, use the original logic
-                console.log(`SchedulingEngine.findFirstOccurrence: Found first occurrence in range: ${currentDate.toISOString()}`);
                 return currentDate;
             }
         }
 
-        console.log(`SchedulingEngine.findFirstOccurrence: No occurrence found in range after ${iterationCount} iterations`);
         return null;
     }
 
@@ -439,12 +358,9 @@ export class SchedulingEngine {
                 // For weekly schedules with multiple days, advance by 1 day at a time
                 // to find all matching days within the same week
                 if (pattern.daysOfWeek && pattern.daysOfWeek.length > 1) {
-                    console.log(`SchedulingEngine.getNextRecurrenceDate: Advancing from ${currentDate.toISOString()} (day ${currentDate.getDay()}) to next day`);
                     nextDate.setDate(nextDate.getDate() + 1);
-                    console.log(`SchedulingEngine.getNextRecurrenceDate: Next date: ${nextDate.toISOString()} (day ${nextDate.getDay()})`);
                 } else {
                     // For single day weekly schedules, advance by full weeks
-                    console.log(`SchedulingEngine.getNextRecurrenceDate: Advancing by ${7 * pattern.interval} days for single day weekly schedule`);
                     nextDate.setDate(nextDate.getDate() + (7 * pattern.interval));
                 }
                 break;

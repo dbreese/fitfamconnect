@@ -38,11 +38,8 @@ export class BillingEngine {
         startDate: Date,
         endDate: Date
     ): Promise<BillingResult> {
-        console.log(`BillingEngine: Generating charges for gym ${gymId} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
-
         // Get all approved members for this gym
         const members = await Member.find({ gymId, status: 'approved' });
-        console.log(`BillingEngine: Found ${members.length} approved members`);
 
         // Get all charges (one-time charges, recurring charges, pro-rated charges)
         const oneTimeCharges = await this.getOneTimeCharges(members, startDate, endDate);
@@ -51,8 +48,6 @@ export class BillingEngine {
 
         const allCharges = [...oneTimeCharges, ...recurringCharges, ...proRatedCharges];
         const totalAmount = allCharges.reduce((sum, charge) => sum + charge.amount, 0);
-
-        console.log(`BillingEngine: Generated ${allCharges.length} total charges worth ${totalAmount} cents`);
 
         return {
             charges: allCharges,
@@ -86,8 +81,6 @@ export class BillingEngine {
             planId: { $exists: false }, // One-time charges don't have planId
             chargeDate: { $lte: endDate } // Note: No start date filter as per BILLING.md
         });
-
-        console.log(`BillingEngine: Found ${unbilledCharges.length} unbilled one-time charges`);
 
         return unbilledCharges.map(charge => {
             const member = members.find(m => m._id!.toString() === charge.memberId.toString());
@@ -156,34 +149,28 @@ export class BillingEngine {
         const uniqueYearlyMemberships = yearlyMembershipsWithPlans.filter(m => !membershipIds.has(m._id!.toString()));
         const allMemberships = [...activeMemberships, ...uniqueYearlyMemberships];
 
-        console.log(`BillingEngine: Found ${activeMemberships.length} active memberships and ${yearlyMembershipsWithPlans.length} yearly memberships`);
-
         const recurringCharges: BillingChargeWithMeta[] = [];
 
         for (const membership of allMemberships) {
             const plan = await Plan.findById(membership.planId);
             if (!plan || !plan.isActive) {
-                console.log(`BillingEngine: Skipping membership ${membership._id} - plan not found or inactive`);
                 continue;
             }
 
             const member = members.find(m => m._id!.toString() === membership.memberId.toString());
             if (!member) {
-                console.log(`BillingEngine: Skipping membership ${membership._id} - member not found`);
                 continue;
             }
 
             // Check if already billed for this period
             const alreadyBilled = await this.hasBeenBilledForPeriod(membership, plan, startDate, endDate);
             if (alreadyBilled) {
-                console.log(`BillingEngine: Member ${member.firstName} ${member.lastName} already billed for plan ${plan.name} in this period`);
                 continue;
             }
 
             // Check if should be billed based on plan frequency
             const shouldBill = await this.shouldBillForPeriod(membership, plan, startDate, endDate);
             if (!shouldBill) {
-                console.log(`BillingEngine: Member ${member.firstName} ${member.lastName} should not be billed for plan ${plan.name} in this period`);
                 continue;
             }
 
@@ -201,7 +188,6 @@ export class BillingEngine {
             });
         }
 
-        console.log(`BillingEngine: Generated ${recurringCharges.length} recurring charges`);
         return recurringCharges;
     }
 
@@ -243,35 +229,22 @@ export class BillingEngine {
             ]
         });
 
-        console.log(`BillingEngine: Found ${proRateCandidates.length} memberships eligible for pro-rated billing`);
 
         const proRatedCharges: BillingChargeWithMeta[] = [];
 
         for (const membership of proRateCandidates) {
-            console.log(`BillingEngine: Processing pro-rated candidate:`, {
-                membershipId: membership._id,
-                memberId: membership.memberId,
-                planId: membership.planId,
-                startDate: membership.startDate,
-                endDate: membership.endDate,
-                lastBilledDate: membership.lastBilledDate
-            });
-
             const plan = await Plan.findById(membership.planId);
             if (!plan || !plan.isActive) {
-                console.log(`BillingEngine: Skipping pro-rated candidate - plan not found or inactive`);
                 continue;
             }
 
             // Skip yearly plans - they should be handled by regular recurring billing
             if (plan.recurringPeriod?.toLowerCase() === 'yearly' || plan.recurringPeriod?.toLowerCase() === 'annual') {
-                console.log(`BillingEngine: Skipping yearly plan from pro-rated billing - should be handled by recurring billing`);
                 continue;
             }
 
             const member = members.find(m => m._id!.toString() === membership.memberId.toString());
             if (!member) {
-                console.log(`BillingEngine: Skipping pro-rated candidate - member not found`);
                 continue;
             }
 
@@ -288,7 +261,6 @@ export class BillingEngine {
 
                 // If membership started at the beginning of the month, it should have been billed regularly
                 if (membershipStart.getTime() === priorMonthStart.getTime()) {
-                    console.log(`BillingEngine: Membership started at beginning of period, should have been billed regularly, not pro-rated`);
                     continue;
                 }
             }
@@ -301,10 +273,7 @@ export class BillingEngine {
                 endDate
             );
 
-            console.log(`BillingEngine: Pro-rated amount calculated: ${proRatedAmount} cents`);
-
             if (proRatedAmount > 0) {
-                console.log(`BillingEngine: Adding pro-rated charge for ${member.firstName} ${member.lastName}`);
                 proRatedCharges.push({
                     memberId: membership.memberId.toString(),
                     memberName: `${member.firstName} ${member.lastName}`,
@@ -317,12 +286,9 @@ export class BillingEngine {
                     type: 'pro-rated-charge' as const,
                     membershipId: membership._id?.toString()
                 });
-            } else {
-                console.log(`BillingEngine: Pro-rated amount is 0, not adding charge`);
             }
         }
 
-        console.log(`BillingEngine: Generated ${proRatedCharges.length} pro-rated charges`);
         return proRatedCharges;
     }
 
@@ -427,8 +393,6 @@ export class BillingEngine {
         startDate: Date,
         endDate: Date
     ): Promise<boolean> {
-        console.log(`BillingEngine: Checking yearly billing for membership ${membership._id}, plan ${plan.name}`);
-
         // Find the most recent charge for this membership/plan combination
         const previousCharge = await Charge.findOne({
             memberId: membership.memberId,
@@ -440,8 +404,6 @@ export class BillingEngine {
             // Case 1: Previous charge exists - calculate next bill date by adding 1 year
             const nextBillDate = new Date(previousCharge.chargeDate);
             nextBillDate.setFullYear(nextBillDate.getFullYear() + 1);
-
-            console.log(`BillingEngine: Previous yearly charge found on ${previousCharge.chargeDate.toISOString()}, next bill date: ${nextBillDate.toISOString()}`);
 
             // Check if next bill date falls within the current billing period
             // Handle leap year edge case: if next bill date is within 2 days after the billing period,
@@ -460,8 +422,6 @@ export class BillingEngine {
             // This handles cases like member joining Sept 15 and being billed on Oct 1
             const membershipActive = membershipStart <= endDate &&
                 (!membership.endDate || new Date(membership.endDate) >= startDate);
-
-            console.log(`BillingEngine: No previous yearly charge found, membership started ${membershipStart.toISOString()}, membership active during period: ${membershipActive}`);
 
             return membershipActive;
         }
@@ -497,13 +457,6 @@ export class BillingEngine {
             const priorMonthEnd = new Date(billingStartDate);
             priorMonthEnd.setDate(priorMonthEnd.getDate() - 1); // Day before billing start (Sept 30)
 
-            console.log(`BillingEngine: Monthly pro-rated calculation periods:`, {
-                priorMonthStart: priorMonthStart.toISOString(),
-                priorMonthEnd: priorMonthEnd.toISOString(),
-                membershipStart: membershipStart.toISOString(),
-                membershipEnd: membershipEnd?.toISOString() || 'ongoing'
-            });
-
             activeDaysInPeriod = this.calculateActiveDaysInPeriod(
                 membershipStart,
                 membershipEnd,
@@ -527,23 +480,6 @@ export class BillingEngine {
 
         // Calculate pro-rated amount: full price * (active days / total days)
         const proRatedAmount = Math.round(plan.price * (activeDaysInPeriod / totalDaysInPeriod));
-
-        console.log(`BillingEngine: Pro-rated calculation for ${plan.name}:`, {
-            membershipStart: membershipStart.toISOString(),
-            membershipEnd: membershipEnd?.toISOString() || 'ongoing',
-            billingStartDate: billingStartDate.toISOString(),
-            priorPeriodStart: plan.recurringPeriod?.toLowerCase() === 'monthly' ?
-                new Date(billingStartDate.getFullYear(), billingStartDate.getMonth() - 1, 1).toISOString() :
-                'calculated',
-            priorPeriodEnd: plan.recurringPeriod?.toLowerCase() === 'monthly' ?
-                new Date(billingStartDate.getFullYear(), billingStartDate.getMonth(), 0).toISOString() :
-                'calculated',
-            fullPrice: plan.price,
-            activeDays: activeDaysInPeriod,
-            totalDays: totalDaysInPeriod,
-            proRatedAmount,
-            frequency: plan.recurringPeriod
-        });
 
         return proRatedAmount;
     }
@@ -677,8 +613,6 @@ export class BillingEngine {
         await Membership.findByIdAndUpdate(membershipId, {
             lastBilledDate: billingDate
         });
-
-        console.log(`BillingEngine: Updated lastBilledDate for membership ${membershipId}`);
     }
 
     /**
@@ -701,14 +635,6 @@ export class BillingEngine {
                             billingId
                         }
                     );
-
-                    if (updateResult) {
-                        console.log(`BillingEngine: Marked one-time charge ${charge.chargeId} as billed`);
-                    } else {
-                        console.error(`BillingEngine: Failed to find one-time charge ${charge.chargeId}`);
-                    }
-                } else {
-                    console.error('BillingEngine: One-time charge missing chargeId', charge);
                 }
             } else {
                 // Create new charge record for recurring/pro-rated charges
@@ -733,8 +659,6 @@ export class BillingEngine {
                 }
             }
         }
-
-        console.log(`BillingEngine: Created ${createdCount} new charge records`);
         return createdCount;
     }
 }
