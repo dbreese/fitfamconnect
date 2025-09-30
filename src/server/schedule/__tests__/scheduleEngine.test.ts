@@ -508,6 +508,115 @@ describe('SchedulingEngine', () => {
             });
         });
 
+        describe('Schedule recurring class on Mondays, and another on Mondays and Tuesdays', () => {
+            it('should detect conflict when second recurring schedule includes overlapping days', async () => {
+                // Test Steps from SCHEDULING.md:
+                // - Schedule a recurring class that starts on Sept 29 and occurs every Monday at 1pm.
+                // - Schedule a recurring class that starts on Sept 28 and occurs every Monday and Tuesday at 1pm.
+
+                // Setup test data
+                const gym = await createTestGym();
+                const location = await createTestLocation(gym._id, 'Main Floor');
+                const testClass = await createTestClass(gym._id, 'Yoga', 60);
+
+                const firstRecurringStart = new Date('2025-09-29T20:00:00.000Z'); // Monday, Sept 29 at 1pm MST
+                const secondRecurringStart = new Date('2025-09-28T20:00:00.000Z'); // Sunday, Sept 28 at 1pm MST
+                const duration = 60;
+
+                // First, schedule the recurring class for Mondays only
+                await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    firstRecurringStart,
+                    true, // recurring
+                    {
+                        frequency: 'weekly',
+                        interval: 1,
+                        daysOfWeek: [1] // Monday
+                    }
+                );
+
+                const secondRecurringPattern = {
+                    frequency: 'weekly' as const,
+                    interval: 1,
+                    daysOfWeek: [1, 2] // Monday and Tuesday
+                };
+
+                // Should detect conflict because:
+                // First schedule: Sept 29, Oct 6, Oct 13, etc. (Mondays)
+                // Second schedule: Sept 30, Oct 6, Oct 7, Oct 13, Oct 14, etc. (Mondays and Tuesdays)
+                // The Monday instances overlap (Sept 30 vs Sept 29, Oct 6 vs Oct 6, etc.)
+                await expect(
+                    SchedulingEngine.validateNewSchedule(
+                        location._id,
+                        secondRecurringStart,
+                        duration,
+                        secondRecurringPattern
+                    )
+                ).rejects.toThrow(/Recurring schedule conflict.*Scheduling conflict/);
+            });
+        });
+
+        describe('Schedule recurring class on Mondays, and update an existing one to also be on Mondays and Tuesdays', () => {
+            it('should detect conflict when updating existing schedule to include overlapping days', async () => {
+                // Test Steps from SCHEDULING.md:
+                // - Schedule a recurring class that starts on Sept 29 and occurs every Monday at 1pm.
+                // - Schedule a recurring class that starts on Sept 28 and occurs every Tuesday at 1pm.
+                // - Update the second recurring class to be recurring on Mondays and Tuesdays, but leave everything else unchanged.
+
+                // Setup test data
+                const gym = await createTestGym();
+                const location = await createTestLocation(gym._id, 'Main Floor');
+                const testClass = await createTestClass(gym._id, 'Yoga', 60);
+
+                const mondayRecurringStart = new Date('2025-09-29T20:00:00.000Z'); // Monday, Sept 29 at 1pm MST
+                const tuesdayRecurringStart = new Date('2025-09-28T20:00:00.000Z'); // Sunday, Sept 28 at 1pm MST
+                const duration = 60;
+
+                // First, schedule the recurring class for Mondays only
+                await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    mondayRecurringStart,
+                    true, // recurring
+                    {
+                        frequency: 'weekly',
+                        interval: 1,
+                        daysOfWeek: [1] // Monday
+                    }
+                );
+
+                // Second, schedule the recurring class for Tuesdays only (no conflict initially)
+                const secondSchedule = await createTestSchedule(
+                    testClass._id,
+                    location._id,
+                    tuesdayRecurringStart,
+                    true, // recurring
+                    {
+                        frequency: 'weekly',
+                        interval: 1,
+                        daysOfWeek: [2] // Tuesday
+                    }
+                );
+
+                // Now try to update the second schedule to include Mondays and Tuesdays
+                // This should create a conflict because the first schedule already has Mondays
+                await expect(
+                    SchedulingEngine.validateScheduleUpdate(
+                        location._id,
+                        tuesdayRecurringStart,
+                        duration,
+                        secondSchedule._id.toString(),
+                        {
+                            frequency: 'weekly',
+                            interval: 1,
+                            daysOfWeek: [1, 2] // Monday and Tuesday
+                        }
+                    )
+                ).rejects.toThrow(/Recurring schedule conflict.*Scheduling conflict/);
+            });
+        });
+
         describe('Scheduled 1-time on Monday, then recurring schedule on Mondays', () => {
             it('should detect conflict when recurring schedule conflicts with existing 1-time class', async () => {
                 // Test Steps from SCHEDULING.md:

@@ -128,13 +128,30 @@ Test Steps:
 Results:
 - No conflict occurs.
 
-## Scheduled 1-time on Monday, then recurring schedule on Mondays, both for 1pm.
+## Schedule 1-time on Monday, then recurring schedule on Mondays, both for 1pm.
 Test Steps:
 - Schedule a 1-time class for Monday, Sept 29 at 1pm.
 - Schedule a recurring class that starts on Sept 28, but occurs every Monday at 1pm.
 
 Results:
 - Conflict with the recurring class.
+
+## Schedule recurring class on Mondays, and another on Mondays and Tuesdays.
+Test Steps:
+- Schedule a recurring class that starts on Sept 29 and occurs every Monday at 1pm.
+- Schedule a recurring class that starts on Sept 28 and occurs every Monday and Tuesday at 1pm.
+
+Results:
+- Conflict with the second recurring schedule.
+
+## Schedule recurring class on Mondays, and update an existing one to also be on Mondays and Tuesdays.
+Test Steps:
+- Schedule a recurring class that starts on Sept 29 and occurs every Monday at 1pm.
+- Schedule a recurring class that starts on Sept 28 and occurs every Tuesday at 1pm.
+- Update the second recurring class to be recurring on Mondays and Tuesdays, but leave everything else unchanged.
+
+Results:
+- Conflict with the second recurring schedule.
 
 ## TODO
 - end date scenarios on recurring schedules
