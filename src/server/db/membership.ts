@@ -16,8 +16,31 @@ const membershipSchema = new mongoose.Schema<IMembership>(
     {
         memberId: { type: String, required: true },
         planId: { type: String, required: true },
-        startDate: { type: Date, required: true, default: Date.now },
-        endDate: { type: Date },
+        startDate: {
+            type: Date,
+            required: true,
+            default: () => {
+                const now = new Date();
+                return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            },
+            set: (date: Date) => {
+                // Ensure startDate is always stored at midnight UTC
+                if (date) {
+                    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+                }
+                return date;
+            }
+        },
+        endDate: {
+            type: Date,
+            set: (date: Date) => {
+                // Ensure endDate is always stored at midnight UTC
+                if (date) {
+                    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+                }
+                return date;
+            }
+        },
         lastBilledDate: { type: Date },
         nextBilledDate: { type: Date }
     },
