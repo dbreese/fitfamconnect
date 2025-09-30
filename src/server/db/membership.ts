@@ -7,6 +7,7 @@ export interface IMembership {
     startDate: Date; // When this plan assignment starts for the member
     endDate?: Date; // When this plan assignment ends (null/undefined = active/ongoing)
     lastBilledDate?: Date; // Last time this membership was billed
+    nextBilledDate?: Date; // Next scheduled billing date for this membership
     createdAt: Date;
     updatedAt: Date;
 }
@@ -17,7 +18,8 @@ const membershipSchema = new mongoose.Schema<IMembership>(
         planId: { type: String, required: true },
         startDate: { type: Date, required: true, default: Date.now },
         endDate: { type: Date },
-        lastBilledDate: { type: Date }
+        lastBilledDate: { type: Date },
+        nextBilledDate: { type: Date }
     },
     { timestamps: true }
 );
@@ -28,6 +30,7 @@ membershipSchema.index({ planId: 1 });
 membershipSchema.index({ startDate: 1 });
 membershipSchema.index({ endDate: 1 });
 membershipSchema.index({ lastBilledDate: 1 });
+membershipSchema.index({ nextBilledDate: 1 });
 membershipSchema.index({ memberId: 1, endDate: 1 }); // Active memberships for a member (endDate null = active)
 membershipSchema.index({ planId: 1, endDate: 1 }); // Active memberships for a plan
 

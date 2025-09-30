@@ -20,18 +20,16 @@ Billing charges can fall into these categories. See details in following section
 - Note that the billing period START DATE is not used -- this way, we can pick up old charges that have not been billed for. For example, an item they purchased a month ago.
 
 ## Recurring Billing Rules
-- A recurring charge can happen on a WEEKLY, MONTHLY, QUARTERLY, or YEARLY schedule.
+- A recurring charge can happen on a MONTHLY, QUARTERLY, or YEARLY schedule.
 - We need to ensure that members are not billed more than they should be. So, when we think we need to charge a member for a recurring charge, we need to use the memberships lastBillingDate field to see if the member has already been charged for the period related to the plan.
-- When the member is charged for a recurring plan, we need to update the membership's lastBillingDate for that plan and billing id.
+- When the member is charged for a recurring plan, we need to update the membership's lastBillingDate and nextBillingDate for that plan and billing id.
+- Dont double bill for a user.
 
 - We will need special logic for each type of recurring plan. The following sections describe the rules for each. The engine should have clear-cut functions for the logic for each, only sharing code where it makes sense.
-
-### Weekly billing special rules
 
 ### Monthly billing special rules
 
 ### Yearly billing special rules
-- We need to make sure we dont double bill for a user.
 - Find the previous charge and calculate the next bill date by adding 1 year to it. If bill date falls within the billing period, then charge the member and create a charge record.
 - If no previous charge exists, and the plan start date is in the current billing period, then create a charge record.
 
@@ -123,8 +121,11 @@ Oct 1: $100 * ((30-4+1)/30) = $90 for first plan, $53.33 for second plan
 
 #### Member joins on Sept 15 and is on the $1200 yearly plan.
 - Sept 1: No record is generated as member is not active.
-- Oct 2: $1200
-    - for "yearly"
+- Oct 1: $1200
+    - for "yearly" that will run from Sept 15, 2025 until Sept 15, 2026.
+- Aug 1, year+1: $0
+- Sept 1, year+1: $1200
+- Oct 1, year+1: $0
 
 #### Member's plan ends on Sept 15 and is on the $100 monthly plan. 
 - The member joined in the month prior.
@@ -151,7 +152,7 @@ A billing run is a single instance of a billing process. It is created by the ow
 All billing records should serve as audit trails to see what was charged. No records should ever be updated once created.
 
 # Code Location
-- I want the billing logic to be located in /src/server/billing/engine.ts.
+- I want the billing logic to be located in /src/server/billing/billingEngine.ts.
 - We need unit tests for all of the above scenarios.
 - Keep unit tests updated that cover at least the above scenarios.
 

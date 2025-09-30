@@ -42,8 +42,17 @@ Mongoose schemas will be stored in src/server/db.
 - Over time, multiple plans can be associated with a member and multiple can be active at a given time (ie, multiple
   recurring plans).
 - Members belong to a gym, not to individual locations within the gym.
-- Last billed date should be tracked for each membership record but is an optional field because they may not have been billed yet.
+- Last billed and next billed dates should be tracked for each membership record.
 - Each membership record represents one plan assignment to one member with its own start/end dates and billing tracking.
+- Fields:
+  - memberId: Reference to Member
+  - planId: Reference to Plan (single plan per row)
+  - startDate: When this plan assignment starts for the member
+  - endDate: When this plan assignment ends (null/undefined = active/ongoing)
+  - lastBilledDate: Last time this membership was billed
+  - nextBilledDate: Next scheduled billing date for this membership
+  - createdAt: Record creation timestamp
+  - updatedAt: Record last update timestamp
 
 # Charge
 

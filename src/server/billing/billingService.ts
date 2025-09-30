@@ -9,7 +9,7 @@ import { Plan } from '../db/plan';
 import { Charge } from '../db/charge';
 import { Billing, type IBilling } from '../db/billing';
 import type { ServerResponse } from '../../shared/ServerResponse';
-import { BillingEngine } from './engine';
+import { BillingEngine } from './billingEngine';
 
 // Helper class for creating server responses
 class ResponseHelper {

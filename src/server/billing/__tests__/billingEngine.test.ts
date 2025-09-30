@@ -1,4 +1,4 @@
-import { BillingEngine } from '../engine';
+import { BillingEngine } from '../billingEngine';
 import { Member } from '../../db/member';
 import { Plan } from '../../db/plan';
 import { Membership } from '../../db/membership';
@@ -383,9 +383,6 @@ describe('BillingEngine', () => {
                 const member = await createTestMember(gym._id, 'John', 'Yearly');
                 const yearlyPlan = await createTestPlan('Yearly Plan', 120000, 'yearly', gym._id); // $1200
 
-                // Member joins Sept 15th
-                await createTestMembership(member._id, yearlyPlan._id, new Date('2024-09-15'));
-
                 // Test Sept 1st billing (member not active yet)
                 const sept1Result = await BillingEngine.generateBillingCharges(
                     gym._id,
@@ -394,6 +391,9 @@ describe('BillingEngine', () => {
                 );
 
                 expect(sept1Result.charges).toHaveLength(0); // No charges as per BILLING.md
+
+                // Member joins Sept 15th
+                await createTestMembership(member._id, yearlyPlan._id, new Date('2024-09-15'));
 
                 // Test Oct 1st billing (should include yearly charge)
                 const oct1Result = await BillingEngine.generateBillingCharges(
@@ -406,7 +406,32 @@ describe('BillingEngine', () => {
                 expect(oct1Result.charges[0].amount).toBe(120000); // $1200
                 expect(oct1Result.charges[0].type).toBe('recurring-plan');
                 expect(oct1Result.charges[0].memberName).toBe('John Yearly');
-            });
+
+                // Test following Aug and Sept 1st billing
+                const nextAugResult = await BillingEngine.generateBillingCharges(
+                    gym._id,
+                    new Date('2025-08-01'),
+                    new Date('2025-08-31')
+                );
+                expect(nextAugResult.charges).toHaveLength(0);
+
+                const nextSeptResult = await BillingEngine.generateBillingCharges(
+                    gym._id,
+                    new Date('2025-09-01'),
+                    new Date('2025-09-31')
+                );
+                expect(nextSeptResult.charges).toHaveLength(1);
+                expect(nextSeptResult.charges[0].amount).toBe(120000); // $1200
+                expect(nextSeptResult.charges[0].type).toBe('recurring-plan');
+                expect(nextSeptResult.charges[0].memberName).toBe('John Yearly');
+
+                const nextOctResult = await BillingEngine.generateBillingCharges(
+                    gym._id,
+                    new Date('2025-08-01'),
+                    new Date('2025-08-31')
+                );
+                expect(nextOctResult.charges).toHaveLength(0);
+            }, 999999);
         });
 
         describe('Yearly billing - prevent double billing', () => {
