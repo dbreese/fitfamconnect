@@ -430,12 +430,16 @@ router.post(
             const start = new Date(startDate);
             const end = new Date(endDate);
 
-            if (end <= start) {
-                return res.status(400).json(ResponseHelper.error('End date must be after start date', 400));
+            // Normalize dates to UTC for consistent comparison
+            const normalizedStart = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), 0, 0, 0, 0));
+            const normalizedEnd = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate(), 23, 59, 59, 999));
+
+            if (normalizedEnd < normalizedStart) {
+                return res.status(400).json(ResponseHelper.error('End date must be on or after start date', 400));
             }
 
             // Check for overlapping billing periods
-            const overlappingPeriods = await checkBillingPeriodOverlap(req.user, start, end);
+            const overlappingPeriods = await checkBillingPeriodOverlap(req.user, normalizedStart, normalizedEnd);
             if (overlappingPeriods) {
                 const errorMessage = `Billing period overlaps with existing billing records. Overlapping periods: ${overlappingPeriods.map(p => `${p.startDate.toISOString().split('T')[0]} to ${p.endDate.toISOString().split('T')[0]}`).join(', ')}`;
                 return res.status(409).json(ResponseHelper.error(errorMessage, 409));
@@ -444,7 +448,7 @@ router.post(
             const gym = await getCurrentUserGym(req.user);
 
             // Use daily billing engine to generate preview for the date range
-            const engineResult = await DailyBillingEngine.generateDailyBillingChargesForRange(gym._id.toString(), start, end);
+            const engineResult = await DailyBillingEngine.generateDailyBillingChargesForRange(gym._id.toString(), normalizedStart, normalizedEnd);
 
             // Convert engine result to legacy format for compatibility
             const preview = convertDailyRangeEngineResultToPreview(engineResult);

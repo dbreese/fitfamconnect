@@ -27,6 +27,7 @@
                                             class="w-full"
                                             dateFormat="yy-mm-dd"
                                             showIcon
+                                            @date-select="onStartDateChange"
                                         />
                                         <small class="text-gray-500">{{ t('billing.optionalField') }}</small>
                                     </div>
@@ -40,6 +41,7 @@
                                             class="w-full"
                                             dateFormat="yy-mm-dd"
                                             showIcon
+                                            @date-select="onEndDateChange"
                                         />
                                         <small class="text-gray-500">{{ t('billing.optionalField') }}</small>
                                     </div>
@@ -388,13 +390,49 @@ function formatDate(date: Date): string {
     return new Date(date).toLocaleDateString();
 }
 
+function normalizeDateToMidnight(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+function normalizeDateToEndOfDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function onStartDateChange() {
+    // When start date changes, automatically set end date to the same date
+    if (billingPeriod.value.startDate) {
+        const normalizedDate = normalizeDateToMidnight(billingPeriod.value.startDate);
+        billingPeriod.value.startDate = normalizedDate;
+        billingPeriod.value.endDate = new Date(normalizedDate);
+    }
+
+    onEndDateChange();
+}
+
+function onEndDateChange() {
+    // Normalize end date to midnight to avoid time component issues
+    if (billingPeriod.value.endDate) {
+        billingPeriod.value.endDate = normalizeDateToMidnight(billingPeriod.value.endDate);
+    }
+
+    // Clear the preview since it's no longer valid for the new date range
+    preview.value = null;
+}
+
 async function generatePreview() {
     // Default to today if no dates are provided
     const startDate = billingPeriod.value.startDate || new Date();
     const endDate = billingPeriod.value.endDate || new Date();
 
+    // Normalize dates to UTC: start at 00:00:00, end at 23:59:59
+    const normalizedStartDate = normalizeDateToMidnight(startDate);
+    const normalizedEndDate = normalizeDateToEndOfDay(endDate);
+
+    console.log('BillingManagement.generatePreview: normalizedStartDate =', normalizedStartDate);
+    console.log('BillingManagement.generatePreview: normalizedEndDate =', normalizedEndDate);
+
     // Validate that end date is not before start date
-    if (endDate < startDate) {
+    if (normalizedEndDate < normalizedStartDate) {
         toast.add({
             severity: 'warn',
             summary: t('feedback.errorTitle'),
@@ -406,7 +444,7 @@ async function generatePreview() {
 
     loading.value = true;
     try {
-        const result = await BillingService.generatePreview(startDate, endDate);
+        const result = await BillingService.generatePreview(normalizedStartDate, normalizedEndDate);
 
         if (result) {
             preview.value = result;
@@ -444,8 +482,8 @@ async function commitBilling() {
     committing.value = true;
     try {
         const result = await BillingService.commitBillingRun(
-            billingPeriod.value.startDate,
-            billingPeriod.value.endDate,
+            billingPeriod.value.startDate || new Date(),
+            billingPeriod.value.endDate || new Date(),
             preview.value.charges
         );
 

@@ -608,6 +608,7 @@ export const messages = {
         billingPeriod: 'Billing Period',
         startDate: 'Start Date',
         endDate: 'End Date',
+        optionalField: 'Optional - defaults to today if not provided',
         generatePreview: 'Generate Preview',
         previewResults: 'Preview Results',
         member: 'Member',
