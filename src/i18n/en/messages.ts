@@ -609,8 +609,6 @@ export const messages = {
         startDate: 'Start Date',
         lastBillingDate: 'Last Billing Date',
         endDate: 'End Date',
-        optionalField: 'Optional - defaults to today if not provided',
-        autoSetFromLastBilling: 'Automatically set from last billing run date',
         generatePreview: 'Generate Preview',
         previewResults: 'Preview Results',
         member: 'Member',

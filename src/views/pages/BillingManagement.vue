@@ -21,10 +21,9 @@
                                         <label for="startDate" class="font-medium"
                                             >{{ t('billing.lastBillingDate') }}</label
                                         >
-                                        <div class="p-inputtext p-component w-full bg-gray-100 border-gray-300 text-gray-600">
+                                        <div class="text-gray-700 py-2">
                                             {{ billingPeriod.startDate ? formatDate(billingPeriod.startDate) : 'Loading...' }}
                                         </div>
-                                        <small class="text-gray-500">{{ t('billing.autoSetFromLastBilling') }}</small>
                                     </div>
                                     <div class="field">
                                         <label for="endDate" class="font-medium"
@@ -38,7 +37,6 @@
                                             showIcon
                                             @date-select="onEndDateChange"
                                         />
-                                        <small class="text-gray-500">{{ t('billing.optionalField') }}</small>
                                     </div>
                                 </div>
                                 <div class="flex justify-end mt-4">
