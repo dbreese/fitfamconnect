@@ -398,6 +398,12 @@ function onEndDateChange() {
     // Normalize end date to midnight to avoid time component issues
     if (billingPeriod.value.endDate) {
         billingPeriod.value.endDate = normalizeDateToMidnight(billingPeriod.value.endDate);
+
+        // Ensure end date is not before start date
+        if (billingPeriod.value.startDate && billingPeriod.value.endDate < billingPeriod.value.startDate) {
+            // If end date is before start date, set it to the same as start date
+            billingPeriod.value.endDate = new Date(billingPeriod.value.startDate);
+        }
     }
 
     // Clear the preview since it's no longer valid for the new date range
