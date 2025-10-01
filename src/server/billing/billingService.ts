@@ -792,6 +792,10 @@ async function commitBillingRunWithEngine(
     // Use engine to create charge records
     const createdCharges = await MonthlyBillingEngine.createChargeRecords(charges, savedBilling._id.toString());
 
+    // Update Gym's lastBillingRunDate to the end date of this billing run
+    await Gym.findByIdAndUpdate(gymId, { lastBillingRunDate: endDate });
+    console.log(`billingService.commitBillingRunWithEngine: Updated Gym ${gymId} lastBillingRunDate to ${endDate.toISOString()}`);
+
     return {
         billingId: savedBilling._id,
         chargesCreated: createdCharges,

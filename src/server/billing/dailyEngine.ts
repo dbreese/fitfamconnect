@@ -45,6 +45,7 @@ export class DailyBillingEngine {
     /**
      * Get the default start date for billing based on Gym's lastBillingRunDate
      * If no lastBillingRunDate exists, use the Gym's createdAt date
+     * Always adds 1 day to represent the start of the next billing period
      */
     static async getDefaultStartDate(gymId: string): Promise<Date> {
         const gym = await Gym.findById(gymId);
@@ -53,7 +54,16 @@ export class DailyBillingEngine {
         }
 
         // Use lastBillingRunDate if it exists, otherwise use createdAt
-        const defaultStartDate = gym.lastBillingRunDate || gym.createdAt;
+        let defaultStartDate: Date;
+
+        if (gym.lastBillingRunDate) {
+            // Add 1 day to represent the start of the next billing period
+            defaultStartDate = new Date(gym.lastBillingRunDate);
+            defaultStartDate.setUTCDate(defaultStartDate.getUTCDate() + 1);
+        } else {
+            // Use gym creation date as-is (no +1 day needed)
+            defaultStartDate = new Date(gym.createdAt);
+        }
 
         // Normalize to midnight UTC
         return new Date(Date.UTC(

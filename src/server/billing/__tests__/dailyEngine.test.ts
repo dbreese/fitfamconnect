@@ -191,7 +191,7 @@ describe('DailyBillingEngine', () => {
     });
 
     describe('Member joins Sept 1st, yearly billing', () => {
-        it('should bill $1200 on Sept 1, $0 on Aug 31 next year, $1200 on Sept 1 next year', async () => {
+        it('should bill $1200 on Sept 1, $0 for Sept 2-30, $0 on Aug 31 next year, $1200 on Sept 1 next year', async () => {
             // Setup
             const gym = await createTestGym();
             const member = await createTestMember(gym._id, 'Alice', 'Yearly');
@@ -212,6 +212,14 @@ describe('DailyBillingEngine', () => {
             let membership = await Membership.findOne({ memberId: member._id, planId: yearlyPlan._id });
             expect(membership?.nextBillDate).toBeDefined();
             expect(membership?.nextBillDate?.getTime()).toBe(new Date('2026-09-01').getTime());
+
+            // Sept 2 - 30 charges
+            const sept2Through30Charges = await DailyBillingEngine.generateDailyBillingChargesForRange(
+                gym._id,
+                new Date('2025-09-30'),
+                new Date('2025-09-02')
+            );
+            expect(sept2Through30Charges.allCharges).toHaveLength(0);
 
             // Test Aug 31 next year (should be $0)
             const aug31Charges = await getBillingForDay(gym._id, new Date('2026-08-31'));

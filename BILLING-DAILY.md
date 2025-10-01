@@ -85,11 +85,13 @@ Results:
 #### Member joins on Sept 1st and is on yearly billing. StartDate is set to Sept 1. Single day billed.
 Gym has lastBillingRunDate = today - 1 day.
 Billing runs on Sept 1st.
+Billing runs for date span Sept 2-30.
 Billing runs on Aug 31 of the next year.
 Billing runs on Sept 1st of the next year.
 
 Results: 
 - Sept 1: $1200
+- Sept 2-30: $0
 - Aug 29 of next year: $0
 - Sept 1 of next year: $1200
 - All other days between start date and Sept 1 of next year are $0 (check every day)
@@ -123,6 +125,9 @@ Dont do anything for these just yet.
 
 # Bugs
 Ignore this section, using it to track some in-progress issues.
+- Does not set Gym.lastBillingRunDate
+    - Does not update UI
+- Commit() not really working well. Looks like it is also not charging some things.
 - What if they spoof the billing commit data and submit it? We should re-calculate the charges to ensure it matches? Or use a signature?
 
 # Billing Run

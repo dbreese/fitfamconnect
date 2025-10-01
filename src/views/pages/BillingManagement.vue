@@ -472,8 +472,9 @@ async function commitBilling() {
             showCommitDialog.value = false;
             preview.value = null;
 
-            // Refresh billing history
+            // Refresh billing history and default start date
             await loadBillingHistory();
+            await loadDefaultDates();
         } else {
             toast.add({
                 severity: 'error',
@@ -628,9 +629,19 @@ async function loadDefaultDates() {
         const gym = await GymService.getMyGym();
         console.log('BillingManagement.loadDefaultDates: gym =', gym);
         if (gym) {
-            // Use lastBillingRunDate if it exists, otherwise use createdAt
-            const defaultStartDate = gym.lastBillingRunDate || gym.createdAt;
-            billingPeriod.value.startDate = new Date(defaultStartDate);
+            // Use lastBillingRunDate + 1 day if it exists, otherwise use createdAt as-is
+            let defaultStartDate: Date;
+
+            if (gym.lastBillingRunDate) {
+                // Add 1 day to represent the start of the next billing period
+                defaultStartDate = new Date(gym.lastBillingRunDate);
+                defaultStartDate.setDate(defaultStartDate.getDate() + 1);
+            } else {
+                // Use gym creation date as-is (no +1 day needed)
+                defaultStartDate = new Date(gym.createdAt);
+            }
+
+            billingPeriod.value.startDate = defaultStartDate;
         }
         console.log('BillingManagement.loadDefaultDates: billingPeriod.value.startDate =', billingPeriod.value.startDate);
 
