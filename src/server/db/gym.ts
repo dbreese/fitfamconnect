@@ -18,6 +18,7 @@ export interface IGym {
         phone?: string;
     };
     isActive: boolean;
+    lastBillingRunDate?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -45,7 +46,8 @@ const gymSchema = new mongoose.Schema<IGym>(
             email: { type: String, required: true },
             phone: { type: String }
         },
-        isActive: { type: Boolean, default: true }
+        isActive: { type: Boolean, default: true },
+        lastBillingRunDate: { type: Date }
     },
     { timestamps: true }
 );

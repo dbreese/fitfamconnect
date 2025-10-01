@@ -421,13 +421,14 @@ router.post(
         try {
             console.log('billingService.POST /billing/preview: Request received', req.body);
 
-            const { startDate, endDate } = req.body;
+            const { endDate } = req.body;
 
-            if (!startDate || !endDate) {
-                return res.status(400).json(ResponseHelper.error('Start date and end date are required', 400));
+            if (!endDate) {
+                return res.status(400).json(ResponseHelper.error('End date is required', 400));
             }
 
-            const start = new Date(startDate);
+            const gym = await getCurrentUserGym(req.user);
+            const start = await DailyBillingEngine.getDefaultStartDate(gym._id.toString());
             const end = new Date(endDate);
 
             // Normalize dates to UTC for consistent comparison
@@ -445,10 +446,8 @@ router.post(
                 return res.status(409).json(ResponseHelper.error(errorMessage, 409));
             }
 
-            const gym = await getCurrentUserGym(req.user);
-
             // Use daily billing engine to generate preview for the date range
-            const engineResult = await DailyBillingEngine.generateDailyBillingChargesForRange(gym._id.toString(), normalizedStart, normalizedEnd);
+            const engineResult = await DailyBillingEngine.generateDailyBillingChargesForRange(gym._id.toString(), normalizedEnd, normalizedStart);
 
             // Convert engine result to legacy format for compatibility
             const preview = convertDailyRangeEngineResultToPreview(engineResult);
@@ -474,30 +473,34 @@ router.post(
         try {
             console.log('billingService.POST /billing/commit: Request received', req.body);
 
-            const { startDate, endDate, charges } = req.body;
+            const { endDate, charges } = req.body;
 
-            if (!startDate || !endDate || !Array.isArray(charges)) {
+            if (!endDate || !Array.isArray(charges)) {
                 return res
                     .status(400)
-                    .json(ResponseHelper.error('Start date, end date, and charges array are required', 400));
+                    .json(ResponseHelper.error('End date and charges array are required', 400));
             }
 
-            const start = new Date(startDate);
+            const gym = await getCurrentUserGym(req.user);
+            const start = await DailyBillingEngine.getDefaultStartDate(gym._id.toString());
             const end = new Date(endDate);
 
-            if (end <= start) {
-                return res.status(400).json(ResponseHelper.error('End date must be after start date', 400));
+            // Normalize dates to UTC for consistent comparison
+            const normalizedStart = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), 0, 0, 0, 0));
+            const normalizedEnd = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate(), 23, 59, 59, 999));
+
+            if (normalizedEnd < normalizedStart) {
+                return res.status(400).json(ResponseHelper.error('End date must be on or after start date', 400));
             }
 
             // Check for overlapping billing periods
-            const overlappingPeriods = await checkBillingPeriodOverlap(req.user, start, end);
+            const overlappingPeriods = await checkBillingPeriodOverlap(req.user, normalizedStart, normalizedEnd);
             if (overlappingPeriods) {
                 const errorMessage = `Billing period overlaps with existing billing records. Overlapping periods: ${overlappingPeriods.map(p => `${p.startDate.toISOString().split('T')[0]} to ${p.endDate.toISOString().split('T')[0]}`).join(', ')}`;
                 return res.status(409).json(ResponseHelper.error(errorMessage, 409));
             }
 
-            const gym = await getCurrentUserGym(req.user);
-            const result = await commitBillingRunWithEngine(req.user, gym._id.toString(), start, end, charges);
+            const result = await commitBillingRunWithEngine(req.user, gym._id.toString(), normalizedStart, normalizedEnd, charges);
 
             console.log('billingService.POST /billing/commit: Response sent successfully');
             res.status(201).json(ResponseHelper.created(result, 'Billing run committed successfully'));

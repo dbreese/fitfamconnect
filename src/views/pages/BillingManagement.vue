@@ -19,17 +19,12 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div class="field">
                                         <label for="startDate" class="font-medium"
-                                            >{{ t('billing.startDate') }}</label
+                                            >{{ t('billing.lastBillingDate') }}</label
                                         >
-                                        <Calendar
-                                            id="startDate"
-                                            v-model="billingPeriod.startDate"
-                                            class="w-full"
-                                            dateFormat="yy-mm-dd"
-                                            showIcon
-                                            @date-select="onStartDateChange"
-                                        />
-                                        <small class="text-gray-500">{{ t('billing.optionalField') }}</small>
+                                        <div class="p-inputtext p-component w-full bg-gray-100 border-gray-300 text-gray-600">
+                                            {{ billingPeriod.startDate ? formatDate(billingPeriod.startDate) : 'Loading...' }}
+                                        </div>
+                                        <small class="text-gray-500">{{ t('billing.autoSetFromLastBilling') }}</small>
                                     </div>
                                     <div class="field">
                                         <label for="endDate" class="font-medium"
@@ -343,6 +338,7 @@ const props = withDefaults(defineProps<Props>(), {
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import { BillingService, type IBillingPreview, type IBillingHistory } from '../../service/BillingService';
+import { GymService } from '../../service/GymService';
 import Fluid from 'primevue/fluid';
 import Card from 'primevue/card';
 import TabView from 'primevue/tabview';
@@ -398,16 +394,7 @@ function normalizeDateToEndOfDay(date: Date): Date {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
 
-function onStartDateChange() {
-    // When start date changes, automatically set end date to the same date
-    if (billingPeriod.value.startDate) {
-        const normalizedDate = normalizeDateToMidnight(billingPeriod.value.startDate);
-        billingPeriod.value.startDate = normalizedDate;
-        billingPeriod.value.endDate = new Date(normalizedDate);
-    }
-
-    onEndDateChange();
-}
+// Start date is now read-only and set from Gym's lastBillingRunDate
 
 function onEndDateChange() {
     // Normalize end date to midnight to avoid time component issues
@@ -420,31 +407,18 @@ function onEndDateChange() {
 }
 
 async function generatePreview() {
-    // Default to today if no dates are provided
-    const startDate = billingPeriod.value.startDate || new Date();
+    // End date is required, start date comes from Gym's lastBillingRunDate
     const endDate = billingPeriod.value.endDate || new Date();
 
-    // Normalize dates to UTC: start at 00:00:00, end at 23:59:59
-    const normalizedStartDate = normalizeDateToMidnight(startDate);
+    // Normalize end date to end of day
     const normalizedEndDate = normalizeDateToEndOfDay(endDate);
 
-    console.log('BillingManagement.generatePreview: normalizedStartDate =', normalizedStartDate);
-    console.log('BillingManagement.generatePreview: normalizedEndDate =', normalizedEndDate);
-
-    // Validate that end date is not before start date
-    if (normalizedEndDate < normalizedStartDate) {
-        toast.add({
-            severity: 'warn',
-            summary: t('feedback.errorTitle'),
-            detail: t('billing.validation.endDateAfterStart'),
-            life: 3000
-        });
-        return;
-    }
+    console.log('BillingManagement.generatePreview: endDate =', normalizedEndDate);
 
     loading.value = true;
     try {
-        const result = await BillingService.generatePreview(normalizedStartDate, normalizedEndDate);
+        // Server will use Gym's lastBillingRunDate as start date
+        const result = await BillingService.generatePreview(normalizedEndDate);
 
         if (result) {
             preview.value = result;
@@ -482,7 +456,6 @@ async function commitBilling() {
     committing.value = true;
     try {
         const result = await BillingService.commitBillingRun(
-            billingPeriod.value.startDate || new Date(),
             billingPeriod.value.endDate || new Date(),
             preview.value.charges
         );
@@ -651,8 +624,32 @@ function resetFilter() {
 }
 
 
+async function loadDefaultDates() {
+    try {
+        // Get the gym data which includes lastBillingRunDate
+        const gym = await GymService.getMyGym();
+        console.log('BillingManagement.loadDefaultDates: gym =', gym);
+        if (gym) {
+            // Use lastBillingRunDate if it exists, otherwise use createdAt
+            const defaultStartDate = gym.lastBillingRunDate || gym.createdAt;
+            billingPeriod.value.startDate = new Date(defaultStartDate);
+        }
+        console.log('BillingManagement.loadDefaultDates: billingPeriod.value.startDate =', billingPeriod.value.startDate);
+
+        // Set end date to today
+        billingPeriod.value.endDate = new Date();
+        console.log('BillingManagement.loadDefaultDates: billingPeriod.value.endDate =', billingPeriod.value.endDate);
+    } catch (error) {
+        console.error('Error loading default dates:', error);
+        // Fallback to today for both dates if there's an error
+        billingPeriod.value.startDate = new Date();
+        billingPeriod.value.endDate = new Date();
+    }
+}
+
 onMounted(() => {
     loadBillingHistory();
+    loadDefaultDates();
 });
 </script>
 

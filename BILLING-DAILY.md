@@ -110,14 +110,20 @@ Billing runs for Sept 30 startDate to Sept 30 endDate.
 Results:
 - Sept 30: $100
 
+#### One-time charges are only charged a single time when multi-day billing occurs.
+Member has a 1-time charge for $3 on Sept 6.
+Billing runs from Sept 1 - Sept 30.
+
+Results:
+- only a single 1-time charge for $3 is charged to member.
+
 #### TODO: Scenarios we need to create tests for
 Dont do anything for these just yet.
 - TBD
 
 # Bugs
 Ignore this section, using it to track some in-progress issues.
-- What if user selects a span that already has been processed? Ie, they builled for 9/10, but run a billing cycle for 9/1 - 9/30?
-- How to use lastBillingRunDate?
+- What if they spoof the billing commit data and submit it? We should re-calculate the charges to ensure it matches? Or use a signature?
 
 # Billing Run
 

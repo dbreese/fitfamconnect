@@ -2,6 +2,7 @@ import { Membership } from '../db/membership';
 import { Member } from '../db/member';
 import { Plan } from '../db/plan';
 import { Charge } from '../db/charge';
+import { Gym } from '../db/gym';
 import type { IMembership } from '../db/membership';
 import type { IMember } from '../db/member';
 import type { IPlan } from '../db/plan';
@@ -42,20 +43,45 @@ export interface DailyBillingRangeResult {
 
 export class DailyBillingEngine {
     /**
+     * Get the default start date for billing based on Gym's lastBillingRunDate
+     * If no lastBillingRunDate exists, use the Gym's createdAt date
+     */
+    static async getDefaultStartDate(gymId: string): Promise<Date> {
+        const gym = await Gym.findById(gymId);
+        if (!gym) {
+            throw new Error('Gym not found');
+        }
+
+        // Use lastBillingRunDate if it exists, otherwise use createdAt
+        const defaultStartDate = gym.lastBillingRunDate || gym.createdAt;
+
+        // Normalize to midnight UTC
+        return new Date(Date.UTC(
+            defaultStartDate.getUTCFullYear(),
+            defaultStartDate.getUTCMonth(),
+            defaultStartDate.getUTCDate()
+        ));
+    }
+
+    /**
      * Generate billing charges for a date range (iterates day-by-day)
      * This is used for batch billing when catching up on multiple days
      */
     static async generateDailyBillingChargesForRange(
         gymId: string,
-        startDate: Date,
-        endDate: Date
+        endDate: Date,
+        startDate?: Date
     ): Promise<DailyBillingRangeResult> {
-        console.log('generateDailyBillingChargesForRange: ', {gymId, startDate, endDate});
+        // Use default start date if not provided
+        const actualStartDate = startDate || await this.getDefaultStartDate(gymId);
+
+        console.log('generateDailyBillingChargesForRange: ', {gymId, startDate: actualStartDate, endDate});
+
         // Normalize dates to midnight UTC
         const normalizedStart = new Date(Date.UTC(
-            startDate.getUTCFullYear(),
-            startDate.getUTCMonth(),
-            startDate.getUTCDate()
+            actualStartDate.getUTCFullYear(),
+            actualStartDate.getUTCMonth(),
+            actualStartDate.getUTCDate()
         ));
 
         const normalizedEnd = new Date(Date.UTC(

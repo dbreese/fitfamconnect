@@ -61,15 +61,15 @@ export interface IBillingHistory {
 export class BillingService {
     private static baseUrl = '/billing';
 
+
     /**
      * Generate billing preview for given period
      */
-    static async generatePreview(startDate: Date, endDate: Date): Promise<IBillingPreview | null> {
-        console.log(`BillingService.generatePreview: Generating preview for ${startDate} to ${endDate}`);
+    static async generatePreview(endDate: Date): Promise<IBillingPreview | null> {
+        console.log(`BillingService.generatePreview: Generating preview to ${endDate}`);
 
         try {
             const response = await submit('POST', `${this.baseUrl}/preview`, {
-                startDate: startDate.toISOString(),
                 endDate: endDate.toISOString()
             });
 
@@ -94,17 +94,15 @@ export class BillingService {
      * Commit billing run
      */
     static async commitBillingRun(
-        startDate: Date,
         endDate: Date,
         charges: IBillingCharge[]
     ): Promise<IBillingCommitResult | null> {
         console.log(
-            `BillingService.commitBillingRun: Committing billing run for ${startDate} to ${endDate} with ${charges.length} charges`
+            `BillingService.commitBillingRun: Committing billing run to ${endDate} with ${charges.length} charges`
         );
 
         try {
             const response = await submit('POST', `${this.baseUrl}/commit`, {
-                startDate: startDate.toISOString(),
                 endDate: endDate.toISOString(),
                 charges
             });
