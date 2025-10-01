@@ -95,6 +95,7 @@ export class DailyBillingEngine {
 
         const chargesByDate = new Map<string, DailyBillingChargeWithMeta[]>();
         const allCharges: DailyBillingChargeWithMeta[] = [];
+        const processedOneTimeCharges = new Set<string>(); // Track processed one-time charges
         let daysProcessed = 0;
 
         // Iterate through each day in the range
@@ -104,12 +105,26 @@ export class DailyBillingEngine {
             // Generate charges for this specific day, passing in pre-fetched members
             const dayResult = await this.generateDailyBillingCharges(gymId, new Date(currentDate), members);
 
-            // Store charges by date
+            // Filter out one-time charges that have already been processed in this multi-day billing run
+            const filteredCharges = dayResult.charges.filter(charge => {
+                if (charge.type === 'one-time-charge' && charge.chargeId) {
+                    if (processedOneTimeCharges.has(charge.chargeId)) {
+                        return false; // Skip this one-time charge, already processed in this billing run
+                    }
+                    processedOneTimeCharges.add(charge.chargeId);
+                }
+                // Always include recurring charges (they can be billed multiple times)
+                return true;
+            });
+
+            // Store charges by date (only if there are charges)
             const dateKey = currentDate.toISOString().split('T')[0];
-            chargesByDate.set(dateKey, dayResult.charges);
+            if (filteredCharges.length > 0) {
+                chargesByDate.set(dateKey, filteredCharges);
+            }
 
             // Accumulate all charges
-            allCharges.push(...dayResult.charges);
+            allCharges.push(...filteredCharges);
 
             daysProcessed++;
 

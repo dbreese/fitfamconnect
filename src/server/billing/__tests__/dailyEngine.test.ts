@@ -226,8 +226,8 @@ describe('DailyBillingEngine', () => {
             // This is computationally intensive but ensures correctness
             const rangeResult = await DailyBillingEngine.generateDailyBillingChargesForRange(
                 gym._id,
-                new Date('2025-09-02'), // Day after first billing
-                new Date('2026-08-31')  // Day before second billing
+                new Date('2026-08-31'), // Day before second billing (end date)
+                new Date('2025-09-02')  // Day after first billing (start date)
             );
 
             // Should have 0 charges across all 364 days
@@ -249,8 +249,8 @@ describe('DailyBillingEngine', () => {
             // Process billing range from Aug 25 to Sept 30 (simulating gym's lastBillingRunDate = Aug 25)
             const rangeResult = await DailyBillingEngine.generateDailyBillingChargesForRange(
                 gym._id,
-                new Date('2025-08-26'), // Start from lastBillingRunDate + 1
-                new Date('2025-09-30')
+                new Date('2025-09-30'), // End date
+                new Date('2025-08-26')  // Start from lastBillingRunDate + 1
             );
 
             // Should have charges on Sept 1 only
@@ -265,10 +265,10 @@ describe('DailyBillingEngine', () => {
 
             // Verify no charges on other days
             const aug26Charges = rangeResult.chargesByDate.get('2025-08-26');
-            expect(aug26Charges).toHaveLength(0);
+            expect(aug26Charges).toBeUndefined();
 
             const sept2Charges = rangeResult.chargesByDate.get('2025-09-02');
-            expect(sept2Charges).toHaveLength(0);
+            expect(sept2Charges).toBeUndefined();
 
             // Simulate billing completion and test Oct 1
             await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2025-09-01'));
@@ -319,6 +319,48 @@ describe('DailyBillingEngine', () => {
             const membership = await Membership.findOne({ memberId: member._id, planId: monthlyPlan._id });
             expect(membership?.nextBillDate).toBeDefined();
             expect(membership?.nextBillDate?.getTime()).toBe(new Date('2025-10-30').getTime());
+        });
+    });
+
+    describe('One-time charges - multi-day billing', () => {
+        it('should only charge one-time charges once during multi-day billing period', async () => {
+            // Setup - as per BILLING-DAILY.md scenario
+            const gym = await createTestGym();
+            const member = await createTestMember(gym._id, 'Test', 'Member');
+
+            // Create a one-time charge for $3 on Sept 6
+            await createTestCharge(member._id, 300, 'One-time charge', new Date('2025-09-06'), false);
+
+            // Test multi-day billing from Sept 1 to Sept 30
+            const septRangeResult = await DailyBillingEngine.generateDailyBillingChargesForRange(
+                gym._id,
+                new Date('2025-09-30'),
+                new Date('2025-09-01')
+            );
+
+            expect(septRangeResult.summary.totalCharges).toBe(1);
+            expect(septRangeResult.allCharges).toHaveLength(1);
+            expect(septRangeResult.allCharges[0].amount).toBe(300); // $3
+            expect(septRangeResult.allCharges[0].type).toBe('one-time-charge');
+            expect(septRangeResult.summary.oneTimeCharges).toBe(1);
+            expect(septRangeResult.summary.recurringPlans).toBe(0);
+
+            // Verify the charge appears only on Sept 6
+            const sept6Charges = septRangeResult.chargesByDate.get('2025-09-06');
+            expect(sept6Charges).toHaveLength(1);
+            expect(sept6Charges![0].amount).toBe(300);
+
+            // Verify no charges on other days
+            const sept1Charges = septRangeResult.chargesByDate.get('2025-09-01');
+            const sept15Charges = septRangeResult.chargesByDate.get('2025-09-15');
+            const sept30Charges = septRangeResult.chargesByDate.get('2025-09-30');
+
+            expect(sept1Charges).toBeUndefined();
+            expect(sept15Charges).toBeUndefined();
+            expect(sept30Charges).toBeUndefined();
+
+            // Verify total amount is $3
+            expect(septRangeResult.summary.totalAmount).toBe(300);
         });
     });
 
