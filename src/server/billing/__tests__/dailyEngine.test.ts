@@ -284,6 +284,44 @@ describe('DailyBillingEngine', () => {
         });
     });
 
+    describe('Member joins Sept 30, monthly billing, single day billed', () => {
+        it('should bill $100 on Sept 30 when billing runs for Sept 30 to Sept 30', async () => {
+            // Setup - as per BILLING-DAILY.md scenario
+            const gym = await createTestGym();
+            const member = await createTestMember(gym._id, 'Late', 'Joiner');
+            const monthlyPlan = await createTestPlan('Monthly Plan', 10000, 'monthly', gym._id); // $100
+
+            // Member joins Sept 30th
+            await createTestMembership(member._id, monthlyPlan._id, new Date('2025-09-30'));
+
+            // Test Sept 30 billing (single day)
+            const sept30Result = await DailyBillingEngine.generateDailyBillingChargesForRange(
+                gym._id,
+                new Date('2025-09-30'),
+                new Date('2025-09-30')
+            );
+
+            expect(sept30Result.summary.totalCharges).toBe(1);
+            expect(sept30Result.allCharges).toHaveLength(1);
+            expect(sept30Result.allCharges[0].amount).toBe(10000); // $100
+            expect(sept30Result.allCharges[0].type).toBe('recurring-plan');
+            expect(sept30Result.summary.daysProcessed).toBe(1);
+
+            // Verify charges are on Sept 30
+            const sept30Charges = sept30Result.chargesByDate.get('2025-09-30');
+            expect(sept30Charges).toHaveLength(1);
+            expect(sept30Charges![0].amount).toBe(10000);
+
+            // Simulate billing completion
+            await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2025-09-30'));
+
+            // Verify nextBillDate was set correctly (should be Oct 30)
+            const membership = await Membership.findOne({ memberId: member._id, planId: monthlyPlan._id });
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2025-10-30').getTime());
+        });
+    });
+
     describe('One-time charges', () => {
         it('should include unbilled one-time charges that occurred before or on billing date', async () => {
             // Setup

@@ -50,6 +50,7 @@ export class DailyBillingEngine {
         startDate: Date,
         endDate: Date
     ): Promise<DailyBillingRangeResult> {
+        console.log('generateDailyBillingChargesForRange: ', {gymId, startDate, endDate});
         // Normalize dates to midnight UTC
         const normalizedStart = new Date(Date.UTC(
             startDate.getUTCFullYear(),

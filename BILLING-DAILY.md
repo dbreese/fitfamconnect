@@ -103,9 +103,21 @@ Results:
 - Sept 30: $100
 - Oct 1: $100
 
+
+#### Member joins on Sept 30, 2025 and is on monthly billing. Startdate is set to Sept 30. Multi-days billed.
+Billing runs for Sept 30 startDate to Sept 30 endDate.
+
+Results:
+- Sept 30: $100
+
 #### TODO: Scenarios we need to create tests for
 Dont do anything for these just yet.
 - TBD
+
+# Bugs
+Ignore this section, using it to track some in-progress issues.
+- What if user selects a span that already has been processed? Ie, they builled for 9/10, but run a billing cycle for 9/1 - 9/30?
+- How to use lastBillingRunDate?
 
 # Billing Run
 
