@@ -244,6 +244,7 @@ export class DailyBillingEngine {
         members: IMember[],
         billingDate: Date
     ): Promise<DailyBillingChargeWithMeta[]> {
+        console.log('getRecurringCharges: ', billingDate);
         const memberIds = members.map(m => m._id!.toString());
 
         // Find memberships where nextBillDate matches the billing date
@@ -277,6 +278,7 @@ export class DailyBillingEngine {
         const recurringCharges: DailyBillingChargeWithMeta[] = [];
 
         for (const membership of memberships) {
+            // TODO: optimize this by fetching plans in bulk instead of one by one
             const plan = await Plan.findById(membership.planId);
             if (!plan || !plan.isActive) {
                 continue;
@@ -287,7 +289,7 @@ export class DailyBillingEngine {
                 continue;
             }
 
-            recurringCharges.push({
+            const newCharge = {
                 memberId: membership.memberId.toString(),
                 memberName: `${member.firstName} ${member.lastName}`,
                 planId: plan._id?.toString(),
@@ -298,7 +300,9 @@ export class DailyBillingEngine {
                 isBilled: false,
                 type: 'recurring-plan' as const,
                 membershipId: membership._id?.toString()
-            });
+            };
+            console.log('getRecurringCharges: newCharge: ', newCharge);
+            recurringCharges.push(newCharge);
         }
 
         return recurringCharges;
@@ -357,6 +361,7 @@ export class DailyBillingEngine {
      * Create charge records from daily billing charges
      */
     static async createChargeRecords(charges: DailyBillingChargeWithMeta[], billingId: string): Promise<number> {
+        console.log('createChargeRecords: ', {charges, billingId});
         let createdCount = 0;
 
         for (const charge of charges) {
@@ -393,10 +398,12 @@ export class DailyBillingEngine {
 
                 // Update membership lastBilledDate and nextBillDate
                 if (charge.membershipId) {
-                    await this.updateMembershipBillingDate(charge.membershipId, new Date(), charge.planId);
+                    console.log('createChargeRecords: updating membership billing date: ', {membershipId: charge.membershipId, chargeDate: charge.chargeDate, planId: charge.planId});
+                    await this.updateMembershipBillingDate(charge.membershipId, charge.chargeDate, charge.planId);
                 }
             }
         }
+        console.log('createChargeRecords: createdCount: ', createdCount);
         return createdCount;
     }
 }

@@ -713,7 +713,7 @@ export class MonthlyBillingEngine {
 
                 // Update membership lastBilledDate and nextBillDate
                 if (charge.membershipId) {
-                    await this.updateMembershipBillingDate(charge.membershipId, new Date(), charge.planId);
+                    await this.updateMembershipBillingDate(charge.membershipId, charge.chargeDate, charge.planId);
                 }
             }
         }

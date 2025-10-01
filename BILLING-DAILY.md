@@ -48,8 +48,26 @@ For each test:
 - Start dates are in the year 2025
 - Times are in UTC
 
+#### Verify charge dates are correct for single day billing.
+Member joins on Sept 1 and is on monthly billing. StartDate is Sept 1. Single day billed.
+Gym has lastBillingRunDate = Aug 10.
+Billing runs on Sept 1st.
+
+Results:
+- Sept 1: $100
+- Charge Date has a date of Sept 1.
+
+#### Verify charge dates are correct for multiple day billing.
+Member joins on Sept 3 and is on monthly billing. StartDate is Sept 3. Single day billed.
+Gym has lastBillingRunDate = Aug 10.
+Billing runs for Sept 1st - Sept 4.
+
+Results:
+- Sept 4: $100
+- Charge Date has a date of Sept 3.
+
 #### Member joins on Aug 31st and is on monthly billing. StartDate is set to Sept 1. Single day billed.
-Gym has lastBillingRunDate = today - 1 day.
+Gym has lastBillingRunDate = Aug 10.
 Billing runs on Sept 1st, 2nd, and 30th.
 Billing runs on Oct 1st.
 
@@ -70,6 +88,14 @@ Results:
 - All other days in Sept are $0
 - Oct 1: $100
 - All other days in Oct are $0
+
+#### Member joins on Sept 1st and is on monthly billing. StartDate is set to Sept 1. Single day billed for next 365 days.
+Gym has lastBillingRunDate = Aug 15.
+Billing runs on every day for the year, starting on Sept 1.
+
+Results: 
+- $100 is billed on the 1st of every month.
+- $0 is billed on all other days.
 
 #### Member joins on Sept 1st and is on weekly billing. StartDate is set to Sept 1. Single day billed.
 Gym has lastBillingRunDate = today - 1 day.

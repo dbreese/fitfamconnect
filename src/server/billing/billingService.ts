@@ -493,13 +493,6 @@ router.post(
                 return res.status(400).json(ResponseHelper.error('End date must be on or after start date', 400));
             }
 
-            // Check for overlapping billing periods
-            const overlappingPeriods = await checkBillingPeriodOverlap(req.user, normalizedStart, normalizedEnd);
-            if (overlappingPeriods) {
-                const errorMessage = `Billing period overlaps with existing billing records. Overlapping periods: ${overlappingPeriods.map(p => `${p.startDate.toISOString().split('T')[0]} to ${p.endDate.toISOString().split('T')[0]}`).join(', ')}`;
-                return res.status(409).json(ResponseHelper.error(errorMessage, 409));
-            }
-
             const result = await commitBillingRunWithEngine(req.user, gym._id.toString(), normalizedStart, normalizedEnd, charges);
 
             console.log('billingService.POST /billing/commit: Response sent successfully');
@@ -790,7 +783,7 @@ async function commitBillingRunWithEngine(
     console.log(`billingService.commitBillingRunWithEngine: Created billing record ${savedBilling._id}`);
 
     // Use engine to create charge records
-    const createdCharges = await MonthlyBillingEngine.createChargeRecords(charges, savedBilling._id.toString());
+    const createdCharges = await DailyBillingEngine.createChargeRecords(charges, savedBilling._id.toString());
 
     // Update Gym's lastBillingRunDate to the end date of this billing run
     await Gym.findByIdAndUpdate(gymId, { lastBillingRunDate: endDate });
