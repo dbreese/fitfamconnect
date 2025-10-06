@@ -78,7 +78,7 @@ export class MonthlyBillingEngine {
         const unbilledCharges = await Charge.find({
             memberId: { $in: memberIds },
             isBilled: false,
-            planId: { $exists: false }, // One-time charges don't have planId
+            membershipId: { $exists: false }, // One-time charges don't have membershipId
             chargeDate: { $lte: endDate } // Note: No start date filter as per BILLING.md
         });
 
@@ -87,7 +87,6 @@ export class MonthlyBillingEngine {
             return {
                 memberId: charge.memberId.toString(),
                 memberName: member ? `${member.firstName} ${member.lastName}` : 'Unknown',
-                planId: charge.planId,
                 productId: charge.productId,
                 amount: charge.amount,
                 note: charge.note || 'One-time charge',
@@ -196,7 +195,6 @@ export class MonthlyBillingEngine {
             recurringCharges.push({
                 memberId: membership.memberId.toString(),
                 memberName: `${member.firstName} ${member.lastName}`,
-                planId: plan._id?.toString(),
                 planName: plan.name,
                 amount: plan.price,
                 note: plan.name, // Carry forward the plan name
@@ -296,7 +294,6 @@ export class MonthlyBillingEngine {
                 proRatedCharges.push({
                     memberId: membership.memberId.toString(),
                     memberName: `${member.firstName} ${member.lastName}`,
-                    planId: plan._id?.toString(),
                     planName: plan.name,
                     amount: proRatedAmount,
                     note: `${plan.name} (pro-rated)`, // Plan name with pro-rated indicator
@@ -416,10 +413,10 @@ export class MonthlyBillingEngine {
         startDate: Date,
         endDate: Date
     ): Promise<boolean> {
-        // Find the most recent charge for this membership/plan combination
+        // Find the most recent charge for this membership
         const previousCharge = await Charge.findOne({
             memberId: membership.memberId,
-            planId: membership.planId,
+            membershipId: membership._id,
             isBilled: true
         }).sort({ chargeDate: -1 }); // Most recent first
 
@@ -657,14 +654,15 @@ export class MonthlyBillingEngine {
     /**
      * Update membership lastBilledDate and nextBillDate after successful billing
      */
-    static async updateMembershipBillingDate(membershipId: string, billingDate: Date, planId?: string): Promise<void> {
+    static async updateMembershipBillingDate(membershipId: string, billingDate: Date): Promise<void> {
         const updateData: any = {
             lastBilledDate: billingDate
         };
 
-        // If we have a plan ID, calculate the next billing date
-        if (planId) {
-            const plan = await Plan.findById(planId);
+        // Get the membership to find the planId
+        const membership = await Membership.findById(membershipId);
+        if (membership && membership.planId) {
+            const plan = await Plan.findById(membership.planId);
             if (plan && plan.recurringPeriod) {
                 updateData.nextBillDate = this.calculateNextBillingDate(billingDate, plan.recurringPeriod);
             }
@@ -698,7 +696,7 @@ export class MonthlyBillingEngine {
                 // Create new charge record for recurring/pro-rated charges
                 const newCharge = new Charge({
                     memberId: charge.memberId,
-                    planId: charge.planId,
+                    membershipId: charge.membershipId,
                     productId: charge.productId,
                     amount: charge.amount,
                     note: charge.note,
@@ -713,7 +711,7 @@ export class MonthlyBillingEngine {
 
                 // Update membership lastBilledDate and nextBillDate
                 if (charge.membershipId) {
-                    await this.updateMembershipBillingDate(charge.membershipId, charge.chargeDate, charge.planId);
+                    await this.updateMembershipBillingDate(charge.membershipId, charge.chargeDate);
                 }
             }
         }

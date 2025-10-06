@@ -39,6 +39,7 @@
     - [ ] Taxes
     - [ ] New member charges, instant charge
     - [ ] Issue refunds
+    - [ ] Can easily see member billing information and transactions.
 
 - [ ] Payments
     - [ ] Stripe Restricted Key

@@ -383,6 +383,14 @@ describe('DailyBillingEngine', () => {
             const sept30Charges = rangeResult.chargesByDate.get('2025-09-30');
             expect(sept30Charges).toHaveLength(1);
             expect(sept30Charges![0].amount).toBe(175000);
+
+            // simulate billing completion
+            await simulateBillingCompletion(member._id, monthlyPlan._id, new Date('2025-09-30'));
+
+            // Verify nextBillDate was set correctly (should be Sept 30 of next year)
+            const membership = await Membership.findOne({ memberId: member._id, planId: monthlyPlan._id });
+            expect(membership?.nextBillDate).toBeDefined();
+            expect(membership?.nextBillDate?.getTime()).toBe(new Date('2026-09-30').getTime());
         });
     });
 
@@ -711,11 +719,11 @@ async function createTestCharge(
     note: string,
     chargeDate: Date,
     isBilled: boolean,
-    planId?: string
+    membershipId?: string
 ): Promise<any> {
     const charge = new Charge({
         memberId,
-        planId,
+        membershipId,
         amount,
         note,
         chargeDate,
@@ -729,7 +737,7 @@ async function simulateBillingCompletion(memberId: string, planId: string, billi
     // Use the DailyBillingEngine's updateMembershipBillingDate method
     const membership = await Membership.findOne({ memberId, planId });
     if (membership) {
-        await DailyBillingEngine.updateMembershipBillingDate(membership._id!.toString(), billingDate, planId);
+        await DailyBillingEngine.updateMembershipBillingDate(membership._id!.toString(), billingDate);
     }
 }
 

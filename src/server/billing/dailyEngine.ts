@@ -214,7 +214,7 @@ export class DailyBillingEngine {
         const unbilledCharges = await Charge.find({
             memberId: { $in: memberIds },
             isBilled: false,
-            planId: { $exists: false }, // One-time charges don't have planId
+            membershipId: { $exists: false }, // One-time charges don't have membershipId
             chargeDate: { $lte: billingDate } // Occurred before or on billing date
         });
 
@@ -223,7 +223,6 @@ export class DailyBillingEngine {
             return {
                 memberId: charge.memberId.toString(),
                 memberName: member ? `${member.firstName} ${member.lastName}` : 'Unknown',
-                planId: charge.planId,
                 productId: charge.productId,
                 amount: charge.amount,
                 note: charge.note || 'One-time charge',
@@ -292,7 +291,6 @@ export class DailyBillingEngine {
             const newCharge = {
                 memberId: membership.memberId.toString(),
                 memberName: `${member.firstName} ${member.lastName}`,
-                planId: plan._id?.toString(),
                 planName: plan.name,
                 amount: plan.price,
                 note: plan.name,
@@ -341,16 +339,20 @@ export class DailyBillingEngine {
     /**
      * Update membership lastBilledDate and nextBillDate after successful billing
      */
-    static async updateMembershipBillingDate(membershipId: string, billingDate: Date, planId?: string): Promise<void> {
+    static async updateMembershipBillingDate(membershipId: string, billingDate: Date): Promise<void> {
+        console.log('updateMembershipBillingDate: ', {membershipId, billingDate});
         const updateData: any = {
             lastBilledDate: billingDate
         };
+        console.log('updateMembershipBillingDate: updateData: ', updateData);
 
-        // If we have a plan ID, calculate the next billing date
-        if (planId) {
-            const plan = await Plan.findById(planId);
+        // Get the membership to find the planId
+        const membership = await Membership.findById(membershipId);
+        if (membership && membership.planId) {
+            const plan = await Plan.findById(membership.planId);
             if (plan && plan.recurringPeriod) {
                 updateData.nextBillDate = this.calculateNextBillingDate(billingDate, plan.recurringPeriod);
+                console.log('updateMembershipBillingDate: nextBillDate: ', updateData.nextBillDate);
             }
         }
 
@@ -383,7 +385,7 @@ export class DailyBillingEngine {
                 // Create new charge record for recurring charges
                 const newCharge = new Charge({
                     memberId: charge.memberId,
-                    planId: charge.planId,
+                    membershipId: charge.membershipId,
                     productId: charge.productId,
                     amount: charge.amount,
                     note: charge.note,
@@ -393,13 +395,15 @@ export class DailyBillingEngine {
                     billingId
                 });
 
+                console.log('createChargeRecords: newCharge: ', newCharge);
+
                 await newCharge.save();
                 createdCount++;
 
                 // Update membership lastBilledDate and nextBillDate
-                if (charge.membershipId) {
-                    console.log('createChargeRecords: updating membership billing date: ', {membershipId: charge.membershipId, chargeDate: charge.chargeDate, planId: charge.planId});
-                    await this.updateMembershipBillingDate(charge.membershipId, charge.chargeDate, charge.planId);
+                if (newCharge.membershipId) {
+                    console.log('createChargeRecords: updating membership billing date: ', {membershipId: newCharge.membershipId, chargeDate: newCharge.chargeDate});
+                    await this.updateMembershipBillingDate(newCharge.membershipId, newCharge.chargeDate);
                 }
             }
         }
