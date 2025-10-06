@@ -14,7 +14,6 @@ import Column from 'primevue/column';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Select from 'primevue/select';
-import MultiSelect from 'primevue/multiselect';
 import Calendar from 'primevue/calendar';
 import Checkbox from 'primevue/checkbox';
 import Toast from 'primevue/toast';
@@ -219,8 +218,8 @@ function openEditDialog(member: any) {
     formData.value = {
         status: member.status,
         planId: activePlan ? activePlan._id : '',
-        startDate: activePlan?.startDate ? new Date(activePlan.startDate) : new Date(),
-        endDate: activePlan?.endDate ? new Date(activePlan.endDate) : null,
+        startDate: activePlan?.startDate ? createDateFromUTC(activePlan.startDate) : new Date(),
+        endDate: activePlan?.endDate ? createDateFromUTC(activePlan.endDate) : null,
         notes: member.notes || ''
     };
 
@@ -247,7 +246,7 @@ function openEditChargeDialog(charge: any) {
     selectedCharge.value = charge;
     chargeFormData.value = {
         amount: (charge.amount / 100).toFixed(2),
-        chargeDate: new Date(charge.chargeDate),
+        chargeDate: createDateFromUTC(charge.chargeDate),
         note: charge.note || '',
         isBilled: charge.isBilled,
         productId: charge.productId || ''
@@ -259,7 +258,7 @@ function openViewChargeDialog(charge: any) {
     selectedCharge.value = charge;
     chargeFormData.value = {
         amount: (charge.amount / 100).toFixed(2),
-        chargeDate: new Date(charge.chargeDate),
+        chargeDate: createDateFromUTC(charge.chargeDate),
         note: charge.note || '',
         isBilled: charge.isBilled,
         productId: charge.productId || ''
@@ -674,16 +673,27 @@ function formatJoinDate(date: string | Date): string {
     return new Date(date).toLocaleDateString();
 }
 
+// Utility function to create a Date object from UTC date string without timezone conversion
+function createDateFromUTC(dateString: string): Date {
+    // If the date string is in YYYY-MM-DD format (UTC midnight), create date in local timezone
+    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day); // month is 0-indexed
+    }
+    // For other date formats, use the standard Date constructor
+    return new Date(dateString);
+}
+
 function getMemberDisplayDate(member: any): string {
     // If member has active plans, show the earliest start date
     if (member.plans && member.plans.length > 0) {
         const activePlans = member.plans.filter((plan: any) => plan.startDate);
         if (activePlans.length > 0) {
-            const earliestStartDate = activePlans.reduce((earliest: any, plan: any) => {
-                const planStartDate = new Date(plan.startDate);
-                const earliestDate = new Date(earliest.startDate);
-                return planStartDate < earliestDate ? plan : earliest;
-            });
+        const earliestStartDate = activePlans.reduce((earliest: any, plan: any) => {
+            const planStartDate = createDateFromUTC(plan.startDate);
+            const earliestDate = createDateFromUTC(earliest.startDate);
+            return planStartDate < earliestDate ? plan : earliest;
+        });
             return formatJoinDate(earliestStartDate.startDate);
         }
     }

@@ -2,6 +2,9 @@ import express, { type Response } from 'express';
 import { authenticateUser, authorizeRoles } from '../auth/auth';
 import type { AuthenticatedRequest } from '../auth/auth';
 import { Member } from '../db/member';
+import { Gym } from '../db/gym';
+import type { IMember } from '../db/member';
+import type { IUser } from '../db/user';
 import type { ServerResponse } from '../../shared/ServerResponse';
 
 const router = express.Router();
