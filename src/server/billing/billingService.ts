@@ -771,6 +771,8 @@ async function commitBillingRunWithEngine(
     endDate: Date,
     charges: any[]
 ) {
+    // SECURITY: NEED TO SIGN THE TRANSACTION AND CHECK THE SIGNATURE TO ENSURE IT IS NOT TAMPERED WITH.
+
     // Create billing record
     const billingRecord = new Billing({
         memberId: user!._id,

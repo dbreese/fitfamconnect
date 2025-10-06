@@ -357,6 +357,33 @@ describe('DailyBillingEngine', () => {
             expect(octRangeResult.summary.totalCharges).toBe(1);
             expect(octRangeResult.summary.totalAmount).toBe(10000);
         });
+
+        it('Multi-day, yearly charge in middle of range.', async () => {
+            // Setup
+            const gym = await createTestGym();
+            const member = await createTestMember(gym._id, 'Range', 'Test');
+            const monthlyPlan = await createTestPlan('Yearly Plan', 175000, 'yearly', gym._id); // $1750
+
+            // Member joins Sept 30
+            await createTestMembership(member._id, monthlyPlan._id, new Date('2025-09-30'));
+
+            // Process billing range from Sept 26 - Oct 6 (simulating gym's lastBillingRunDate = Sept 25)
+            const rangeResult = await DailyBillingEngine.generateDailyBillingChargesForRange(
+                gym._id,
+                new Date('2025-10-06'), // End date
+                new Date('2025-09-26')  // Start from lastBillingRunDate + 1
+            );
+
+            // Should have charges for the year
+            expect(rangeResult.summary.totalCharges).toBe(1);
+            expect(rangeResult.summary.totalAmount).toBe(175000);
+            expect(rangeResult.summary.daysProcessed).toBe(11); // Sept 26 - Oct 6 inclusive
+
+            // Verify charges are on Sept 1
+            const sept30Charges = rangeResult.chargesByDate.get('2025-09-30');
+            expect(sept30Charges).toHaveLength(1);
+            expect(sept30Charges![0].amount).toBe(175000);
+        });
     });
 
     describe('Member joins Sept 30, monthly billing, single day billed', () => {

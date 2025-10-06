@@ -12,8 +12,6 @@ router.use(express.json());
 
 // GET /gym - Get the current user's gym
 router.get('/gym', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
-    console.log('DUSTIN WAS HERE');
-    console.log('gymService.getGym: API invoked');
     const user = req.user;
 
     try {

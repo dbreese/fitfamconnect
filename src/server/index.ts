@@ -7,7 +7,6 @@ import compression from 'compression';
 import express from 'express';
 import helmet from 'helmet';
 import path from 'path';
-import { router as aiRouter } from './ai/ai';
 import { router as authRouter } from './auth/auth';
 import { router as userRouter } from './user/userService';
 import { usersRouter } from './users/usersService';
@@ -26,13 +25,11 @@ import { myGymsRouter } from './mygyms/myGymsService';
 import { signupsRouter } from './signups/signupsService';
 import { productRouter } from './product/productService';
 import { memberRouter } from './member/memberService';
-import { recents } from './recents/recents';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import listEndpoints from 'express-list-endpoints';
 import connectDB from './db/database';
-import { connect } from 'http2';
 
 const clerkKey = process.env.CLERK_PUBLISHABLE_KEY;
 if (!clerkKey) {
@@ -70,7 +67,6 @@ app.use(
 app.use(helmet());
 app.use(compression());
 app.use(authRouter);
-app.use(aiRouter);
 app.use(userRouter);
 app.use(usersRouter);
 app.use(feedbackRouter);
@@ -88,7 +84,6 @@ app.use(signupsRouter);
 app.use(productRouter);
 app.use(memberRouter);
 app.use(status);
-app.use(recents);
 
 app.use(express.static(path.join(__dirname, '../')));
 
@@ -116,7 +111,6 @@ process.on('uncaughtException', (error) => {
 console.log('ROUTER ENDPOINTS DEFINED: ');
 console.log(listEndpoints(app));
 console.log(listEndpoints(authRouter));
-console.log(listEndpoints(aiRouter));
 console.log(listEndpoints(userRouter));
 console.log(listEndpoints(usersRouter));
 console.log(listEndpoints(feedbackRouter));
@@ -132,7 +126,6 @@ console.log(listEndpoints(coachRouter));
 console.log(listEndpoints(myGymsRouter));
 console.log(listEndpoints(signupsRouter));
 console.log(listEndpoints(productRouter));
-console.log(listEndpoints(recents));
 
 const port = process.env['PORT'] || 3002;
 app.listen(port, () => console.log(`Server started at ${port}`));
