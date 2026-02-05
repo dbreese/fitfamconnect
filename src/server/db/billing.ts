@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 
 export interface IBilling {
     _id?: string;
+    // TODO: Rename to userId as this is user.id not member.id
     memberId: string; // Reference to Member._id (person who ran billing)
     billingDate: Date; // Date the billing run was created
     startDate: Date; // Start date of the billing cycle period

@@ -114,6 +114,7 @@ export class DailyBillingEngine {
         while (currentDate <= normalizedEnd) {
             // Generate charges for this specific day, passing in pre-fetched members
             const dayResult = await this.generateDailyBillingCharges(gymId, new Date(currentDate), members);
+            console.log('generateDailyBillingChargesForRange: dayResult: ', JSON.stringify(dayResult, null, 2));
 
             // Filter out one-time charges that have already been processed in this multi-day billing run
             const filteredCharges = dayResult.charges.filter(charge => {
@@ -299,6 +300,8 @@ export class DailyBillingEngine {
                 type: 'recurring-plan' as const,
                 membershipId: membership._id?.toString()
             };
+            console.log('getRecurringCharges: membership._id: ', membership._id);
+            console.log('getRecurringCharges: membershipId: ', newCharge.membershipId);
             console.log('getRecurringCharges: newCharge: ', newCharge);
             recurringCharges.push(newCharge);
         }
@@ -383,6 +386,7 @@ export class DailyBillingEngine {
                 }
             } else {
                 // Create new charge record for recurring charges
+                console.log('createChargeRecords: charge.membershipId: ', charge.membershipId);
                 const newCharge = new Charge({
                     memberId: charge.memberId,
                     membershipId: charge.membershipId,
@@ -395,9 +399,10 @@ export class DailyBillingEngine {
                     billingId
                 });
 
-                console.log('createChargeRecords: newCharge: ', newCharge);
+                console.log('createChargeRecords: newCharge before save: ', newCharge);
 
                 await newCharge.save();
+                console.log('createChargeRecords: newCharge after save: ', newCharge);
                 createdCount++;
 
                 // Update membership lastBilledDate and nextBillDate

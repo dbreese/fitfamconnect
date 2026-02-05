@@ -119,8 +119,8 @@ async function getBillingHistory(user: IUser | undefined) {
 
             // Calculate statistics
             const totalAmount = charges.reduce((sum, charge) => sum + charge.amount, 0);
-            const recurringCharges = charges.filter(charge => charge.planId);
-            const oneTimeCharges = charges.filter(charge => !charge.planId);
+            const recurringCharges = charges.filter(charge => charge.membershipId);
+            const oneTimeCharges = charges.filter(charge => !charge.membershipId);
 
             const recurringAmount = recurringCharges.reduce((sum, charge) => sum + charge.amount, 0);
             const oneTimeAmount = oneTimeCharges.reduce((sum, charge) => sum + charge.amount, 0);
@@ -191,8 +191,8 @@ async function getMemberBillingHistory(user: IUser | undefined) {
 
             // Calculate statistics
             const totalAmount = charges.reduce((sum, charge) => sum + charge.amount, 0);
-            const recurringCharges = charges.filter(charge => charge.planId);
-            const oneTimeCharges = charges.filter(charge => !charge.planId);
+            const recurringCharges = charges.filter(charge => charge.membershipId);
+            const oneTimeCharges = charges.filter(charge => !charge.membershipId);
 
             const recurringAmount = recurringCharges.reduce((sum, charge) => sum + charge.amount, 0);
             const oneTimeAmount = oneTimeCharges.reduce((sum, charge) => sum + charge.amount, 0);
@@ -238,22 +238,28 @@ async function getBillingDetails(user: IUser | undefined, billingId: string) {
     const members = await Member.find({ _id: { $in: memberIds } });
     const memberMap = new Map(members.map(m => [m._id.toString(), m]));
 
-    // Get plan details for charges that have planId
-    const planIds = [...new Set(charges.filter(c => c.planId).map(c => c.planId))];
+    // Get membership details for charges that have membershipId
+    const membershipIds = [...new Set(charges.filter(c => c.membershipId).map(c => c.membershipId))];
+    const memberships = await Membership.find({ _id: { $in: membershipIds } });
+    const membershipMap = new Map(memberships.map(m => [m._id.toString(), m]));
+
+    // Get plan details for memberships
+    const planIds = [...new Set(memberships.map(m => m.planId))];
     const plans = await Plan.find({ _id: { $in: planIds } });
     const planMap = new Map(plans.map(p => [p._id.toString(), p]));
 
     // Format charges with member and plan details
     const formattedCharges = charges.map(charge => {
         const member = memberMap.get(charge.memberId.toString());
-        const plan = charge.planId ? planMap.get(charge.planId.toString()) : null;
+        const membership = charge.membershipId ? membershipMap.get(charge.membershipId.toString()) : null;
+        const plan = membership ? planMap.get(membership.planId.toString()) : null;
 
         return {
             type: plan ? 'recurring-plan' : 'one-time-charge',
             chargeId: charge._id,
             memberId: charge.memberId,
             memberName: member ? `${member.firstName} ${member.lastName}` : 'Unknown',
-            planId: charge.planId,
+            planId: charge.membershipId,
             planName: plan ? plan.name : null,
             amount: charge.amount,
             description: charge.note || (plan ? `Recurring plan: ${plan.name}` : 'One-time charge'),
@@ -348,22 +354,28 @@ async function getMemberBillingDetails(user: IUser | undefined, billingId: strin
     const members = await Member.find({ _id: { $in: memberIdsInCharges } });
     const memberMap = new Map(members.map(m => [m._id.toString(), m]));
 
-    // Get plan details for charges that have planId
-    const planIds = [...new Set(charges.filter(c => c.planId).map(c => c.planId))];
+    // Get membership details for charges that have membershipId
+    const membershipIds = [...new Set(charges.filter(c => c.membershipId).map(c => c.membershipId))];
+    const memberships = await Membership.find({ _id: { $in: membershipIds } });
+    const membershipMap = new Map(memberships.map(m => [m._id.toString(), m]));
+
+    // Get plan details for memberships
+    const planIds = [...new Set(memberships.map(m => m.planId))];
     const plans = await Plan.find({ _id: { $in: planIds } });
     const planMap = new Map(plans.map(p => [p._id.toString(), p]));
 
     // Format charges with member and plan details
     const formattedCharges = charges.map(charge => {
         const member = memberMap.get(charge.memberId.toString());
-        const plan = charge.planId ? planMap.get(charge.planId.toString()) : null;
+        const membership = charge.membershipId ? membershipMap.get(charge.membershipId.toString()) : null;
+        const plan = membership ? planMap.get(membership.planId.toString()) : null;
 
         return {
             type: plan ? 'recurring-plan' : 'one-time-charge',
             chargeId: charge._id,
             memberId: charge.memberId,
             memberName: member ? `${member.firstName} ${member.lastName}` : 'Unknown',
-            planId: charge.planId,
+            planId: charge.membershipId,
             planName: plan ? plan.name : null,
             amount: charge.amount,
             description: charge.note || (plan ? `Recurring plan: ${plan.name}` : 'One-time charge'),
@@ -632,9 +644,17 @@ router.delete(
             const billingDeleteResult = await Billing.deleteMany({});
             console.log(`billingService.DELETE /billing/clear-all: Deleted ${billingDeleteResult.deletedCount} billing records`);
 
+            // Reset lastBillingRunDate for all gyms
+            const gymUpdateResult = await Gym.updateMany(
+                { lastBillingRunDate: { $exists: true } },
+                { $unset: { lastBillingRunDate: 1 } }
+            );
+            console.log(`billingService.DELETE /billing/clear-all: Reset lastBillingRunDate for ${gymUpdateResult.modifiedCount} gyms`);
+
             const result = {
                 chargesDeleted: chargeDeleteResult.deletedCount,
                 billingsDeleted: billingDeleteResult.deletedCount,
+                gymsReset: gymUpdateResult.modifiedCount,
                 totalDeleted: chargeDeleteResult.deletedCount + billingDeleteResult.deletedCount
             };
 
@@ -670,7 +690,7 @@ function convertDailyRangeEngineResultToPreview(engineResult: any) {
             type: charge.type,
             chargeId: charge.chargeId,
             memberId: charge.memberId,
-            planId: charge.planId,
+            planId: charge.membershipId,
             amount: charge.amount,
             description: charge.note,
             date: charge.chargeDate
@@ -692,63 +712,6 @@ function convertDailyRangeEngineResultToPreview(engineResult: any) {
             planId: c.planId,
             amount: c.amount,
             description: c.note,
-            date: c.chargeDate
-        })),
-        groupedCharges,
-        totalAmount: engineResult.summary.totalAmount,
-        summary: {
-            recurringPlans: engineResult.summary.recurringPlans,
-            oneTimeCharges: engineResult.summary.oneTimeCharges,
-            totalCharges: engineResult.summary.totalCharges
-        }
-    };
-}
-
-/**
- * Convert MonthlyBillingEngine result to legacy preview format for UI compatibility
- */
-function convertEngineResultToPreview(engineResult: any) {
-    // Group charges by member
-    const memberChargeGroups = new Map();
-
-    engineResult.charges.forEach((charge: any) => {
-        const memberId = charge.memberId;
-        if (!memberChargeGroups.has(memberId)) {
-            memberChargeGroups.set(memberId, {
-                memberId,
-                memberName: charge.memberName,
-                charges: [],
-                subtotal: 0
-            });
-        }
-
-        const group = memberChargeGroups.get(memberId);
-        group.charges.push({
-            type: charge.type,
-            chargeId: charge.chargeId,
-            memberId: charge.memberId,
-            planId: charge.planId,
-            amount: charge.amount,
-            description: charge.note, // Use the improved note field
-            date: charge.chargeDate
-        });
-        group.subtotal += charge.amount;
-    });
-
-    const groupedCharges = Array.from(memberChargeGroups.values()).sort((a, b) =>
-        a.memberName.localeCompare(b.memberName)
-    );
-
-    return {
-        startDate: engineResult.startDate,
-        endDate: engineResult.endDate,
-        charges: engineResult.charges.map((c: any) => ({
-            type: c.type,
-            chargeId: c.chargeId,
-            memberId: c.memberId,
-            planId: c.planId,
-            amount: c.amount,
-            description: c.note, // Use the improved note field
             date: c.chargeDate
         })),
         groupedCharges,
@@ -784,8 +747,18 @@ async function commitBillingRunWithEngine(
     const savedBilling = await billingRecord.save();
     console.log(`billingService.commitBillingRunWithEngine: Created billing record ${savedBilling._id}`);
 
+    // Convert charges back to engine format (planId -> membershipId)
+    const engineCharges = charges.map((charge: any) => ({
+        ...charge,
+        membershipId: charge.planId, // Convert planId back to membershipId
+        planId: undefined // Remove planId as it's not part of the engine format
+    }));
+
+    console.log('billingService.commitBillingRunWithEngine: Original charges:', charges);
+    console.log('billingService.commitBillingRunWithEngine: Converted engineCharges:', engineCharges);
+
     // Use engine to create charge records
-    const createdCharges = await DailyBillingEngine.createChargeRecords(charges, savedBilling._id.toString());
+    const createdCharges = await DailyBillingEngine.createChargeRecords(engineCharges, savedBilling._id.toString());
 
     // Update Gym's lastBillingRunDate to the end date of this billing run
     await Gym.findByIdAndUpdate(gymId, { lastBillingRunDate: endDate });
