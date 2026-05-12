@@ -101,12 +101,6 @@ const router = createRouter({
 
                         // Owner-only routes
                         {
-                            path: '/tools/help',
-                            name: 'help',
-                            component: () => import('@/views/tools/HelpOverview.vue'),
-                            meta: { roles: ['owner'] }
-                        },
-                        {
                             path: '/gym',
                             name: 'gym',
                             component: () => import('@/views/pages/GymManagement.vue'),

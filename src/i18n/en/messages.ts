@@ -1,11 +1,6 @@
 export const messages = {
     appName: 'Fit Fam Connect',
     motto: 'Where fitness and community meet.',
-    disclaimer: {
-        title: 'Important Reminder about AI',
-        desc: "Our AI tools are like having a super-helpful teaching assistant, always ready to lend a hand! They're fantastic for generating drafts and ideas, but remember, you're the lead teacher! Please give all AI-generated content a quick review to ensure it's accurate, complete, and perfectly tailored to your students and classroom. Think of it as adding your special teacher's touch!"
-    },
-    results: 'Results',
     buttons: {
         signin: 'Sign In',
         getStarted: 'Get Started',
@@ -13,11 +8,7 @@ export const messages = {
         logout: 'Logout',
         ok: 'OK'
     },
-    options: {
-        gradeTitle: 'Grade Level'
-    },
     menu: {
-        aitools: 'AI Tools',
         management: 'Management',
         reports: 'Reports',
         user: 'Member',
@@ -28,9 +19,6 @@ export const messages = {
         approved: 'Approved',
         denied: 'Denied',
         inactive: 'Inactive'
-    },
-    recents: {
-        dialogTitle: 'Recent Items'
     },
     help: {
         title: 'Help',
@@ -64,14 +52,7 @@ export const messages = {
     },
     profile: {
         title: 'User Profile',
-        preferences: 'Saved Preferences',
-        preferencesHelp: ['The values below will be used by all tools throughout the site.'],
         submit: 'Update',
-        temperature: 'Tone of content',
-        mode: 'Is content targeting kids/students, or parents?',
-        from: 'Your signature for letters, newsletters, etc.',
-        newsletterSections: 'Sections for your newsletter.',
-        showHelp: 'Expand help sections on tools.',
         desc: "Manage your member profile information here. Update your contact details, address, and pin code settings. Your pin code can be used for quick check-in at gym kiosks and other secure features.",
         memberInfo: {
             title: 'Member Information',
@@ -215,12 +196,12 @@ export const messages = {
     highlights: {
         title: 'Your Portable Powerhouse',
         subTitle: 'at your fingertips.. anywhere... anytime',
-        highlight1Title: 'Meet your new AI teaching wingman!',
+        highlight1Title: 'Run your gym from anywhere',
         highlight1Text:
-            'Meet your new AI teaching wingman! Fit Fam Connect is designed to be your constant companion, working seamlessly across your phone and desktop. Get ready to experience the power of AI, right at your fingertips, no matter where your teaching adventures take you!',
-        highlight2Title: 'Toolbox of Teaching Awesomeness',
+            'Fit Fam Connect is designed to be your constant companion, working seamlessly across your phone and desktop. Manage members, classes, schedules, and billing right from your pocket — no matter where the day takes you.',
+        highlight2Title: 'Built for fitness communities',
         highlight2Text:
-            "Unlock your teacher's secret weapon stash! We're packing Fit Fam Connect with tools that are designed by teachers, for teachers. And we're not stopping there – we're adding more every day! We know what you need to succeed, because we're in the trenches with you!"
+            "Memberships, plans, scheduling, coaches, and billing — all in one place, designed for gyms and clubs. And we're not stopping there: we're adding more every day to keep your fitness community thriving."
     },
     pricing: {
         title: 'Simple Pricing',
