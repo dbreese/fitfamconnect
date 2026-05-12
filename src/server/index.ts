@@ -87,12 +87,19 @@ app.use(productRouter);
 app.use(memberRouter);
 app.use(status);
 
-app.use(express.static(path.join(__dirname, '../')));
+// Serve ONLY the built SPA (vite output dir), never the source tree.
+// __dirname is .../src/server at runtime (tsx), so the client build lives at <repo>/dist.
+const clientDir = path.resolve(__dirname, '../../dist');
+app.use(express.static(clientDir));
 
-// unknown routes from client should get home page -- causes regex errror
-// app.get('/*', (_, res) => {
-//     res.sendFile(path.join(__dirname, '../', 'index.html'));
-// });
+// SPA fallback: any non-API path that isn't a static asset returns index.html.
+// (All API routers are registered above; missing API routes still 404 there.)
+app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    res.sendFile(path.join(clientDir, 'index.html'), (err) => {
+        if (err) next();
+    });
+});
 
 connectDB();
 

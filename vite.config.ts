@@ -12,8 +12,11 @@ console.log('API SERVER: ' + process.env.API_SERVER);
 
 export default defineConfig({
     build: {
-        minify: false,
-        sourcemap: true
+        // Don't ship readable client source: minify the bundle and emit no source maps.
+        // (With the API server now serving only dist/, this closes the client-source
+        // half of the static-serve disclosure finding from the security review.)
+        minify: true,
+        sourcemap: false
     },
     define: {
         __API_SERVER__: JSON.stringify(process.env.API_SERVER)
