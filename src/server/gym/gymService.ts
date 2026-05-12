@@ -1,14 +1,35 @@
 import type { IUser } from '../db/user';
-import express, { Router, type Request, type Response } from 'express';
+import express, { Router, type Response } from 'express';
 import { authenticateUser, authorizeRoles } from '../auth/auth';
 import type { AuthenticatedRequest } from '../auth/auth';
 import { Gym, type IGym } from '../db/gym';
-import { Member } from '../db/member';
-import { User } from '../db/user';
 import { type ServerResponse } from '../../shared/ServerResponse';
 
+// This router is the OWNER-facing view of an owner's own gym: GET /gym and PUT /gym.
+// Root-level administration over all gyms (/gym/all, /gym/create, /gym/:id, /gym/users/owners)
+// lives in gyms/gymsService.ts. Both update paths share sanitizeGymUpdate() below.
 export const router = Router();
 router.use(express.json());
+
+// Owners may see/edit a gym only while it is active. `isActive: { $ne: false }` also matches
+// legacy gym documents created before the field existed (those are treated as active).
+const ACTIVE_GYM_FILTER = { $ne: false };
+
+/**
+ * Strip fields that must never be set through a gym update, regardless of who is calling:
+ * `gymCode` is generated, `isActive` is managed via the delete endpoint, `lastBillingRunDate`
+ * is owned by the billing engine, and `_id`/`createdAt`/`updatedAt` are managed by Mongoose.
+ * `ownerId` may only be reassigned by root, so the owner-facing update passes
+ * `allowOwnerChange: false` and the root admin passes `allowOwnerChange: true`.
+ */
+export function sanitizeGymUpdate(updateData: Partial<IGym>, opts: { allowOwnerChange: boolean }): Partial<IGym> {
+    const { _id, gymCode, isActive, lastBillingRunDate, createdAt, updatedAt, ownerId, ...rest } = updateData;
+    const safe: Partial<IGym> = { ...rest };
+    if (opts.allowOwnerChange && ownerId !== undefined) {
+        safe.ownerId = ownerId;
+    }
+    return safe;
+}
 
 // GET /gym - Get the current user's gym
 router.get('/gym', authenticateUser, authorizeRoles('owner', 'root'), async (req: AuthenticatedRequest, res: Response) => {
@@ -69,9 +90,7 @@ router.put('/gym', authenticateUser, authorizeRoles('owner', 'root'), async (req
 });
 
 /**
- * Find gym by owner user ID
- * @param user - Authenticated user
- * @returns Gym document or null
+ * Find the active gym owned by this user.
  */
 async function findGymByOwner(user: IUser | undefined): Promise<IGym | null> {
     if (!user) {
@@ -80,18 +99,14 @@ async function findGymByOwner(user: IUser | undefined): Promise<IGym | null> {
     }
 
     console.log(`gymService.findGymByOwner: Looking for gym owned by user ${user._id}`);
-    // const gym = await Gym.findOne({ ownerId: user._id, isActive: true });
-    const gym = await Gym.findOne({ ownerId: user._id });
+    const gym = await Gym.findOne({ ownerId: user._id, isActive: ACTIVE_GYM_FILTER });
 
-    console.log("gymService.findGymByOwner: Found gym ", gym);
+    console.log('gymService.findGymByOwner: Found gym ', gym);
     return gym;
 }
 
 /**
- * Update gym by owner user ID
- * @param user - Authenticated user
- * @param updateData - Data to update
- * @returns Updated gym document or null
+ * Update the active gym owned by this user, after stripping fields owners may not change.
  */
 async function updateGymByOwner(user: IUser | undefined, updateData: Partial<IGym>): Promise<IGym | null> {
     if (!user) {
@@ -101,16 +116,14 @@ async function updateGymByOwner(user: IUser | undefined, updateData: Partial<IGy
 
     console.log(`gymService.updateGymByOwner: Updating gym for user ${user._id}`);
 
-    // Security: Only allow updating gym that belongs to this user
-    const gym = await Gym.findOne({ ownerId: user._id, isActive: true });
+    // Security: only the active gym that belongs to this user.
+    const gym = await Gym.findOne({ ownerId: user._id, isActive: ACTIVE_GYM_FILTER });
     if (!gym) {
         console.log(`gymService.updateGymByOwner: User ${user._id} does not own any active gym`);
         return null;
     }
 
-    // Remove fields that shouldn't be updated via this endpoint
-    const { ownerId, gymCode, isActive, createdAt, updatedAt, ...safeUpdateData } = updateData;
-
+    const safeUpdateData = sanitizeGymUpdate(updateData, { allowOwnerChange: false });
     console.log(`gymService.updateGymByOwner: Applying safe updates to gym ${gym._id}:`, safeUpdateData);
 
     const updatedGym = await Gym.findByIdAndUpdate(gym._id, safeUpdateData, { new: true, runValidators: true });
@@ -121,187 +134,3 @@ async function updateGymByOwner(user: IUser | undefined, updateData: Partial<IGy
 
     return updatedGym;
 }
-
-// Helper class for creating server responses
-class ResponseHelper {
-    static success(data: any, message: string = 'Success'): ServerResponse {
-        return { responseCode: 200, body: { message, data } };
-    }
-    static created(data: any, message: string = 'Created'): ServerResponse {
-        return { responseCode: 201, body: { message, data } };
-    }
-    static error(message: string, code: number = 500): ServerResponse {
-        return { responseCode: code, body: { message } };
-    }
-}
-
-/**
- * ROOT-LEVEL GYM MANAGEMENT ENDPOINTS
- */
-
-// GET /gym/all - Get all gyms (root access only)
-router.get('/gym/all', authenticateUser, authorizeRoles('root'), async (req: AuthenticatedRequest, res: Response) => {
-    try {
-        console.log('gymService.GET /gym/all: Request received');
-
-        const gyms = await Gym.find({}).sort({ name: 1 });
-
-        // Enrich with owner information from User model
-        const enrichedGyms = await Promise.all(gyms.map(async (gym) => {
-            const owner = await User.findById(gym.ownerId);
-            return {
-                ...gym.toObject(),
-                owner: owner ? {
-                    _id: owner._id,
-                    firstName: owner.fullname ? owner.fullname.split(' ')[0] || owner.username : owner.username,
-                    lastName: owner.fullname ? owner.fullname.split(' ').slice(1).join(' ') || '' : '',
-                    email: owner.email,
-                    username: owner.username
-                } : null
-            };
-        }));
-
-        console.log(`gymService.GET /gym/all: Found ${gyms.length} gyms`);
-        res.status(200).json(ResponseHelper.success(enrichedGyms, 'Gyms retrieved successfully'));
-    } catch (error) {
-        console.error('gymService.GET /gym/all: Error:', error);
-        res.status(500).json(ResponseHelper.error('Failed to retrieve gyms', 500));
-    }
-});
-
-// POST /gym/create - Create new gym (root access only)
-router.post('/gym/create', authenticateUser, authorizeRoles('root'), async (req: AuthenticatedRequest, res: Response) => {
-    try {
-        console.log('gymService.POST /gym/create: Request received', req.body);
-
-        const gymData = req.body;
-
-        // Validate required fields
-        if (!gymData.name || !gymData.ownerId || !gymData.billingAddress || !gymData.contact) {
-            return res.status(400).json(ResponseHelper.error('Name, ownerId, billingAddress, and contact are required', 400));
-        }
-
-        // Verify owner exists and has 'owner' role
-        const owner = await User.findById(gymData.ownerId);
-        if (!owner) {
-            return res.status(400).json(ResponseHelper.error('Owner user not found', 400));
-        }
-
-        if (!owner.roles?.includes('owner')) {
-            return res.status(400).json(ResponseHelper.error('Selected user must have "owner" role', 400));
-        }
-
-        // Check if owner already has a gym
-        const existingGym = await Gym.findOne({ ownerId: gymData.ownerId });
-        if (existingGym) {
-            return res.status(400).json(ResponseHelper.error('Owner already has a gym', 400));
-        }
-
-        const newGym = new Gym(gymData);
-        const savedGym = await newGym.save();
-
-        console.log(`gymService.POST /gym/create: Created gym ${savedGym.name} with ID ${savedGym._id}`);
-        res.status(201).json(ResponseHelper.created(savedGym, 'Gym created successfully'));
-    } catch (error) {
-        console.error('gymService.POST /gym/create: Error:', error);
-        res.status(500).json(ResponseHelper.error('Failed to create gym', 500));
-    }
-});
-
-// PUT /gym/:id - Update gym (root access only)
-router.put('/gym/:id', authenticateUser, authorizeRoles('root'), async (req: AuthenticatedRequest, res: Response) => {
-    try {
-        const { id } = req.params;
-        const updateData = req.body;
-        console.log('gymService.PUT /gym/:id: Request received', { id, updateData });
-
-        // If ownerId is being updated, verify the new owner
-        if (updateData.ownerId) {
-            const owner = await User.findById(updateData.ownerId);
-            if (!owner) {
-                return res.status(400).json(ResponseHelper.error('Owner user not found', 400));
-            }
-
-            if (!owner.roles?.includes('owner')) {
-                return res.status(400).json(ResponseHelper.error('Selected user must have "owner" role', 400));
-            }
-
-            // Check if new owner already has a gym (excluding current gym)
-            const existingGym = await Gym.findOne({
-                ownerId: updateData.ownerId,
-                _id: { $ne: id }
-            });
-            if (existingGym) {
-                return res.status(400).json(ResponseHelper.error('Selected owner already has another gym', 400));
-            }
-        }
-
-        // Remove fields that shouldn't be updated
-        const { createdAt, updatedAt, ...safeUpdateData } = updateData;
-
-        const updatedGym = await Gym.findByIdAndUpdate(id, safeUpdateData, {
-            new: true,
-            runValidators: true
-        });
-
-        if (!updatedGym) {
-            return res.status(404).json(ResponseHelper.error('Gym not found', 404));
-        }
-
-        console.log(`gymService.PUT /gym/:id: Updated gym ${updatedGym.name}`);
-        res.status(200).json(ResponseHelper.success(updatedGym, 'Gym updated successfully'));
-    } catch (error) {
-        console.error('gymService.PUT /gym/:id: Error:', error);
-        res.status(500).json(ResponseHelper.error('Failed to update gym', 500));
-    }
-});
-
-// DELETE /gym/:id - Delete gym (root access only)
-router.delete('/gym/:id', authenticateUser, authorizeRoles('root'), async (req: AuthenticatedRequest, res: Response) => {
-    try {
-        const { id } = req.params;
-        console.log('gymService.DELETE /gym/:id: Request received', { id });
-
-        const gym = await Gym.findById(id);
-        if (!gym) {
-            return res.status(404).json(ResponseHelper.error('Gym not found', 404));
-        }
-
-        // Soft delete by setting isActive to false
-        gym.isActive = false;
-        await gym.save();
-
-        console.log(`gymService.DELETE /gym/:id: Soft deleted gym ${gym.name}`);
-        res.status(200).json(ResponseHelper.success({}, 'Gym deleted successfully'));
-    } catch (error) {
-        console.error('gymService.DELETE /gym/:id: Error:', error);
-        res.status(500).json(ResponseHelper.error('Failed to delete gym', 500));
-    }
-});
-
-// GET /gym/users/owners - Get all users with owner role for selection (root access only)
-router.get('/gym/users/owners', authenticateUser, authorizeRoles('root'), async (req: AuthenticatedRequest, res: Response) => {
-    try {
-        console.log('gymService.GET /gym/users/owners: Request received');
-
-        // Get users with 'owner' role from User collection
-        const ownerUsers = await User.find({
-            roles: 'owner'
-        }).select('_id username fullname email').sort({ fullname: 1 });
-
-        // Format for frontend consumption
-        const formattedOwners = ownerUsers.map(user => ({
-            _id: user._id,
-            firstName: user.fullname ? user.fullname.split(' ')[0] || user.username : user.username,
-            lastName: user.fullname ? user.fullname.split(' ').slice(1).join(' ') || '' : '',
-            email: user.email,
-            username: user.username
-        }));
-
-        console.log(`gymService.GET /gym/users/owners: Found ${formattedOwners.length} owner users`);
-        res.status(200).json(ResponseHelper.success(formattedOwners, 'Owner users retrieved successfully'));
-    } catch (error) {
-        console.error('gymService.GET /gym/users/owners: Error:', error);
-        res.status(500).json(ResponseHelper.error('Failed to retrieve owner users', 500));
-    }
-});
