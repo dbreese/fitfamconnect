@@ -47,7 +47,6 @@
         "jspdf-autotable": "^5.0.2",
         "mongoose": "^8.9.5",
         "morgan": "^1.10.0",
-        "openai": "^4.78.1",
         "pdfjs-dist": "^4.10.38",
         "primeicons": "^7.0.0",
         "primevue": "^4.3.1",

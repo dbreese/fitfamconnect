@@ -6,6 +6,7 @@ import { Charge } from '../db/charge';
 import { Member } from '../db/member';
 import { Gym } from '../db/gym';
 import { Plan } from '../db/plan';
+import { Membership } from '../db/membership';
 import type { ICharge } from '../db/charge';
 import type { ServerResponse } from '../../shared/ServerResponse';
 
@@ -468,23 +469,27 @@ async function findUnbilledChargesForUser(user: IUser | undefined): Promise<any[
         return [];
     }
 
-    // Get gym and plan information
+    // Get gym, membership, and plan information
     const gyms = await Gym.find({ _id: { $in: gymIds } });
-    const planIds = unbilledCharges.map(charge => charge.planId).filter(Boolean);
+
+    const membershipIds = unbilledCharges.map(charge => charge.membershipId).filter(Boolean);
+    const memberships = await Membership.find({ _id: { $in: membershipIds } });
+    const planIds = memberships.map(membership => membership.planId).filter(Boolean);
     const plans = await Plan.find({ _id: { $in: planIds } });
 
     // Format the response
     const formattedCharges = unbilledCharges.map(charge => {
         const member = memberRecords.find(m => m._id?.toString() === charge.memberId);
         const gym = gyms.find(g => g._id?.toString() === member?.gymId);
-        const plan = plans.find(p => p._id?.toString() === charge.planId);
+        const membership = memberships.find(ms => ms._id?.toString() === charge.membershipId);
+        const plan = membership ? plans.find(p => p._id?.toString() === membership.planId) : undefined;
 
         return {
             _id: charge._id,
             date: charge.chargeDate,
             description: charge.note || 'Charge',
             amount: charge.amount, // Keep in cents for consistency
-            type: charge.planId ? 'recurring' : 'one-time',
+            type: charge.membershipId ? 'recurring' : 'one-time',
             planName: plan?.name,
             gymName: gym?.name || 'Unknown Gym',
             gymId: gym?._id
